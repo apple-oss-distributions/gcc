@@ -419,9 +419,6 @@ struct c_lang_decl GTY(()) {
 extern c_language_kind c_language;
 
 /* APPLE LOCAL begin PCH */
-/* Nonzero if we can read a PCH file now.  */
-extern int allow_pch;
-
 /* The file name to which we should write a precompiled header, or
    NULL if no header will be written in this compile.  */
 extern const char *pch_file;

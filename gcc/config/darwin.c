@@ -1784,6 +1784,31 @@ darwin_non_lazy_pcrel (FILE *file, rtx addr)
 }
 /* APPLE LOCAL end coalescing */
 
+/* APPLE LOCAL begin CW asm blocks */
+/* Assume labels like L_foo$stub etc in CW-style inline code are
+   intended to be taken as literal labels, and return the identifier,
+   otherwise return NULL signifying that we have no special
+   knowledge.  */
+tree
+darwin_cw_asm_special_label (id)
+     tree id;
+{
+  const char *name = IDENTIFIER_POINTER (id);
+
+  if (name[0] == 'L')
+    {
+      int len = strlen (name);
+
+      if ((len > 5 && strcmp (name + len - 5, "$stub") == 0)
+	  || (len > 9 && strcmp (name + len - 9, "$lazy_ptr") == 0)
+	  || (len > 13 && strcmp (name + len - 13, "$non_lazy_ptr") == 0))
+	return id;
+    }
+
+  return NULL_TREE;
+}
+/* APPLE LOCAL end CW asm blocks */
+
 /* Output a difference of two labels that will be an assembly time
    constant if the two labels are local.  (.long lab1-lab2 will be
    very different if lab1 is at the boundary between two sections; it

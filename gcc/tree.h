@@ -1476,6 +1476,12 @@ struct tree_type GTY(())
    values for parameters are encoded in the type of the function,
    not in the PARM_DECL slot.  */
 #define DECL_INITIAL(NODE) (DECL_CHECK (NODE)->decl.initial)
+/* APPLE LOCAL begin Altivec */
+/* Use decl.saved_tree for PARM_DECL to provide original argument list to
+   dbxout. Backend likes to rearrange vector parameters. */
+/* For a PARM_DECL, keep original argument vector.  */
+#define DECL_ORIGINAL_ARGUMENTS(NODE) (PARM_DECL_CHECK (NODE)->decl.saved_tree)
+/* APPLE LOCAL end Altivec */
 /* For a PARM_DECL, records the data type used to pass the argument,
    which may be different from the type seen in the program.  */
 #define DECL_ARG_TYPE(NODE) (PARM_DECL_CHECK (NODE)->decl.initial)
@@ -1934,6 +1940,9 @@ struct tree_decl GTY(())
   } GTY ((desc ("TREE_CODE((tree) &(%0))"))) u2;
 
   /* In a FUNCTION_DECL, this is DECL_SAVED_TREE.  */
+  /* APPLE LOCAL begin Altivec */
+  /* In a PARM_DECL, this is tree_vec with original argument sequence */
+  /* APPLE LOCAL end Altivec */
   tree saved_tree;
 
   /* In a FUNCTION_DECL, these are function data which is to be kept

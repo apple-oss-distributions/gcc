@@ -310,10 +310,11 @@ convert_to_pointer_force (type, expr)
 	  tree binfo;
 
 	  /* APPLE LOCAL begin Objective-C++ */
-	  /* Casts to a (pointer to a) specific ObjC class should always be 
-	     retained, because this information aids in method lookup.  */
+	  /* Casts to a (pointer to a) specific ObjC class (or 'id' or
+	     'Class') should always be retained, because this information aids 
+	     in method lookup.  */
 	  if (flag_objc 
-	      && is_class_name (TYPE_IDENTIFIER (TREE_TYPE (type))))
+	      && (objc_is_id (type) || is_class_name (TREE_TYPE (type))))
 	    return build1 (NOP_EXPR, type, expr);
 	  /* APPLE LOCAL end Objective-C++ */
 
@@ -369,7 +370,7 @@ build_up_reference (type, arg, flags, decl)
 	 here because it needs to live as long as DECL.  */
       tree targ = arg;
 
-      arg = make_temporary_var_for_ref_to_temp (decl);
+      arg = make_temporary_var_for_ref_to_temp (decl, TREE_TYPE (arg));
 
       /* Process the initializer for the declaration.  */
       DECL_INITIAL (arg) = targ;

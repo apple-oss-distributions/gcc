@@ -2228,6 +2228,8 @@ compstmt_nostart: '}'
 		{ $$ = convert (void_type_node, integer_zero_node); }
 	| pushlevel maybe_label_decls compstmt_contents_nonempty '}' poplevel
 		{ $$ = poplevel (kept_level_p (), 1, 0);
+		  /* APPLE LOCAL CW asm blocks */
+		  if (flag_cw_asm_blocks) cw_asm_block = 0;
 		  SCOPE_STMT_BLOCK (TREE_PURPOSE ($5))
 		    = SCOPE_STMT_BLOCK (TREE_VALUE ($5))
 		    = $$; }

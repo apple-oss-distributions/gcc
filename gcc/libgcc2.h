@@ -32,6 +32,11 @@ extern void __bb_exit_func (void);
 extern void __bb_init_func (struct bb *);
 extern void __bb_fork_func (void);
 
+struct nf;
+extern void __nf_exit_func (void);
+extern void __nf_init_func (struct nf *);
+extern void __nf_fork_func (void);
+
 #if LONG_TYPE_SIZE == GCOV_TYPE_SIZE
 typedef long gcov_type;
 #else

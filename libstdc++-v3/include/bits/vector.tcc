@@ -61,6 +61,12 @@
 #ifndef __GLIBCPP_INTERNAL_VECTOR_TCC
 #define __GLIBCPP_INTERNAL_VECTOR_TCC
 
+/* APPLE LOCAL begin libstdc++ debug mode */
+#ifdef _GLIBCXX_DEBUG
+#  define vector _Release_vector
+#endif
+/* APPLE LOCAL end libstdc++ debug mode */
+
 namespace std
 {
   template<typename _Tp, typename _Alloc>
@@ -433,5 +439,11 @@ namespace std
       }
     }
 } // namespace std
+
+/* APPLE LOCAL begin libstdc++ debug mode */
+#ifdef _GLIBCXX_DEBUG
+#  undef vector
+#endif
+/* APPLE LOCAL end libstdc++ debug mode */
 
 #endif /* __GLIBCPP_INTERNAL_VECTOR_TCC */

@@ -42,9 +42,10 @@ Only the most useful options are listed here; see below for the
 remainder.  @samp{g++} accepts mostly the same options as @samp{gcc}.
 
 @c APPLE LOCAL begin manual
-In Apple's version of GCC, both @samp{cc} and @samp{gcc} are actually
-symbolic links to @samp{gcc3}, while @samp{c++} and @samp{g++} are links
-to @samp{g++3}.
+Note: In Apple's version of GCC, both @samp{cc} and @samp{gcc} are actually
+symbolic links to @samp{gcc-3.3}, while @samp{c++} and @samp{g++} are links
+to @samp{g++-3.3}, unless the @command{gcc_select(1)} command has been used
+to point them at another compiler version.
 
 Note that Apple's GCC includes a number of extensions to standard GCC
 (flagged below with ``APPLE ONLY''), and that not all generic GCC
@@ -56,9 +57,9 @@ Java, although there are third parties who have made these work.
 @c man end
 @c man begin SEEALSO
 gpl(7), gfdl(7), fsf-funding(7),
-cpp(1), gcov(1), g77(1), as(1), ld(1), gdb(1), adb(1), dbx(1), sdb(1)
-and the Info entries for @file{gcc}, @file{cpp}, @file{g77}, @file{as},
-@file{ld}, @file{binutils} and @file{gdb}.
+cpp(1), gcov(1), g77(1), as(1), ld(1), gdb(1), adb(1), dbx(1), sdb(1),
+gcc_select(1) and the Info entries for @file{gcc}, @file{cpp}, @file{g77},
+@file{as}, @file{ld}, @file{binutils} and @file{gdb}.
 @c man end
 @c man begin BUGS
 @c APPLE LOCAL begin report bugs to Apple
@@ -136,7 +137,10 @@ only one of these two forms, whichever one is not the default.
 * Invoking G++::	Compiling C++ programs.
 * C Dialect Options::   Controlling the variant of C language compiled.
 * C++ Dialect Options:: Variations on C++.
-* Objective-C Dialect Options:: Variations on Objective-C.
+@c APPLE LOCAL begin Objective-C++
+* Objective-C Dialect Options:: Variations on Objective-C and
+			(APPLE ONLY) Objective-C++.
+@c APPLE LOCAL end Objective-C++
 * Language Independent Options:: Controlling how diagnostics should be
                         formatted.
 * Warning Options::     How picky should the compiler be?
@@ -246,7 +250,14 @@ in the following sections.
 @xref{Objective-C Dialect Options,,Options Controlling Objective-C Dialect}.
 @gccoptlist{
 -fconstant-string-class=@var{class-name} @gol
--fgnu-runtime  -fnext-runtime  -gen-decls @gol
+@c APPLE LOCAL begin ObjC options
+-fgnu-runtime  -fnext-runtime  @gol
+-fno-nil-receivers (APPLE ONLY) @gol
+-fobjc-exceptions (APPLE ONLY) @gol
+-freplace-objc-classes (APPLE ONLY) @gol
+-fzero-link (APPLE ONLY) @gol
+@c APPLE LOCAL end ObjC options
+-gen-decls @gol
 -Wno-protocol  -Wselector -Wundeclared-selector}
 
 @item Language Independent Options
@@ -348,7 +359,8 @@ in the following sections.
 -fstrength-reduce  -fstrict-aliasing  -ftracer -fthread-jumps @gol
 -funroll-all-loops  -funroll-loops  @gol
 --param @var{name}=@var{value}
--O  -O0  -O1  -O2  -O3  -Os}
+@c APPLE LOCAL -fast
+-O  -O0  -O1  -O2  -O3  -Os -fast (APPLE ONLY)}
 
 @item Preprocessor Options
 @xref{Preprocessor Options,,Options Controlling the Preprocessor}.
@@ -965,8 +977,9 @@ has not been used at all).
 @opindex ObjC
 @opindex ObjC++
 These are similar in effect to @option{-x objective-c} and @option{-x
-objective-c++}, but affect only the choice of compiler for files already
-identified as source files. (APPLE ONLY)
+objective-c++}, but also cause the @option{-ObjC} flag to be passed to
+@command{ld(1)}, causing static archive libraries that define an Objective-C
+class or category to be linked in in their entirety. (APPLE ONLY)
 @c APPLE LOCAL end -ObjC 2001-08-03 sts **
 
 @c APPLE LOCAL begin fat builds
@@ -1420,7 +1433,11 @@ be constant.
 @opindex fconstant-cfstrings
 Enable the automatic creation of a CoreFoundation-type constant string
 whenever a special builtin @code{__builtin__CFStringMakeConstantString}
-is called on a literal string.  (APPLE ONLY)
+is called on a literal string, and for @code{@@"@dots{}"} literals
+in Objective-C (thus overriding the @option{-fconstant-string-class}
+setting).  This option will also be enabled if the environment variable
+@code{MACOSX_DEPLOYMENT_TARGET} exists and is set to @code{"10.2"} or
+greater.  (APPLE ONLY)
 @c APPLE LOCAL end constant cfstrings
 
 @c APPLE LOCAL begin Pascal strings 2001-07-05 zll **
@@ -2023,7 +2040,13 @@ programs:
 @opindex fconstant-string-class
 Use @var{class-name} as the name of the class to instantiate for each
 literal string specified with the syntax @code{@@"@dots{}"}.  The default
-class name is @code{NXConstantString}.
+@c APPLE LOCAL begin constant strings
+class name is @code{NXConstantString} if the GNU runtime is being used, and
+@code{NSConstantString} if the NeXT runtime is being used (see below).  The
+@option{-fconstant-cfstrings} option, if also present, will override the
+@option{-fconstant-string-class} setting and cause @code{@@"@dots{}"} literals
+to be laid out as constant CoreFoundation strings.
+@c APPLE LOCAL end constant strings
 
 @item -fgnu-runtime
 @opindex fgnu-runtime
@@ -2036,6 +2059,123 @@ Generate output compatible with the NeXT runtime.  This is the default
 for NeXT-based systems, including Darwin and Mac OS X@.  The macro
 @code{__NEXT_RUNTIME__} is predefined if (and only if) this option is
 used.
+
+@c APPLE LOCAL begin ObjC options
+@item -fno-nil-receivers @r{(APPLE ONLY)}
+@opindex -fno-nil-receivers
+Assume that all Objective-C message dispatches (e.g., 
+@code{[receiver message:arg]}) in this translation unit ensure that the receiver 
+is not @code{nil}.  This allows for more efficient entry points in the runtime to be 
+used.  Currently, this option is only available in conjunciton with 
+the NeXT runtime.
+
+@item -fobjc-exceptions @r{(APPLE ONLY)}
+@opindex -fobjc-exceptions
+Enable syntactic support for structured exception handling in Objective-C, 
+similar to what is offered by C++ and Java.  This option will also be enabled 
+if the environment variable @code{MACOSX_DEPLOYMENT_TARGET} exists and is set 
+to @code{"10.3"} or greater.
+
+@smallexample
+  @@try @{
+    @dots{}
+       @@throw expr;
+    @dots{}
+  @}
+  @@catch (AnObjCClass *exc) @{
+    @dots{}
+      @@throw expr;
+    @dots{}
+      @@throw;
+    @dots{}
+  @}
+  @@catch (AnotherClass *exc) @{
+    @dots{}
+  @}
+  @@catch (id allOthers) @{
+    @dots{}
+  @}
+  @@finally @{
+    @dots{}
+      @@throw expr;
+    @dots{}
+  @}
+@end smallexample
+
+The @code{@@throw} statement may appear anywhere in an Objective-C or
+Objective-C++ program; when used inside of a @code{@@catch} block, the 
+@code{@@throw} may appear without an argument (as shown above), in which case 
+the object caught by the @code{@@catch} will be rethrown.
+
+Note that only (pointers to) Objective-C objects may be thrown and
+caught using this scheme.  When an object is thrown, it will be caught
+by the nearest @code{@@catch} clause capable of handling objects of that type,
+analogously to how @code{catch} blocks work in C++ and Java.  A 
+@code{@@catch(id @dots{})} clause (as shown above) may also be provided to catch 
+any and all Objective-C exceptions not caught by previous @code{@@catch}
+clauses (if any).
+
+The @code{@@finally} clause, if present, will be executed upon exit from the
+immediately preceding @code{@@try @dots{} @@catch} section.  This will happen
+regardless of whether any exceptions are thrown, caught or rethrown
+inside the @code{@@try @dots{} @@catch} section, analogously to the behavior
+of the @code{finally} clause in Java.
+
+There are several caveats to using the new exception mechanism:
+
+@itemize @bullet
+@item
+Although currently designed to be binary compatible with @code{NS_HANDLER}-style 
+idioms provided by the @code{NSException} class, the new
+exceptions can only be used on Mac OS X 10.3 (Panther) and later
+systems, due to additional functionality needed in the (NeXT) Objective-C
+runtime.
+
+@item
+As mentioned above, the new exceptions do not support handling
+types other than Objective-C objects.   Furthermore, when used from 
+Objective-C++, the Objective-C exception model does not interoperate with C++
+exceptions at this time.  This means you cannot @code{@@throw} an exception
+from Objective-C and @code{catch} it in C++, or vice versa 
+(i.e., @code{throw @dots{} @@catch}).
+@end itemize
+ 
+The @option{-fobjc-exceptions} switch also enables the use of synchronization
+blocks for thread-safe execution:
+
+@smallexample
+  ObjCClass *lockObject = @dots{};
+  @dots{}
+  @@synchronized (lockObject) @{
+    @dots{}
+      @@throw expr;
+    @dots{}
+  @}
+@end smallexample
+
+Unlike Java, Objective-C does not allow for entire methods to be marked
+@code{@@synchronized}.  Note that throwing exceptions out of
+@code{@@synchronized} blocks is allowed, and will cause the guarding object
+to be unlocked properly.
+
+@item -freplace-objc-classes @r{(APPLE ONLY)}
+@opindex -freplace-objc-classes
+When compiling for the NeXT runtime, the compiler ordinarily replaces calls
+to @code{objc_getClass("@dots{}")} (when the name of the class is known at
+compile time) with static class references that get initialized at load time,
+which improves run-time performance.  Specifying the 
+@option{-freplace-objc-classes} flag suppresses this behavior and causes calls 
+to @code{objc_getClass("@dots{}")} to be retained.  This is useful in
+Fix-and-Continue debugging mode, since it allows for individual class 
+implementations to be modified during program execution.
+
+@item -fzero-link @r{(APPLE ONLY)}
+@opindex -fzero-link
+Emit a special marker instructing @command{ld(1)} not to statically link in
+the resulting object file, and allow @command{dyld(1)} to load it in at
+run time instead.  This is used in conjunction with the Zero Link debugging
+mode.
+@c APPLE LOCAL end ObjC options
 
 @item -gen-decls
 @opindex gen-decls
@@ -2925,8 +3065,8 @@ casts like @code{(unsigned) -1}.
 @cindex signed and unsigned values, comparison warning
 Warn when a comparison between signed and unsigned values could produce
 an incorrect result when the signed value is converted to unsigned.
-This warning is also enabled by @option{-W}; to get the other warnings
-of @option{-W} without this warning, use @samp{-W -Wno-sign-compare}.
+This warning is enabled by @option{-W}, and by @option{-Wall}
+in C++ only.
 
 @item -Waggregate-return
 @opindex Waggregate-return
@@ -3742,6 +3882,41 @@ Optimize yet more.  @option{-O3} turns on all optimizations specified by
 @item -O0
 @opindex O0
 Do not optimize.  This is the default.
+
+@c APPLE LOCAL begin -fast  
+@item -fast
+@opindex fast
+Optimize for maximum performance. @option{-fast} changes the overall optimization 
+strategy of GCC in order to produce the fastest possible running code for PPC7450 
+and G5 architectures. By default, @option{-fast} optimizes for G5. Programs 
+optimized for G5 will not run on PPC7450. To optimize for PPC7450, add 
+@option{-mcpu=7450} on command line.
+
+@option{-fast} currently enables the following optimization flags (for G5 and PPC7450). 
+These flags may change in the future. You cannot override any of these options if you use 
+@option{-fast} except by setting @option{-mcpu=7450}. Note that @option{-ffast-math}, 
+@option{-fstrict-aliasing} and @option{-malign-natural} are unsafe in some situations. 
+To build shared libraries with @option{-fast}, specify @option{-fPIC} on command line. 
+
+@gccoptlist{-O3
+-funroll-loops
+-fstrict-aliasing
+-fsched-interblock
+-falign-loops=16
+-falign-jumps=16
+-falign-functions=16
+-falign-jumps-max-skip=15
+-falign-loops-max-skip=15
+-malign-natural
+-ffast-math
+-mdynamic-no-pic
+-mpowerpc-gpopt
+-force_cpusubtype_ALL
+-fstrict-aliasing
+-mtune=G5
+-mcpu=G5
+-mpowerpc64}
+@c APPLE LOCAL end -fast
 
 @item -Os
 @opindex Os
@@ -6196,7 +6371,8 @@ implementations.
 @opindex mtune
 Set the instruction scheduling parameters for machine type
 @var{cpu_type}, but do not set the instruction set or register set that the
-option @option{-mcpu=@var{cpu_type}} would.
+option @option{-mcpu=@var{cpu_type}} would. For certain machines, such as power4,
+mtune can change the code alignment settings.
 
 The same values for @option{-mcpu=@var{cpu_type}} can be used for
 @option{-mtune=@var{cpu_type}}, but the only useful values are those

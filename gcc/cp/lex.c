@@ -1289,6 +1289,10 @@ do_identifier (token, parsing, args)
 	  tree newtoken;
 	  if ((newtoken = cw_asm_reg_name (token)))
 	    POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, newtoken);
+#ifdef CW_ASM_SPECIAL_LABEL
+	  if ((newtoken = CW_ASM_SPECIAL_LABEL (token)))
+	    POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, newtoken);
+#endif
 	  /* Assume undeclared symbols are labels. */
 	  newtoken = get_cw_asm_label (token);
 	  POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, newtoken);

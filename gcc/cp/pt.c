@@ -4304,6 +4304,9 @@ lookup_template_class (d1, arglist, in_decl, context, entering_scope, complain)
 	  CLASSTYPE_GOT_SEMICOLON (t) = 1;
 	  SET_CLASSTYPE_IMPLICIT_INSTANTIATION (t);
 	  TYPE_FOR_JAVA (t) = TYPE_FOR_JAVA (template_type);
+	  /* APPLE LOCAL begin libstdc++ debug mode */
+	  TYPE_ATTRIBUTES (t) = TYPE_ATTRIBUTES (template_type);
+	  /* APPLE LOCAL end libstdc++ debug mode */
 
 	  /* A local class.  Make sure the decl gets registered properly.  */
 	  if (context == current_function_decl)
@@ -5295,6 +5298,9 @@ instantiate_class_template (type)
   TYPE_ALIGN (type) = TYPE_ALIGN (pattern);
   TYPE_USER_ALIGN (type) = TYPE_USER_ALIGN (pattern);
   TYPE_FOR_JAVA (type) = TYPE_FOR_JAVA (pattern); /* For libjava's JArray<T> */
+  /* APPLE LOCAL begin libstdc++ debug mode */
+  TYPE_ATTRIBUTES (type) = TYPE_ATTRIBUTES (pattern);
+  /* APPLE LOCAL end libstdc++ debug mode */
   if (ANON_AGGR_TYPE_P (pattern))
     SET_ANON_AGGR_TYPE_P (type);
 

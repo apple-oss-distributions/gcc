@@ -55,7 +55,7 @@ extern int objcp_lookup_identifier	PARAMS ((tree, tree *, int));
 	objcp_finish_struct (t, fieldlist, attributes)
 #define start_function(declspecs, declarator, attributes) \
 	objcp_start_function (declspecs, declarator, attributes)
-#define finish_function(nested) \
+#define finish_function(nested, defer) \
 	objcp_finish_function (nested)
 #define start_decl(declarator, declspecs, initialized, attributes) \
 	objcp_start_decl (declarator, declspecs, initialized, attributes)

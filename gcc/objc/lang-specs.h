@@ -23,8 +23,9 @@ Boston, MA 02111-1307, USA.  */
 
   {".m", "@objective-c", 0},
   {"@objective-c",
-     "%{E|M|MM:%(trad_capable_cpp)\
-          -lang-objc %(cpp_options) %(cpp_debug_options)}\
+      /* APPLE LOCAL use cc1obj  */
+     "%{E|M|MM:cc1obj -E %{traditional|ftraditional|traditional-cpp:-traditional-cpp}\
+          %(cpp_options) %(cpp_debug_options)}\
       "/* APPLE LOCAL prohibit -arch with -E and -S  */"\
       %{E|S:%{@:%e-E and -S are not allowed with multiple -arch flags}}\
       %{!E:%{!M:%{!MM:\
@@ -40,8 +41,9 @@ Boston, MA 02111-1307, USA.  */
      "%{!M:%{!MM:%{!E:cc1obj -fpreprocessed %i %(cc1_options) %{gen-decls}\
 			     %{!fsyntax-only:%(invoke_as)}}}}", 0},
   {"@objective-c-header",
-     "%{E|M|MM:%(trad_capable_cpp)\
-          -lang-objc %(cpp_options) %(cpp_debug_options)}\
+      /* APPLE LOCAL use cc1obj  */
+     "%{E|M|MM:cc1obj -E %{traditional|ftraditional|traditional-cpp:-traditional-cpp}\
+          %(cpp_options) %(cpp_debug_options)}\
       %{!E:%{!M:%{!MM:\
 	%{traditional|ftraditional|traditional-cpp:\
 %eGNU Objective C no longer supports traditional compilation}\

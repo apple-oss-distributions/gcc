@@ -60,6 +60,8 @@ extern int machopic_name_defined_p PARAMS ((const char*));
 extern int machopic_ident_defined_p PARAMS ((tree));
 extern void darwin_encode_section_info PARAMS ((tree, int));
 extern const char *darwin_strip_name_encoding PARAMS ((const char *));
+/* APPLE LOCAL CW asm blocks */
+extern tree darwin_cw_asm_special_label PARAMS ((tree));
 
 #endif /* TREE_CODE */
 

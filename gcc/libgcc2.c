@@ -1591,6 +1591,425 @@ __bb_fork_func (void)
 #endif /* not inhibit_libc */
 #endif /* L_bb */
 
+/* APPLE LOCAL begin new feedback support */
+/* Derived from the __bb version above */
+#ifdef L_nf
+
+struct nf_function_info {
+  long checksum;
+  int arc_count;
+  int call_count;
+  const char *name;
+};
+
+/* Structure emitted by --create-profile  */
+struct nf
+{
+  long zero_word;
+  const char *filename;
+  gcov_type *arccounts;
+  long narccounts;
+  gcov_type *callcounts;
+  long ncallcounts;
+  long *arcindices;
+  long narcindices;
+  long *callindices;
+  long ncallindices;  /* always == ncallcounts I think */
+  struct nf *next;
+  long sizeof_nf;
+  struct nf_function_info *function_infos;
+};
+
+#ifndef inhibit_libc
+
+/* Arc profile dumper. Requires atexit and stdio.  */
+
+#undef NULL /* Avoid errors if stdio.h and our stddef.h mismatch.  */
+#include <stdio.h>
+
+#include "gcov-io.h"
+#include <string.h>
+#ifdef TARGET_HAS_F_SETLKW
+#include <fcntl.h>
+#include <errno.h>
+#endif
+
+/* Chain of per-object file nf structures.  */
+static struct nf *nf_head;
+
+/* Dump the coverage counts. We merge with existing counts when
+   possible, to avoid growing the .db files ad infinitum.  */
+
+void
+__nf_exit_func (void)
+{
+  struct nf *ptr;
+  int i;
+  gcov_type program_arcctsum = 0;
+  gcov_type program_maxarcct = 0;
+  long program_narccts = 0;
+  gcov_type program_callctsum = 0;
+  gcov_type program_maxcallct = 0;
+  long program_ncallcts = 0;
+  gcov_type merged_arcctsum = 0;
+  gcov_type merged_maxarcct = 0;
+  long merged_arccts = 0;
+  gcov_type merged_callctsum = 0;
+  gcov_type merged_maxcallct = 0;
+  long merged_callcts = 0;
+  
+#if defined (TARGET_HAS_F_SETLKW)
+  struct flock s_flock;
+
+  s_flock.l_type = F_WRLCK;
+  s_flock.l_whence = SEEK_SET;
+  s_flock.l_start = 0;
+  s_flock.l_len = 0; /* Until EOF.  */
+  s_flock.l_pid = getpid ();
+#endif
+
+  /* Non-merged stats for this program.  */
+  for (ptr = nf_head; ptr; ptr = ptr->next)
+    {
+      for (i = 0; i < ptr->narccounts; i++)
+	{
+	  program_arcctsum += ptr->arccounts[i];
+
+	  if (ptr->arccounts[i] > program_maxarcct)
+	    program_maxarcct = ptr->arccounts[i];
+	}
+      program_narccts += ptr->narccounts;
+      for (i = 0; i < ptr->ncallcounts; i++)
+	{
+	  program_callctsum += ptr->callcounts[i];
+
+	  if (ptr->callcounts[i] > program_maxcallct)
+	    program_maxcallct = ptr->callcounts[i];
+	}
+      program_ncallcts += ptr->ncallcounts;
+    }
+  
+  for (ptr = nf_head; ptr; ptr = ptr->next)
+    {
+      FILE *db_file;
+      gcov_type object_maxarcct = 0;
+      gcov_type object_arcctsum = 0;
+      long object_functions = 0;
+      gcov_type object_maxcallct = 0;
+      gcov_type object_callctsum = 0;
+      int merging = 0;
+      int error = 0;
+      struct nf_function_info *fn_info;
+      gcov_type *arccount_ptr;
+      gcov_type *callcount_ptr;
+      long *arcindex_ptr;
+      long *callindex_ptr;
+      
+      /* Open for modification */
+      db_file = fopen (ptr->filename, "r+b");
+      
+      if (db_file)
+	merging = 1;
+      else
+	{
+	  /* Try for appending */
+	  db_file = fopen (ptr->filename, "ab");
+	  /* Some old systems might not allow the 'b' mode modifier.
+             Therefore, try to open without it.  This can lead to a
+             race condition so that when you delete and re-create the
+             file, the file might be opened in text mode, but then,
+             you shouldn't delete the file in the first place.  */
+	  if (!db_file)
+	    db_file = fopen (ptr->filename, "a");
+	}
+      
+      if (!db_file)
+	{
+	  fprintf (stderr, "arc profiling: Can't open output file %s.\n",
+		   ptr->filename);
+	  ptr->filename = 0;
+	  continue;
+	}
+
+#if defined (TARGET_HAS_F_SETLKW)
+      /* After a fork, another process might try to read and/or write
+         the same file simultanously.  So if we can, lock the file to
+         avoid race conditions.  */
+      while (fcntl (fileno (db_file), F_SETLKW, &s_flock)
+	     && errno == EINTR)
+	continue;
+#endif
+      for (fn_info = ptr->function_infos; fn_info->arc_count != -1; fn_info++)
+	object_functions++;
+
+      if (merging)
+	{
+	  /* Merge data from file.  */
+	  long tmp_long;
+	  gcov_type tmp_gcov;
+	  
+	  if (/* magic */
+	      (__read_long (&tmp_long, db_file, 4) || tmp_long != -457l)
+	      /* functions in object file.  */
+	      || (__read_long (&tmp_long, db_file, 4)
+		  || tmp_long != object_functions)
+	      /* number of arc counts.  */
+	      || (__read_long (&tmp_long, db_file, 4)
+		  || tmp_long != ptr->narccounts)
+	      /* number of call counts.  */
+	      || (__read_long (&tmp_long, db_file, 4)
+		  || tmp_long != ptr->ncallcounts)
+	      /* number of arc indices.  */
+	      || (__read_long (&tmp_long, db_file, 4)
+		  || tmp_long != ptr->narcindices)
+	      /* number of call indices.  */
+	      || (__read_long (&tmp_long, db_file, 4)
+		  || tmp_long != ptr->ncallindices)
+	      /* extension block, skipped */
+	      || (__read_long (&tmp_long, db_file, 4)
+	  /* Would be a good idea to validate index info here... */ 
+              || fseek (db_file, tmp_long, SEEK_CUR)))
+	    {
+	    read_error:;
+	      fprintf (stderr, "arc profiling: Error merging output file %s.\n",
+		       ptr->filename);
+	      clearerr (db_file);
+	    }
+	  else
+	    {
+	      /* Merge execution counts for each function.  */
+	      arccount_ptr = ptr->arccounts;
+	      callcount_ptr = ptr->callcounts;
+	      
+	      for (i = ptr->narccounts; i >0; i--, arccount_ptr++)
+		if (__read_gcov_type (&tmp_gcov, db_file, 8))
+		  goto read_error;
+		else
+		  *arccount_ptr += tmp_gcov;
+
+	      for (i = ptr->ncallcounts; i > 0; i--, callcount_ptr++)
+		if (__read_gcov_type (&tmp_gcov, db_file, 8))
+		  goto read_error;
+		else
+		  *callcount_ptr += tmp_gcov;
+	      
+	      /* Validate index tables; they should match. 
+		 This check can be removed if speed is a problem. */
+	      arcindex_ptr = ptr->arcindices;
+	      callindex_ptr = ptr->callindices;
+
+	      for (i = ptr->narcindices; i > 0; i--, arcindex_ptr++)
+		if (__read_long (&tmp_long, db_file, 4)
+		    || tmp_long != *arcindex_ptr)
+		  goto read_error;
+
+	      for (i = ptr->ncallindices; i > 0; i--, callindex_ptr++)
+		if (__read_long (&tmp_long, db_file, 4)
+		    || tmp_long != *callindex_ptr)
+		  goto read_error;
+	    }
+	  fseek (db_file, 0, SEEK_SET);
+	}
+      
+      /* Calculate the per-object statistics.  */
+      for (i = 0; i < ptr->narccounts; i++)
+	{
+	  object_arcctsum += ptr->arccounts[i];
+
+	  if (ptr->arccounts[i] > object_maxarcct)
+	    object_maxarcct = ptr->arccounts[i];
+	}
+      for (i = 0; i < ptr->ncallcounts; i++)
+	{
+	  object_callctsum += ptr->callcounts[i];
+
+	  if (ptr->callcounts[i] > object_maxcallct)
+	    object_maxcallct = ptr->callcounts[i];
+	}
+      merged_arcctsum += object_arcctsum;
+      merged_callctsum += object_callctsum;
+      if (merged_maxarcct < object_maxarcct)
+	merged_maxarcct = object_maxarcct;
+      if (merged_maxcallct < object_maxcallct)
+	merged_maxcallct = object_maxcallct;
+      merged_arccts += ptr->narccounts;
+      merged_callcts += ptr->ncallcounts;
+      
+      /* Write out the data.  */
+      if (/* magic */
+	  __write_long (-457, db_file, 4)
+	  /* number of functions in object file.  */
+	  || __write_long (object_functions, db_file, 4)
+	  /* number of instrumented arcs.  */
+	  || __write_long (ptr->narccounts, db_file, 4)
+	  /* number of instrumented calls.  */
+	  || __write_long (ptr->ncallcounts, db_file, 4)
+	  /* number of entries in arc index table. */
+	  || __write_long (ptr->narcindices, db_file, 4)
+	  /* number of entries in call index table. */
+	  || __write_long (ptr->ncallindices, db_file, 4)
+	  /* length of extra data in bytes.  */
+	  || __write_long ((4 + 4 + 8 + 8 + 8 + 8) 
+			    + (4 + 4 + 8 + 8 + 8 + 8), db_file, 4)
+	  /* whole program statistics. If merging write per-object
+	     now, rewrite later */
+	  /* number of instrumented arcs.  */
+	  || __write_long (merging ? ptr->narccounts : program_narccts, 
+				db_file, 4)
+	  /* number of instrumented call.  */
+	  || __write_long (merging ? ptr->ncallcounts : program_ncallcts, 
+				db_file, 4)
+	  /* sum of counters.  */
+	  || __write_gcov_type (merging ? object_arcctsum : program_arcctsum,
+				 db_file, 8)
+	  /* sum of counters.  */
+	  || __write_gcov_type (merging ? object_callctsum 
+				    : program_callctsum, db_file, 8)
+	  /* maximal counter.  */
+	  || __write_gcov_type (merging ? object_maxarcct : program_maxarcct,
+				    db_file, 8)
+	  /* maximal counter.  */
+	  || __write_gcov_type (merging ? object_maxcallct 
+				    : program_maxcallct, db_file, 8)
+
+	  /* per-object statistics.  */
+	  /* number of counters.  */
+	  || __write_long (ptr->narccounts, db_file, 4)
+	  /* number of counters.  */
+	  || __write_long (ptr->ncallcounts, db_file, 4)
+	  /* sum of counters.  */
+	  || __write_gcov_type (object_arcctsum, db_file, 8)
+	  /* sum of counters.  */
+	  || __write_gcov_type (object_callctsum, db_file, 8)
+	  /* maximal counter.  */
+	  || __write_gcov_type (object_maxarcct, db_file, 8)
+	  /* maximal counter.  */
+	  || __write_gcov_type (object_maxcallct, db_file, 8))
+	{
+	write_error:;
+	  fprintf (stderr, "arc profiling: Error writing output file %s.\n",
+		   ptr->filename);
+	  error = 1;
+	}
+      else
+	{
+	  /* Write execution counts.  */
+	  arccount_ptr = ptr->arccounts;
+	  callcount_ptr = ptr->callcounts;
+	  for (i = ptr->narccounts; i > 0; i--, arccount_ptr++)
+	    if (__write_gcov_type (*arccount_ptr, db_file, 8))
+	      goto write_error;
+	  for (i = ptr->ncallcounts; i > 0; i--, callcount_ptr++)
+	    if (__write_gcov_type (*callcount_ptr, db_file, 8))
+	      goto write_error;
+
+	  /* Write index info.  This is the same for each run of
+	     the executable; it could be checked, but not summed. */
+	  arcindex_ptr = ptr->arcindices;
+	  callindex_ptr = ptr->callindices;
+	  for (i = ptr->narcindices; i > 0; i--, arcindex_ptr++)
+	    if (__write_long (*arcindex_ptr, db_file, 4))
+	      goto write_error;
+	  for (i = ptr->ncallindices; i > 0; i--, callindex_ptr++)
+	    if (__write_long (*callindex_ptr, db_file, 4))
+	      goto write_error;
+	}
+
+      if (fclose (db_file))
+	{
+	  fprintf (stderr, "arc profiling: Error closing output file %s.\n",
+		   ptr->filename);
+	  error = 1;
+	}
+      if (error || !merging)
+	ptr->filename = 0;
+    }
+
+  /* Upate whole program statistics.  */
+  for (ptr = nf_head; ptr; ptr = ptr->next)
+    if (ptr->filename)
+      {
+	FILE *db_file;
+	
+	db_file = fopen (ptr->filename, "r+b");
+	if (!db_file)
+	  {
+	    fprintf (stderr, "arc profiling: Cannot reopen %s.\n",
+		     ptr->filename);
+	    continue;
+	  }
+	
+#if defined (TARGET_HAS_F_SETLKW)
+	while (fcntl (fileno (db_file), F_SETLKW, &s_flock)
+	       && errno == EINTR)
+	  continue;
+#endif
+	
+	if (fseek (db_file, 4 * 7, SEEK_SET)
+	    /* number of instrumented arcs.  */
+	    || __write_long (merged_arccts, db_file, 4)
+	    /* number of instrumented calls.  */
+	    || __write_long (merged_callcts, db_file, 4)
+	    /* sum of counters.  */
+	    || __write_gcov_type (merged_arcctsum, db_file, 8)
+	    /* sum of counters.  */
+	    || __write_gcov_type (merged_callctsum, db_file, 8)
+	    /* maximal counter.  */
+	    || __write_gcov_type (merged_maxarcct, db_file, 8)
+	    /* maximal counter.  */
+	    || __write_gcov_type (merged_maxcallct, db_file, 8))
+	  fprintf (stderr, "arc profiling: Error updating program header %s.\n",
+		   ptr->filename);
+	if (fclose (db_file))
+	  fprintf (stderr, "arc profiling: Error reclosing %s\n",
+		   ptr->filename);
+      }
+}
+
+/* Add a new object file onto the nf chain.  Invoked automatically
+   when running an object file's global ctors.  */
+
+void
+__nf_init_func (struct nf *blocks)
+{
+  if (blocks->zero_word)
+    return;
+
+  /* Initialize destructor and per-thread data.  */
+  if (!nf_head)
+    atexit (__nf_exit_func);
+
+  /* Set up linked list.  */
+  blocks->zero_word = 1;
+  blocks->next = nf_head;
+  nf_head = blocks;
+}
+
+/* Called before fork or exec - write out profile information gathered so
+   far and reset it to zero.  This avoids duplication or loss of the
+   profile information gathered so far.  */
+/*** not currently used (not needed for SPEC) ***/
+
+void
+__nf_fork_func (void)
+{
+  struct nf *ptr;
+
+  __nf_exit_func ();
+  for (ptr = nf_head; ptr != (struct nf *) 0; ptr = ptr->next)
+    {
+      long i;
+      for (i = ptr->narccounts - 1; i >= 0; i--)
+	ptr->arccounts[i] = 0;
+      for (i = ptr->ncallcounts - 1; i >= 0; i--)
+	ptr->callcounts[i] = 0;
+    }
+}
+
+#endif /* not inhibit_libc */
+#endif /* L_nf */
+/* APPLE LOCAL end new feedback support */
+
 #ifdef L_clear_cache
 /* Clear part of an instruction cache.  */
 

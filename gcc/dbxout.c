@@ -1233,7 +1233,7 @@ dbxout_type_method_1 (decl, debug_name)
   CHARS (IDENTIFIER_LENGTH (DECL_ASSEMBLER_NAME (decl)) + 6
 	 - (debug_name - IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (decl))));
 
-  if (DECL_VINDEX (decl) && host_integerp (DECL_VINDEX (decl), 0))
+  if ((DECL_VINDEX (decl) && host_integerp (DECL_VINDEX (decl), 0)))
     {
       print_wide_int (tree_low_cst (DECL_VINDEX (decl), 0));
       putc (';', asmfile);
@@ -2518,7 +2518,14 @@ dbxout_symbol (decl, local)
 	int tag_needed = 1;
 	int did_output = 0;
 
-	if (DECL_NAME (decl))
+	if (DECL_NAME (decl)
+            /* APPLE LOCAL begin gdb only used symbols */
+#ifdef DBX_ONLY_USED_SYMBOLS
+            /* Do not generate a tag for incomplete records */
+            && (COMPLETE_TYPE_P (type) || TREE_CODE (type) == VOID_TYPE)
+#endif
+            /* APPLE LOCAL end gdb only used symbols */
+           )
 	  {
 	    /* Nonzero means we must output a tag as well as a typedef.  */
 	    tag_needed = 0;
@@ -2536,12 +2543,6 @@ dbxout_symbol (decl, local)
 		/* Distinguish the implicit typedefs of C++
 		   from explicit ones that might be found in C.  */
                 && DECL_ARTIFICIAL (decl)
-		/* APPLE LOCAL begin gdb only used symbols */
-#ifdef DBX_ONLY_USED_SYMBOLS
-                /* Do not generate a tag for incomplete records.  */
-                && COMPLETE_TYPE_P (type)
-#endif
-		/* APPLE LOCAL end gdb only used symbols */
 		/* Do not generate a tag for records of variable size,
 		   since this type can not be properly described in the
 		   DBX format, and it confuses some tools such as objdump.  */
@@ -3063,7 +3064,19 @@ void
 dbxout_parms (parms)
      tree parms;
 {
- 
+   /* APPLE LOCAL begin Altivec */
+  int parm_count = 0;
+  int len = 0;
+  tree orig_parms_vec;
+  /* It is possible that backend rearranged vector parameters.
+     DECL_ORIGINAL_ARGUMENTS keeps tree_vec of original parameter sequence.  */
+  if (parms && flag_altivec && DECL_ORIGINAL_ARGUMENTS (parms))
+    {
+      len = list_length (parms);
+      orig_parms_vec = DECL_ORIGINAL_ARGUMENTS (parms);
+    }
+  /* APPLE LOCAL end Altivec */
+
 /* APPLE LOCAL gdb only used symbols */
 #ifdef DBXOUT_TRACK_NESTING
   ++dbxout_nesting;
@@ -3072,263 +3085,297 @@ dbxout_parms (parms)
   /* APPLE LOCAL empty BINCL/EINCL optimization */
   emit_pending_bincls_if_required ();
 
-  for (; parms; parms = TREE_CHAIN (parms))
-    if (DECL_NAME (parms) && TREE_TYPE (parms) != error_mark_node)
-      {
-	dbxout_prepare_symbol (parms);
+  /* APPLE LOCAL begin Altivec */
+  /* If required, fetch next paramters from DECL_ORIGINAL_ARGUMENTS tree_vec.  */
+  for (;;)
+    {
+      /* Fetch next parameter from DECL_ORIGINAL_ARGUMENTS tree_vec */
+      if (len)
+	{
+	  if (parm_count < len)
+	    {
+	      parms = TREE_VEC_ELT (orig_parms_vec, parm_count);
+	      parm_count ++;
+	    }
+	  else
+	    parms = NULL;
+	}
+      /* Fetch next parameter from TREE_CHAIN */
+      else
+	{
+	  if (parms)
+	    {
+	      /* Do not skip first parameter */
+	      if (parm_count > 0)
+		parms = TREE_CHAIN (parms);
+	      parm_count++;
+	    }
+	  else
+	    parms = NULL;
+	}
 
-	/* Perform any necessary register eliminations on the parameter's rtl,
-	   so that the debugging output will be accurate.  */
-	DECL_INCOMING_RTL (parms)
-	  = eliminate_regs (DECL_INCOMING_RTL (parms), 0, NULL_RTX);
-	SET_DECL_RTL (parms, eliminate_regs (DECL_RTL (parms), 0, NULL_RTX));
+      if (!parms)
+	break;
+  /* APPLE LOCAL end Altivec */
+      if (DECL_NAME (parms) && TREE_TYPE (parms) != error_mark_node)
+	{
+	  dbxout_prepare_symbol (parms);
+	  
+	  /* Perform any necessary register eliminations on the parameter's rtl,
+	     so that the debugging output will be accurate.  */
+	  DECL_INCOMING_RTL (parms)
+	    = eliminate_regs (DECL_INCOMING_RTL (parms), 0, NULL_RTX);
+	  SET_DECL_RTL (parms, eliminate_regs (DECL_RTL (parms), 0, NULL_RTX));
 #ifdef LEAF_REG_REMAP
-	if (current_function_uses_only_leaf_regs)
-	  {
-	    leaf_renumber_regs_insn (DECL_INCOMING_RTL (parms));
-	    leaf_renumber_regs_insn (DECL_RTL (parms));
-	  }
+	  if (current_function_uses_only_leaf_regs)
+	    {
+	      leaf_renumber_regs_insn (DECL_INCOMING_RTL (parms));
+	      leaf_renumber_regs_insn (DECL_RTL (parms));
+	    }
 #endif
-
-	if (PARM_PASSED_IN_MEMORY (parms))
-	  {
-	    rtx addr = XEXP (DECL_INCOMING_RTL (parms), 0);
-
-	    /* ??? Here we assume that the parm address is indexed
-	       off the frame pointer or arg pointer.
-	       If that is not true, we produce meaningless results,
-	       but do not crash.  */
-	    if (GET_CODE (addr) == PLUS
-		&& GET_CODE (XEXP (addr, 1)) == CONST_INT)
-	      current_sym_value = INTVAL (XEXP (addr, 1));
-	    else
-	      current_sym_value = 0;
-
-	    current_sym_code = N_PSYM;
-	    current_sym_addr = 0;
-
-	    FORCE_TEXT;
-	    if (DECL_NAME (parms))
-	      {
-		current_sym_nchars = 2 + IDENTIFIER_LENGTH (DECL_NAME (parms));
-
-		fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
-			 IDENTIFIER_POINTER (DECL_NAME (parms)),
-			 DBX_MEMPARM_STABS_LETTER);
-	      }
-	    else
-	      {
-		current_sym_nchars = 8;
-		fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
-			 DBX_MEMPARM_STABS_LETTER);
-	      }
-
-	    /* It is quite tempting to use:
-
-	           dbxout_type (TREE_TYPE (parms), 0);
-
-	       as the next statement, rather than using DECL_ARG_TYPE(), so
-	       that gcc reports the actual type of the parameter, rather
-	       than the promoted type.  This certainly makes GDB's life
-	       easier, at least for some ports.  The change is a bad idea
-	       however, since GDB expects to be able access the type without
-	       performing any conversions.  So for example, if we were
-	       passing a float to an unprototyped function, gcc will store a
-	       double on the stack, but if we emit a stab saying the type is a
-	       float, then gdb will only read in a single value, and this will
-	       produce an erroneous value.  */
-	    dbxout_type (DECL_ARG_TYPE (parms), 0);
-	    current_sym_value = DEBUGGER_ARG_OFFSET (current_sym_value, addr);
-	    dbxout_finish_symbol (parms);
-	  }
-	else if (GET_CODE (DECL_RTL (parms)) == REG)
-	  {
-	    rtx best_rtl;
-	    char regparm_letter;
-	    tree parm_type;
-	    /* Parm passed in registers and lives in registers or nowhere.  */
-
-	    current_sym_code = DBX_REGPARM_STABS_CODE;
-	    regparm_letter = DBX_REGPARM_STABS_LETTER;
-	    current_sym_addr = 0;
-
-	    /* If parm lives in a register, use that register;
-	       pretend the parm was passed there.  It would be more consistent
-	       to describe the register where the parm was passed,
-	       but in practice that register usually holds something else.
-
-	       If we use DECL_RTL, then we must use the declared type of
-	       the variable, not the type that it arrived in.  */
-	    if (REGNO (DECL_RTL (parms)) < FIRST_PSEUDO_REGISTER)
-	      {
-		best_rtl = DECL_RTL (parms);
-		parm_type = TREE_TYPE (parms);
-	      }
-	    /* If the parm lives nowhere, use the register where it was
-	       passed.  It is also better to use the declared type here.  */
-	    else
-	      {
-		best_rtl = DECL_INCOMING_RTL (parms);
-		parm_type = TREE_TYPE (parms);
-	      }
-	    current_sym_value = DBX_REGISTER_NUMBER (REGNO (best_rtl));
-
-	    FORCE_TEXT;
-	    if (DECL_NAME (parms))
-	      {
-		current_sym_nchars = 2 + IDENTIFIER_LENGTH (DECL_NAME (parms));
-		fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
-			 IDENTIFIER_POINTER (DECL_NAME (parms)),
-			 regparm_letter);
-	      }
-	    else
-	      {
-		current_sym_nchars = 8;
-		fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
-			 regparm_letter);
-	      }
-
-	    dbxout_type (parm_type, 0);
-	    dbxout_finish_symbol (parms);
-	  }
-	else if (GET_CODE (DECL_RTL (parms)) == MEM
-		 && GET_CODE (XEXP (DECL_RTL (parms), 0)) == REG
-		 && REGNO (XEXP (DECL_RTL (parms), 0)) != HARD_FRAME_POINTER_REGNUM
-		 && REGNO (XEXP (DECL_RTL (parms), 0)) != STACK_POINTER_REGNUM
-#if ARG_POINTER_REGNUM != HARD_FRAME_POINTER_REGNUM
-		 && REGNO (XEXP (DECL_RTL (parms), 0)) != ARG_POINTER_REGNUM
-#endif
-		 )
-	  {
-	    /* Parm was passed via invisible reference.
-	       That is, its address was passed in a register.
-	       Output it as if it lived in that register.
-	       The debugger will know from the type
-	       that it was actually passed by invisible reference.  */
-
-	    char regparm_letter;
-	    /* Parm passed in registers and lives in registers or nowhere.  */
-
-	    current_sym_code = DBX_REGPARM_STABS_CODE;
-	    if (use_gnu_debug_info_extensions)
-	      regparm_letter = GDB_INV_REF_REGPARM_STABS_LETTER;
-	    else
+	  
+	  if (PARM_PASSED_IN_MEMORY (parms))
+	    {
+	      rtx addr = XEXP (DECL_INCOMING_RTL (parms), 0);
+	      
+	      /* ??? Here we assume that the parm address is indexed
+		 off the frame pointer or arg pointer.
+		 If that is not true, we produce meaningless results,
+		 but do not crash.  */
+	      if (GET_CODE (addr) == PLUS
+		  && GET_CODE (XEXP (addr, 1)) == CONST_INT)
+		current_sym_value = INTVAL (XEXP (addr, 1));
+	      else
+		current_sym_value = 0;
+	      
+	      current_sym_code = N_PSYM;
+	      current_sym_addr = 0;
+	      
+	      FORCE_TEXT;
+	      if (DECL_NAME (parms))
+		{
+		  current_sym_nchars = 2 + IDENTIFIER_LENGTH (DECL_NAME (parms));
+		  
+		  fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
+			   IDENTIFIER_POINTER (DECL_NAME (parms)),
+			   DBX_MEMPARM_STABS_LETTER);
+		}
+	      else
+		{
+		  current_sym_nchars = 8;
+		  fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
+			   DBX_MEMPARM_STABS_LETTER);
+		}
+	      
+	      /* It is quite tempting to use:
+		 
+	      dbxout_type (TREE_TYPE (parms), 0);
+	      
+	      as the next statement, rather than using DECL_ARG_TYPE(), so
+	      that gcc reports the actual type of the parameter, rather
+	      than the promoted type.  This certainly makes GDB's life
+	      easier, at least for some ports.  The change is a bad idea
+	      however, since GDB expects to be able access the type without
+	      performing any conversions.  So for example, if we were
+	      passing a float to an unprototyped function, gcc will store a
+	      double on the stack, but if we emit a stab saying the type is a
+	      float, then gdb will only read in a single value, and this will
+	      produce an erroneous value.  */
+	      dbxout_type (DECL_ARG_TYPE (parms), 0);
+	      current_sym_value = DEBUGGER_ARG_OFFSET (current_sym_value, addr);
+	      dbxout_finish_symbol (parms);
+	    }
+	  else if (GET_CODE (DECL_RTL (parms)) == REG)
+	    {
+	      rtx best_rtl;
+	      char regparm_letter;
+	      tree parm_type;
+	      /* Parm passed in registers and lives in registers or nowhere.  */
+	      
+	      current_sym_code = DBX_REGPARM_STABS_CODE;
 	      regparm_letter = DBX_REGPARM_STABS_LETTER;
-
-	    /* DECL_RTL looks like (MEM (REG...).  Get the register number.
-	       If it is an unallocated pseudo-reg, then use the register where
-	       it was passed instead.  */
-	    if (REGNO (XEXP (DECL_RTL (parms), 0)) < FIRST_PSEUDO_REGISTER)
-	      current_sym_value = REGNO (XEXP (DECL_RTL (parms), 0));
-	    else
-	      current_sym_value = REGNO (DECL_INCOMING_RTL (parms));
-
-	    current_sym_addr = 0;
-
-	    FORCE_TEXT;
-	    if (DECL_NAME (parms))
-	      {
-		current_sym_nchars
-		  = 2 + strlen (IDENTIFIER_POINTER (DECL_NAME (parms)));
-
-		fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
-			 IDENTIFIER_POINTER (DECL_NAME (parms)),
-			 regparm_letter);
-	      }
-	    else
-	      {
-		current_sym_nchars = 8;
-		fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
-			 regparm_letter);
-	      }
-
-	    dbxout_type (TREE_TYPE (parms), 0);
-	    dbxout_finish_symbol (parms);
-	  }
-	else if (GET_CODE (DECL_RTL (parms)) == MEM
-		 && GET_CODE (XEXP (DECL_RTL (parms), 0)) == MEM)
-	  {
-	    /* Parm was passed via invisible reference, with the reference
-	       living on the stack.  DECL_RTL looks like
-	       (MEM (MEM (PLUS (REG ...) (CONST_INT ...)))) or it
-	       could look like (MEM (MEM (REG))).  */
-	    const char *const decl_name = (DECL_NAME (parms)
-				     ? IDENTIFIER_POINTER (DECL_NAME (parms))
-				     : "(anon)");
-	    if (GET_CODE (XEXP (XEXP (DECL_RTL (parms), 0), 0)) == REG)
-	      current_sym_value = 0;
-	    else
+	      current_sym_addr = 0;
+	      
+	      /* If parm lives in a register, use that register;
+		 pretend the parm was passed there.  It would be more consistent
+		 to describe the register where the parm was passed,
+		 but in practice that register usually holds something else.
+		 
+		 If we use DECL_RTL, then we must use the declared type of
+		 the variable, not the type that it arrived in.  */
+	      if (REGNO (DECL_RTL (parms)) < FIRST_PSEUDO_REGISTER)
+		{
+		  best_rtl = DECL_RTL (parms);
+		  parm_type = TREE_TYPE (parms);
+		}
+	      /* If the parm lives nowhere, use the register where it was
+		 passed.  It is also better to use the declared type here.  */
+	      else
+		{
+		  best_rtl = DECL_INCOMING_RTL (parms);
+		  parm_type = TREE_TYPE (parms);
+		}
+	      current_sym_value = DBX_REGISTER_NUMBER (REGNO (best_rtl));
+	      
+	      FORCE_TEXT;
+	      if (DECL_NAME (parms))
+		{
+		  current_sym_nchars = 2 + IDENTIFIER_LENGTH (DECL_NAME (parms));
+		  fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
+			   IDENTIFIER_POINTER (DECL_NAME (parms)),
+			   regparm_letter);
+		}
+	      else
+		{
+		  current_sym_nchars = 8;
+		  fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
+			   regparm_letter);
+		}
+	      
+	      dbxout_type (parm_type, 0);
+	      dbxout_finish_symbol (parms);
+	    }
+	  else if (GET_CODE (DECL_RTL (parms)) == MEM
+		   && GET_CODE (XEXP (DECL_RTL (parms), 0)) == REG
+		   && REGNO (XEXP (DECL_RTL (parms), 0)) != HARD_FRAME_POINTER_REGNUM
+		   && REGNO (XEXP (DECL_RTL (parms), 0)) != STACK_POINTER_REGNUM
+#if ARG_POINTER_REGNUM != HARD_FRAME_POINTER_REGNUM
+		   && REGNO (XEXP (DECL_RTL (parms), 0)) != ARG_POINTER_REGNUM
+#endif
+		   )
+	    {
+	      /* Parm was passed via invisible reference.
+		 That is, its address was passed in a register.
+		 Output it as if it lived in that register.
+		 The debugger will know from the type
+		 that it was actually passed by invisible reference.  */
+	      
+	      char regparm_letter;
+	      /* Parm passed in registers and lives in registers or nowhere.  */
+	      
+	      current_sym_code = DBX_REGPARM_STABS_CODE;
+	      if (use_gnu_debug_info_extensions)
+		regparm_letter = GDB_INV_REF_REGPARM_STABS_LETTER;
+	      else
+		regparm_letter = DBX_REGPARM_STABS_LETTER;
+	      
+	      /* DECL_RTL looks like (MEM (REG...).  Get the register number.
+		 If it is an unallocated pseudo-reg, then use the register where
+		 it was passed instead.  */
+	      if (REGNO (XEXP (DECL_RTL (parms), 0)) < FIRST_PSEUDO_REGISTER)
+		current_sym_value = REGNO (XEXP (DECL_RTL (parms), 0));
+	      else
+		current_sym_value = REGNO (DECL_INCOMING_RTL (parms));
+	      
+	      current_sym_addr = 0;
+	      
+	      FORCE_TEXT;
+	      if (DECL_NAME (parms))
+		{
+		  current_sym_nchars
+		    = 2 + strlen (IDENTIFIER_POINTER (DECL_NAME (parms)));
+		  
+		  fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
+			   IDENTIFIER_POINTER (DECL_NAME (parms)),
+			   regparm_letter);
+		}
+	      else
+		{
+		  current_sym_nchars = 8;
+		  fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
+			   regparm_letter);
+		}
+	      
+	      dbxout_type (TREE_TYPE (parms), 0);
+	      dbxout_finish_symbol (parms);
+	    }
+	  else if (GET_CODE (DECL_RTL (parms)) == MEM
+		   && GET_CODE (XEXP (DECL_RTL (parms), 0)) == MEM)
+	    {
+	      /* Parm was passed via invisible reference, with the reference
+		 living on the stack.  DECL_RTL looks like
+		 (MEM (MEM (PLUS (REG ...) (CONST_INT ...)))) or it
+		 could look like (MEM (MEM (REG))).  */
+	      const char *const decl_name = (DECL_NAME (parms)
+					     ? IDENTIFIER_POINTER (DECL_NAME (parms))
+					     : "(anon)");
+	      if (GET_CODE (XEXP (XEXP (DECL_RTL (parms), 0), 0)) == REG)
+		current_sym_value = 0;
+	      else
+		current_sym_value
+		  = INTVAL (XEXP (XEXP (XEXP (DECL_RTL (parms), 0), 0), 1));
+	      current_sym_addr = 0;
+	      current_sym_code = N_PSYM;
+	      
+	      FORCE_TEXT;
+	      fprintf (asmfile, "%s\"%s:v", ASM_STABS_OP, decl_name);
+	      
 	      current_sym_value
-	        = INTVAL (XEXP (XEXP (XEXP (DECL_RTL (parms), 0), 0), 1));
-	    current_sym_addr = 0;
-	    current_sym_code = N_PSYM;
-
-	    FORCE_TEXT;
-	    fprintf (asmfile, "%s\"%s:v", ASM_STABS_OP, decl_name);
-
-	    current_sym_value
-	      = DEBUGGER_ARG_OFFSET (current_sym_value,
-				     XEXP (XEXP (DECL_RTL (parms), 0), 0));
-	    dbxout_type (TREE_TYPE (parms), 0);
-	    dbxout_finish_symbol (parms);
-	  }
-	else if (GET_CODE (DECL_RTL (parms)) == MEM
-		 && XEXP (DECL_RTL (parms), 0) != const0_rtx
-		 /* ??? A constant address for a parm can happen
-		    when the reg it lives in is equiv to a constant in memory.
-		    Should make this not happen, after 2.4.  */
-		 && ! CONSTANT_P (XEXP (DECL_RTL (parms), 0)))
-	  {
-	    /* Parm was passed in registers but lives on the stack.  */
-
-	    current_sym_code = N_PSYM;
-	    /* DECL_RTL looks like (MEM (PLUS (REG...) (CONST_INT...))),
-	       in which case we want the value of that CONST_INT,
-	       or (MEM (REG ...)),
-	       in which case we use a value of zero.  */
-	    if (GET_CODE (XEXP (DECL_RTL (parms), 0)) == REG)
-	      current_sym_value = 0;
-	    else
+		= DEBUGGER_ARG_OFFSET (current_sym_value,
+				       XEXP (XEXP (DECL_RTL (parms), 0), 0));
+	      dbxout_type (TREE_TYPE (parms), 0);
+	      dbxout_finish_symbol (parms);
+	    }
+	  else if (GET_CODE (DECL_RTL (parms)) == MEM
+		   && XEXP (DECL_RTL (parms), 0) != const0_rtx
+		   /* ??? A constant address for a parm can happen
+		      when the reg it lives in is equiv to a constant in memory.
+		      Should make this not happen, after 2.4.  */
+		   && ! CONSTANT_P (XEXP (DECL_RTL (parms), 0)))
+	    {
+	      /* Parm was passed in registers but lives on the stack.  */
+	      
+	      current_sym_code = N_PSYM;
+	      /* DECL_RTL looks like (MEM (PLUS (REG...) (CONST_INT...))),
+		 in which case we want the value of that CONST_INT,
+		 or (MEM (REG ...)),
+		 in which case we use a value of zero.  */
+	      if (GET_CODE (XEXP (DECL_RTL (parms), 0)) == REG)
+		current_sym_value = 0;
+	      else
 		current_sym_value
 		  = INTVAL (XEXP (XEXP (DECL_RTL (parms), 0), 1));
 
-	    current_sym_addr = 0;
-
-	    /* Make a big endian correction if the mode of the type of the
-	       parameter is not the same as the mode of the rtl.  */
-	    if (BYTES_BIG_ENDIAN
-		&& TYPE_MODE (TREE_TYPE (parms)) != GET_MODE (DECL_RTL (parms))
-		&& GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (parms))) < UNITS_PER_WORD)
-	      {
-		current_sym_value +=
+	      current_sym_addr = 0;
+	      
+	      /* Make a big endian correction if the mode of the type of the
+		 parameter is not the same as the mode of the rtl.  */
+	      if (BYTES_BIG_ENDIAN
+		  && TYPE_MODE (TREE_TYPE (parms)) != GET_MODE (DECL_RTL (parms))
+		  && GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (parms))) < UNITS_PER_WORD)
+		{
+		  current_sym_value +=
 		    GET_MODE_SIZE (GET_MODE (DECL_RTL (parms)))
 		    - GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (parms)));
-	      }
-
-	    FORCE_TEXT;
-	    if (DECL_NAME (parms))
-	      {
-		current_sym_nchars
-		  = 2 + strlen (IDENTIFIER_POINTER (DECL_NAME (parms)));
-
-		fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
-			 IDENTIFIER_POINTER (DECL_NAME (parms)),
-			 DBX_MEMPARM_STABS_LETTER);
-	      }
-	    else
-	      {
-		current_sym_nchars = 8;
-		fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
-		DBX_MEMPARM_STABS_LETTER);
-	      }
-
-	    current_sym_value
-	      = DEBUGGER_ARG_OFFSET (current_sym_value,
-				     XEXP (DECL_RTL (parms), 0));
-	    dbxout_type (TREE_TYPE (parms), 0);
-	    dbxout_finish_symbol (parms);
-	  }
-      }
+		}
+	      
+	      FORCE_TEXT;
+	      if (DECL_NAME (parms))
+		{
+		  current_sym_nchars
+		    = 2 + strlen (IDENTIFIER_POINTER (DECL_NAME (parms)));
+		  
+		  fprintf (asmfile, "%s\"%s:%c", ASM_STABS_OP,
+			   IDENTIFIER_POINTER (DECL_NAME (parms)),
+			   DBX_MEMPARM_STABS_LETTER);
+		}
+	      else
+		{
+		  current_sym_nchars = 8;
+		  fprintf (asmfile, "%s\"(anon):%c", ASM_STABS_OP,
+			   DBX_MEMPARM_STABS_LETTER);
+		}
+	      
+	      current_sym_value
+		= DEBUGGER_ARG_OFFSET (current_sym_value,
+				       XEXP (DECL_RTL (parms), 0));
+	      dbxout_type (TREE_TYPE (parms), 0);
+	      dbxout_finish_symbol (parms);
+	    }
+	}
+    /* APPLE LOCAL begin Altivec */
+    }
+    /* APPLE LOCAL end Altivec */
       
   /* APPLE LOCAL gdb only used symbols */
   DBXOUT_DECR_NESTING;
@@ -3349,12 +3396,52 @@ void
 dbxout_reg_parms (parms)
      tree parms;
 {
+  /* APPLE LOCAL begin Altivec */
+  int parm_count = 0;
+  int len = 0;
+  tree orig_parms_vec;
+  /* It is possible that backend rearranged vector parameters.
+     DECL_ORIGINAL_ARGUMENTS keeps tree_vec of original parameter sequence.  */
+  if (parms && flag_altivec && DECL_ORIGINAL_ARGUMENTS (parms))
+    {
+      len = list_length (parms);
+      orig_parms_vec = DECL_ORIGINAL_ARGUMENTS (parms);
+    }
+  /* APPLE LOCAL end Altivec */
+
 /* APPLE LOCAL gdb only used symbols */
 #ifdef DBXOUT_TRACK_NESTING
   ++dbxout_nesting;
 #endif
 
-  for (; parms; parms = TREE_CHAIN (parms))
+  /* APPLE LOCAL begin Altivec */
+  /* If required, fetch next paramters from DECL_ORIGINAL_ARGUMENTS tree_vec.  */
+  for (;;)
+    {
+      /* Fetch next parameter from DECL_ORIGINAL_ARGUMENTS tree_vec */
+      if (len)
+	{
+	  if (parm_count < len)
+	    {
+	      parms = TREE_VEC_ELT (orig_parms_vec, parm_count);
+	      parm_count ++;
+	    }
+	  else
+	    parms = NULL;
+	}
+      /* Fetch next parameter from TREE_CHAIN */
+      else
+	{
+	  if (parms)
+	    parms = TREE_CHAIN (parms);
+	  else
+	    parms = NULL;
+	}
+
+      if (!parms)
+	break;
+  /* APPLE LOCAL end Altivec */
+
     if (DECL_NAME (parms) && PARM_PASSED_IN_MEMORY (parms))
       {
 	dbxout_prepare_symbol (parms);
@@ -3374,6 +3461,9 @@ dbxout_reg_parms (parms)
 	  dbxout_symbol_location (parms, TREE_TYPE (parms),
 				  0, DECL_RTL (parms));
       }
+    /* APPLE LOCAL begin Altivec */
+    }
+    /* APPLE LOCAL end Altivec */
 
   /* APPLE LOCAL gdb only used symbols */
   DBXOUT_DECR_NESTING;

@@ -74,9 +74,16 @@ Boston, MA 02111-1307, USA.  */
 %{!static:%{!mdynamic-no-pic:-fPIC}} %{faltivec:-D__VEC__=10206 -D__ALTIVEC__=1}"
 
 /* APPLE LOCAL asm flags */
-#define ASM_SPEC "-arch %T \
+#define ASM_SPEC "\
   %{Zforce_cpusubtype_ALL:-force_cpusubtype_ALL} \
-  %{!Zforce_cpusubtype_ALL:%{faltivec:-force_cpusubtype_ALL}}"
+  %{!Zforce_cpusubtype_ALL:%{faltivec:-force_cpusubtype_ALL}}\
+  %{!fast*:\
+    %{mcpu=970|mcpu=G5|mpowerpc64|mcpu=power4: -arch ppc970}\
+    %{!mcpu=970:%{!mcpu=G5:%{!mpowerpc64:%{!mcpu=power4: -arch %T}}}}}\
+  %{fast*:\
+    %{mcpu=G5|mcpu=970|mpowerpc64|mcpu=power4:-arch ppc970}\
+    %{!mcpu*:%{!mpowerpc64:-arch ppc970}}\
+    %{mcpu*|mpowerpc*:%{!mcpu=G5:%{!mcpu=970:%{!mpowerpc64:%{!mcpu=power4: -arch %T}}}}}}"
 
 /* APPLE LOCAL AltiVec */
 #define CPP_ALTIVEC_SPEC "%{faltivec:-D__VEC__=10206 -D__ALTIVEC__=1}"
@@ -163,6 +170,28 @@ Boston, MA 02111-1307, USA.  */
 #undef  RS6000_OUTPUT_BASENAME
 #define RS6000_OUTPUT_BASENAME(FILE, NAME)	\
     assemble_name (FILE, NAME);
+
+/* This causes the text and symbol-stub sections to come out adjacent
+   in the assembly code, hence out of the linker.  This is needed to
+   prevent out-of-range branches when there is a large data section.
+   If -static, don't.  Alas, there is no flag_static, so we look for
+   its inverse (-fpic or -mdynamic-no-pic).  */
+
+#define ASM_FILE_START(FILE)	\
+  if (flag_pic || MACHO_DYNAMIC_NO_PIC_P ()) \
+    { \
+      fprintf (FILE, "\t.section __TEXT,__text,regular,pure_instructions\n"); \
+      if (MACHO_DYNAMIC_NO_PIC_P ()) \
+        { \
+          fprintf (FILE, "\t.section __TEXT,__symbol_stub1,"); \
+          fprintf (FILE, "symbol_stubs,pure_instructions,16\n"); \
+        } \
+      else \
+        { \
+          fprintf (FILE, "\t.section __TEXT,__picsymbolstub1,"); \
+          fprintf (FILE, "symbol_stubs,pure_instructions,32\n"); \
+        } \
+    }
 
 /* Globalizing directive for a label.  */
 #undef GLOBAL_ASM_OP

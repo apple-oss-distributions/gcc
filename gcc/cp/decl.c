@@ -1614,6 +1614,9 @@ poplevel (keep, reverse, functionbody)
   if (tmp == 2)
     {
       tree scope_stmts;
+      /* APPLE LOCAL 3090270 dpatel */
+      /* FSF Candidate */
+      tree saved_block = NULL_TREE;
 
       scope_stmts
 	= add_scope_stmt (/*begin_p=*/0, /*partial_p=*/1);
@@ -1623,7 +1626,17 @@ poplevel (keep, reverse, functionbody)
 	  SCOPE_STMT_BLOCK (TREE_VALUE (scope_stmts)) = block;
 	}
 
+      if (block)
+	saved_block = block;
       block = poplevel (keep, reverse, functionbody);
+
+      /* APPLE LOCAL begin 3090270 dpatel */
+      /* FSF Candidate */
+      /* Collect BLOCK_VARS from tag_transparent binding level so that
+	 debug displays all variables in one block.  */
+      BLOCK_VARS (block) = chainon (BLOCK_VARS (block), BLOCK_VARS (saved_block));
+      BLOCK_VARS (saved_block) = NULL_TREE;
+      /* APPLE LOCAL end 3090270 dpatel */
     }
 
   POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, block);

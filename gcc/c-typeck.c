@@ -1382,13 +1382,26 @@ build_external_ref (id, fun)
      also handy to assume undeclared names as labels, although it
      would be better to have a second pass and complain about names in
      the block that are not labels.  */
-  if (cw_asm_block && decl == NULL)
+  if (cw_asm_block)
     {
-      tree newid;
-      if ((newid = cw_asm_reg_name (id)))
-	return newid;
-      /* Assume undeclared symbols are labels. */
-      return get_cw_asm_label (id);
+      if (decl)
+	{
+	  if (TREE_CODE (decl) == FUNCTION_DECL)
+	    TREE_USED (decl) = 1;
+	  /* Locals and parms just need to be left alone for now.  */
+	}
+      else
+	{
+	  tree newid;
+	  if ((newid = cw_asm_reg_name (id)))
+	    return newid;
+#ifdef CW_ASM_SPECIAL_LABEL
+	  if ((newid = CW_ASM_SPECIAL_LABEL (id)))
+	    return newid;
+#endif
+	  /* Assume undeclared symbols are labels. */
+	  return get_cw_asm_label (id);
+	}
     }
   /* APPLE LOCAL end CW asm blocks */
 

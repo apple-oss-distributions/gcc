@@ -2,8 +2,8 @@
 /* Test out '@catch(id foo) {...}', which should catch
    all uncaught exceptions.  */
 /* Developed by Ziemowit Laski <zlaski@apple.com>.  */
-/* NB: The '-lauto' may need to be removed (in the future) from the next line.  */
-/* { dg-options "-fobjc-exceptions -lobjc -lauto" } */
+
+/* { dg-options "-fobjc-exceptions -lobjc" } */
 /* { dg-do run { target *-*-darwin* } } */
 
 #import <objc/objc.h>

@@ -2,7 +2,8 @@
 /* Test if caught exception objects are accessible inside the
    @catch block.  (Yes, I managed to break this.)  */
 /* Author: Ziemowit Laski <zlaski@apple.com> */
-/* { dg-do compile } */
+
+/* { dg-do compile { target *-*-darwin* } } */
 /* { dg-options "-fobjc-exceptions" } */
 
 #include <objc/Object.h>

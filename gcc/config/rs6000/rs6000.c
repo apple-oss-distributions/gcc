@@ -1455,6 +1455,7 @@ rs6000_override_options (default_cpu)
   int multiple = TARGET_MULTIPLE;
   /* Save current -mstring/-mno-string status.  */
   int string = TARGET_STRING;
+  int mtune = 0;
 
   /* Identify the processor type.  */
   rs6000_select[0].string = default_cpu;
@@ -1469,8 +1470,10 @@ rs6000_override_options (default_cpu)
 	    if (! strcmp (ptr->string, processor_target_table[j].name))
 	      {
 		if (ptr->set_tune_p)
+		{
 		  rs6000_cpu = processor_target_table[j].processor;
-
+		  mtune = 1;
+                }  
 		if (ptr->set_arch_p)
 		  {
 		    target_flags |= processor_target_table[j].target_enable;
@@ -1483,6 +1486,24 @@ rs6000_override_options (default_cpu)
 	    error ("bad value (%s) for %s switch", ptr->string, ptr->name);
 	}
     }
+
+  /* APPLE LOCAL begin extra settings for -mtune=G5|970 */
+  if (mtune && !flag_fast && optimize >= 3 && rs6000_cpu == PROCESSOR_POWER4)
+  {   
+    if (!align_functions)
+    align_functions = 16;
+    if (!align_loops)
+    {
+      align_loops = 16;
+      align_loops_max_skip = 15;
+    }
+    if (!align_jumps)
+    {
+      align_jumps = 16;
+      align_jumps_max_skip = 15;
+    }
+  }
+  /* APPLE LOCAL end extra settings for -mtune=G5|970 */
 
   if (rs6000_cpu == PROCESSOR_PPC8540)
     rs6000_isel = 1;
@@ -4254,13 +4275,23 @@ rearrange_arg_list (cum, args)
      CUMULATIVE_ARGS *cum;
      tree args;
 {
-  tree arg, value, next;
+  tree arg, value, next, orig_arg_vec;
   tree prev = NULL_TREE;
   tree vector_args = NULL_TREE;
   tree last_vector_arg = NULL_TREE;
   tree vector_reg_args = NULL_TREE;
   int i = 0;
+  /* lenght of argument list.  */
+  int len = 0;
+  int arg_count = 0;
+  bool vector_arg_found = false;
 
+  if (!flag_altivec)
+    return args;
+
+  len = list_length (args);
+  orig_arg_vec = make_tree_vec (len);
+  
   /* Don't rearrange for SVR4 or varargs and stdarg.  */
   if (DEFAULT_ABI == ABI_V4 || cum->is_varargs)
     return args;
@@ -4269,9 +4300,12 @@ rearrange_arg_list (cum, args)
   for (arg = args; arg; arg = next)
     {
       next = TREE_CHAIN (arg);
+      TREE_VEC_ELT (orig_arg_vec, arg_count) = arg;
+      arg_count++;
       value = (TREE_CODE (arg) == TREE_LIST ? TREE_VALUE (arg) : arg);
       if (TREE_CODE (TREE_TYPE (value)) == VECTOR_TYPE)
 	{
+	  vector_arg_found = true;
 	  if (prev)
 	    TREE_CHAIN (prev) = next;
 	  else
@@ -4291,6 +4325,7 @@ rearrange_arg_list (cum, args)
       else
 	prev = arg;
     }
+
   vector_reg_args = nreverse (vector_reg_args);
   vector_args = nreverse (vector_args);
 
@@ -4305,6 +4340,14 @@ rearrange_arg_list (cum, args)
     TREE_CHAIN (prev) = vector_args;
   else
     args = vector_args;
+
+
+  /* If args is a TREE_LIST, do  not attach orig_arg_vec.  */
+  if (vector_arg_found && (TREE_CODE (args) == PARM_DECL))
+    DECL_ORIGINAL_ARGUMENTS (args) = orig_arg_vec;
+  else
+    orig_arg_vec = NULL;
+
 
   return args;
 }
@@ -13541,7 +13584,7 @@ rs6000_emit_epilogue (sibcall)
 	= gen_rtx_CLOBBER (VOIDmode, gen_rtx_REG (SImode, 8));
       RTVEC_ELT (p, j++)
 	= gen_rtx_USE (VOIDmode, gen_rtx_REG (SImode, 10));
-      emit_insn (gen_rtx_PARALLEL (VOIDmode, p));
+      emit_jump_insn (gen_rtx_PARALLEL (VOIDmode, p));
 
       return;
     }
@@ -13570,6 +13613,12 @@ rs6000_emit_epilogue (sibcall)
         /* On Darwin, R11 would be clobbered by restVEC, so use R2. */
 	frame_reg_rtx = gen_rtx_REG (Pmode, DEFAULT_ABI == ABI_DARWIN ? 2 : 11);
       /* APPLE LOCAL end AltiVec */
+
+      /* APPLE LOCAL emit stack tie */
+      /* Prevent scheduler from moving references to the stack, which
+	 might fall below the red zone after R1 is updated,
+	 across the insn that restores R1. */
+      rs6000_emit_stack_tie ();
 
       emit_move_insn (frame_reg_rtx,
 		      gen_rtx_MEM (Pmode, sp_reg_rtx));
@@ -13607,6 +13656,9 @@ rs6000_emit_epilogue (sibcall)
 	      && !sibcall
 	      && !(info->first_fp_reg_save != 64
 		   && !FP_SAVE_INLINE (info->first_fp_reg_save))
+	      && !current_function_calls_eh_return
+	      && !(info->vector_outside_red_zone_p
+		   && use_backchain_to_restore_sp)
 		 ? branch : call);
 
   /* APPLE FIXME redundant with new code just below? */

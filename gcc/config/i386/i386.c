@@ -15579,7 +15579,7 @@ x86_output_mi_thunk (file, thunk, delta, vcall_offset, function)
 #if TARGET_MACHO
 	if (TARGET_MACHO)
 	  {
-	    char *ip = IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (function));
+	    char *ip = XSTR ( XEXP ( DECL_RTL (function), 0), 0);
 	    tmp = gen_rtx_SYMBOL_REF (Pmode, machopic_stub_name (ip));
 	    tmp = gen_rtx_MEM (QImode, tmp);
 	    xops[0] = tmp;

@@ -435,6 +435,12 @@ int flag_reorder_blocks_and_partition = 0;
 
 /* APPLE LOCAL end - rarely executed bb optimization */
 
+/* APPLE LOCAL begin - single-set constant propagation */
+
+int flag_ss_const_prop = 0;
+
+/* APPLE LOCAL end - single-set constant propagation */
+
 /* Nonzero if functions should be reordered.  */
 
 int flag_reorder_functions = 0;
@@ -1393,6 +1399,10 @@ static const lang_independent_options f_options[] =
   { "export-coalesced", &flag_export_coalesced, 1,
    N_("EXPERIMENTAL: Export coalesced symbols from dylibs") },
   /* APPLE LOCAL end coalescing  turly  */
+  /* APPLE LOCAL begin - single-set constant propagation */
+  { "ss-const-prop", &flag_ss_const_prop, 1,
+    N_("Perform simple single-assignment constant propagation") },
+  /* APPLE LOCAL end - single-set constant propagation */
   /* APPLE LOCAL begin - rarely executed bb optimization */
   { "reorder-blocks-and-partition", &flag_reorder_blocks_and_partition, 1,
     N_("Put hot and cold blocks in separate sections") },
@@ -3423,6 +3433,13 @@ rest_of_compilation (decl)
       timevar_push (TV_COMBINE);
       open_dump_file (DFI_combine, decl);
 
+      /* APPLE LOCAL begin - single-set constant propagation */
+
+      if (flag_ss_const_prop)
+	find_all_single_set_constants ();
+
+      /* APPLE LOCAL end - single-set constant propagation */
+
       rebuild_jump_labels_after_combine
 	= combine_instructions (insns, max_reg_num ());
 
@@ -3443,6 +3460,13 @@ rest_of_compilation (decl)
 
       ggc_collect ();
     }
+
+  /* APPLE LOCAL begin - single-set constant propagation */
+
+  if (flag_ss_const_prop)
+    cleanup_ss_constant_propagation ();
+
+  /* APPLE LOCAL end - single-set constant propagation */
 
   /* Rerun if-conversion, as combine may have simplified things enough to
      now meet sequence length restrictions.  */
@@ -5348,6 +5372,9 @@ parse_options_and_default_flags (argc, argv)
       flag_delete_null_pointer_checks = 1;
       flag_reorder_blocks = 1;
       flag_reorder_functions = 1;
+      /* APPLE LOCAL begin - single-set constant propagation */
+      flag_ss_const_prop = 1;
+      /* APPLE LOCAL end - single-set constant propagation */
     }
 
   if (optimize >= 3)

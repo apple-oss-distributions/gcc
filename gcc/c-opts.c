@@ -802,7 +802,8 @@ c_common_decode_option (argc, argv)
       warn_parentheses = on;
       warn_return_type = on;
       warn_sequence_point = on;	/* Was C only.  */
-      warn_sign_compare = on;	/* Was C++ only.  */
+      if (c_language == clk_cplusplus)
+	warn_sign_compare = on;
       /* APPLE LOCAL constant cfstrings */
       warn_nonportable_cfstrings = on;
       warn_switch = on;
@@ -1862,7 +1863,11 @@ static void
 set_std_c89 (c94, iso)
      int c94, iso;
 {
-  cpp_set_lang (parse_in, c94 ? CLK_STDC94: iso ? CLK_STDC89: CLK_GNUC89);
+  /* APPLE LOCAL begin 3191171 */
+  /* Do not override CLK_ASM if set */
+  if (cpp_opts->lang != CLK_ASM)
+  /* APPLE LOCAL end 3191171 */
+    cpp_set_lang (parse_in, c94 ? CLK_STDC94: iso ? CLK_STDC89: CLK_GNUC89);
   flag_iso = iso;
   flag_no_asm = iso;
   flag_no_gnu_keywords = iso;

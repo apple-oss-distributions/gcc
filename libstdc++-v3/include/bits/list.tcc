@@ -61,6 +61,12 @@
 #ifndef __GLIBCPP_INTERNAL_LIST_TCC
 #define __GLIBCPP_INTERNAL_LIST_TCC
 
+/* APPLE LOCAL begin libstdc++ debug mode */
+#ifdef _GLIBCXX_DEBUG
+#  define list _Release_list
+#endif
+/* APPLE LOCAL end libstdc++ debug mode */
+
 namespace std
 {
   template<typename _Tp, typename _Alloc>
@@ -364,5 +370,11 @@ namespace std
       }
     }
 } // namespace std
+
+/* APPLE LOCAL begin libstdc++ debug mode */
+#ifdef _GLIBCXX_DEBUG
+#  undef list
+#endif
+/* APPLE LOCAL end libstdc++ debug mode */
 
 #endif /* __GLIBCPP_INTERNAL_LIST_TCC */

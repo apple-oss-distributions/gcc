@@ -1465,11 +1465,6 @@ regcast_or_absdcl:
 
 cast_expr:
 	  unary_expr
-	/* APPLE LOCAL begin AltiVec */
-	| regcast_or_absdcl '(' nontrivial_exprlist ')'  %prec UNARY
-		/* See decl2.c to see what we did to 'reparse_absdcl_as_casts'.  */
-		{ $$ = reparse_absdcl_as_casts ($$, $3); }
-	/* APPLE LOCAL end AltiVec */	
 	| regcast_or_absdcl unary_expr  %prec UNARY
 		{ $$ = reparse_absdcl_as_casts ($$, $2); }
 	| regcast_or_absdcl '{' initlist maybecomma '}'  %prec UNARY
@@ -2624,24 +2619,14 @@ class_head_defn:
 	| class_head_apparent_template '{'
 		{
 		  yyungetc ('{', 1);
-		  $$.t = $1;
-		  $$.new_type_flag = 0;
-		  if (TREE_CODE (TREE_TYPE ($1)) == RECORD_TYPE)
-		    /* We might be specializing a template with a different
-		       class-key.  */
-		    CLASSTYPE_DECLARED_CLASS (TREE_TYPE ($1))
-		      = (current_aggr == class_type_node);
+		  $$.t = handle_class_head_apparent_template
+				($1, &$$.new_type_flag);
 		}
 	| class_head_apparent_template ':'
 		{
 		  yyungetc (':', 1);
-		  $$.t = $1;
-		  $$.new_type_flag = 0;
-		  if (TREE_CODE (TREE_TYPE ($1)) == RECORD_TYPE)
-		    /* We might be specializing a template with a different
-		       class-key.  */
-		    CLASSTYPE_DECLARED_CLASS (TREE_TYPE ($1))
-		      = (current_aggr == class_type_node);
+		  $$.t = handle_class_head_apparent_template
+				($1, &$$.new_type_flag);
 		}
 	| aggr identifier_defn '{'
 		{
@@ -2740,6 +2725,8 @@ opt.component_decl_list:
 	| opt.component_decl_list access_specifier
 @@ifobjcp
 	/* ObjC @defs(class) construct.  */
+        | DEFS '(' identifier ')' ';'
+		{ get_class_ivars_from_name ($3); }
         | DEFS '(' identifier ')' 
 		{ get_class_ivars_from_name ($3); }
 @@end_ifobjcp

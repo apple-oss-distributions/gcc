@@ -1324,6 +1324,9 @@ fatal VPARAMS ((const char *str, ...))
   VA_CLOSE (ap);
 }
 
+/* APPLE LOCAL CW asm blocks */
+int flag_cw_asm_blocks = 0;
+
 /* APPLE LOCAL begin indexing */
 void warning PARAMS ((char *));
 void warning (char *msgid) { printf ("%s\n", msgid); }

@@ -161,9 +161,10 @@ trigraph_p (pfile)
       else if (buffer->cur != buffer->last_Wtrigraphs)
 	{
 	  buffer->last_Wtrigraphs = buffer->cur;
-	  cpp_error_with_line (pfile, DL_WARNING,
-			       pfile->line, CPP_BUF_COL (buffer) - 1,
-			       "trigraph ??%c ignored", (int) from_char);
+	  cpp_error_with_line 
+	    (pfile, DL_WARNING, pfile->line, CPP_BUF_COL (buffer) - 1,
+	     "trigraph ??%c ignored, use -trigraphs to enable", 
+	     (int) from_char);
 	}
     }
 

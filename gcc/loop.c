@@ -2607,12 +2607,30 @@ prescan_loop (loop)
 	  break;
 
 	case CALL_INSN:
+	  /* APPLE LOCAL treat all sibcalls as non-const.  */
+          /* The loop optimizer attempts to hoist invariant stores
+	     out of the loop.  Stores into memory locations that are
+	     actual parameters for a call within the loop
+	     can be invariant, and can be hoisted; however,
+	     they then appear dead and are removed, as the call
+	     insn doesn't have any info about memory parameters
+	     attached.  So we don't want to do this.  This is
+	     prevented in the case of non-const calls by not
+	     hoisting any stores, and in the case of const non-sibcalls
+	     by enclosing the parameters in LIBCALL...RETVAL notes,
+	     which prevents individual stores from being considered
+	     separately.  To fix the remaining case, const sibcalls, 
+	     we treat them as non-const.  
+	     The right way to fix this is to establish a connection
+	     between the call and the parameters, so hoisted stores
+	     don't get deleted.  There is no good reason they shouldn't
+	     get hoisted.  But that's too invasive for now.  */
 	  if (! CONST_OR_PURE_CALL_P (insn))
 	    {
 	      loop_info->unknown_address_altered = 1;
 	      loop_info->has_nonconst_call = 1;
 	    }
-	  else if (pure_call_p (insn))
+	  else if (pure_call_p (insn) || SIBLING_CALL_P (insn))
 	    loop_info->has_nonconst_call = 1;
 	  loop_info->has_call = 1;
 	  if (can_throw_internal (insn))
@@ -7982,11 +8000,11 @@ loop_iv_add_mult_emit_before (loop, b, m, a, reg, before_bb, before_insn)
   update_reg_last_use (b, before_insn);
   update_reg_last_use (m, before_insn);
 
-  loop_insn_emit_before (loop, before_bb, before_insn, seq);
-
   /* It is possible that the expansion created lots of new registers.
      Iterate over the sequence we just created and record them all.  */
   loop_regs_update (loop, seq);
+
+  loop_insn_emit_before (loop, before_bb, before_insn, seq);
 }
 
 
@@ -8011,11 +8029,11 @@ loop_iv_add_mult_sink (loop, b, m, a, reg)
   update_reg_last_use (b, loop->sink);
   update_reg_last_use (m, loop->sink);
 
-  loop_insn_sink (loop, seq);
-
   /* It is possible that the expansion created lots of new registers.
      Iterate over the sequence we just created and record them all.  */
   loop_regs_update (loop, seq);
+
+  loop_insn_sink (loop, seq);
 }
 
 
@@ -8034,11 +8052,11 @@ loop_iv_add_mult_hoist (loop, b, m, a, reg)
   /* Use copy_rtx to prevent unexpected sharing of these rtx.  */
   seq = gen_add_mult (copy_rtx (b), copy_rtx (m), copy_rtx (a), reg);
 
-  loop_insn_hoist (loop, seq);
-
   /* It is possible that the expansion created lots of new registers.
      Iterate over the sequence we just created and record them all.  */
   loop_regs_update (loop, seq);
+
+  loop_insn_hoist (loop, seq);
 }
 
 
@@ -8427,6 +8445,25 @@ check_dbra_loop (loop, insn_count)
 	  || (no_use_except_counting && ! loop_info->has_prefetch))
 	{
 	  rtx tem;
+
+	  /* APPLE LOCAL begin: Don't reverse loop if compare register is live
+	     beyond loop. */
+
+	  int regno;
+	  int reg_is_global;
+
+	  /* Check to verify that compare register in loop condition is
+	     not live beyond the loop.  If it is, do not reverse the loop. */
+
+	  regno = REGNO (SET_DEST (PATTERN (first_compare)));
+
+	  reg_is_global = LOOP_REG_GLOBAL_P (loop, regno);
+
+	  if (reg_is_global)
+	    return 0;
+
+	  /* APPLE LOCAL end: Don't reverse loop if compare register is live
+	     beyond loop. */
 
 	  /* Loop can be reversed.  */
 	  if (loop_dump_stream)

@@ -777,6 +777,7 @@ C_OBJS = c-parse.o c-lang.o c-pretty-print.o $(C_AND_OBJC_OBJS) \
 # Language-independent object files.
 
 # APPLE LOCAL new tree dump
+# APPLE LOCAL new const-prop.o
 OBJS = alias.o bb-reorder.o bitmap.o builtins.o caller-save.o calls.o	   \
  dmp-tree.o								\
  cfg.o cfganal.o cfgbuild.o cfgcleanup.o cfglayout.o cfgloop.o		   \
@@ -796,7 +797,7 @@ OBJS = alias.o bb-reorder.o bitmap.o builtins.o caller-save.o calls.o	   \
  sibcall.o simplify-rtx.o ssa.o ssa-ccp.o ssa-dce.o stmt.o		   \
  stor-layout.o stringpool.o timevar.o toplev.o tracer.o tree.o tree-dump.o \
  tree-inline.o unroll.o varasm.o varray.o version.o vmsdbgout.o xcoffout.o \
- et-forest.o								   \
+ et-forest.o const-prop.o						   \
  $(GGC) $(out_object_file) $(EXTRA_OBJS) $(host_hook_obj)
 
 BACKEND = main.o libbackend.a
@@ -834,7 +835,7 @@ LIB2FUNCS_2 = _floatdixf _fixunsxfsi _fixtfdi _fixunstfdi _floatditf \
     _addvdi3 _subvsi3 _subvdi3 _mulvsi3 _mulvdi3 _negvsi2 _negvdi2 _ctors
 
 # Defined in libgcc2.c, included only in the static library.
-LIB2FUNCS_ST = _eprintf _bb __gcc_bcmp
+LIB2FUNCS_ST = _eprintf _bb __gcc_bcmp _nf
 
 FPBIT_FUNCS = _pack_sf _unpack_sf _addsub_sf _mul_sf _div_sf \
     _fpcmp_parts_sf _compare_sf _eq_sf _ne_sf _gt_sf _ge_sf \
@@ -1344,7 +1345,8 @@ c-dump.o : c-dump.c $(CONFIG_H) $(SYSTEM_H) $(TREE_H) $(C_TREE_H) tree-dump.h
 
 # APPLE LOCAL PCH
 c-pch.o : c-pch.c $(CONFIG_H) $(SYSTEM_H) $(CPPLIB_H) $(TREE_H) c-common.h \
-	output.h toplev.h c-pragma.h $(GGC_H) debug.h langhooks.h flags.h
+	output.h toplev.h c-pragma.h $(GGC_H) debug.h langhooks.h flags.h \
+	hosthooks.h
 
 # Language-independent files.
 
@@ -1425,8 +1427,9 @@ gtype-desc.o: gtype-desc.c $(CONFIG_H) $(SYSTEM_H) varray.h $(HASHTAB_H) \
 	libfuncs.h debug.h $(GGC_H) bitmap.h $(BASIC_BLOCK_H) hard-reg-set.h \
 	ssa.h cselib.h insn-addr.h
 
+# APPLE LOCAL pch
 ggc-common.o: ggc-common.c $(CONFIG_H) $(SYSTEM_H) $(GGC_H) $(HASHTAB_H) \
-	toplev.h
+	toplev.h hosthooks.h
 
 ggc-simple.o: ggc-simple.c $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(TREE_H) flags.h \
 	$(GGC_H) varray.h $(TIMEVAR_H) $(TM_P_H) $(PARAMS_H)
@@ -1727,6 +1730,10 @@ predict.o: predict.c $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(TREE_H) flags.h \
 lists.o: lists.c $(CONFIG_H) $(SYSTEM_H) toplev.h $(RTL_H) $(GGC_H)
 bb-reorder.o : bb-reorder.c $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(TREE_H) \
    flags.h $(BASIC_BLOCK_H) hard-reg-set.h output.h cfglayout.h $(TARGET_H)
+# APPLE LOCAL BEGIN single set constant propagation 
+const-prop.o: const-prop.c $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(TREE_H) flags.h \
+   $(BASIC_BLOCK_H) hard-reg-set.h expr.h output.h 
+#APPLE LOCAL END single set constant propagation
 tracer.o : tracer.c $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(TREE_H) \
    $(BASIC_BLOCK_H) hard-reg-set.h output.h cfglayout.h flags.h \
    $(PARAMS_H) profile.h

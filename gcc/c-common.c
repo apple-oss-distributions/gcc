@@ -215,9 +215,6 @@ APPLE LOCAL end AltiVec
 tree c_global_trees[CTI_MAX];
 
 /* APPLE LOCAL begin PCH */
-/* Nonzero if we can read a PCH file now.  */
-int allow_pch = 1;
-
 /* The file name to which we should write a precompiled header, or
    NULL if no header will be written in this compile.  */
 const char *pch_file;
@@ -874,7 +871,7 @@ int cw_asm_lineno;
 static char *cw_asm_buffer;
 
 /* An array tracking which variables to list as inputs and outputs.  */
-static GTY(()) varray_type cw_asm_reg_vars;
+static GTY(()) varray_type cw_asm_operands;
 
 /* Two arrays used as a map from user-supplied labels, local to an asm
    block, to unique global labels that the assembler will like.  */
@@ -1313,15 +1310,29 @@ altivec_vector_constant (type, values)
 
   /* Walk the values list placing the converted constants into
      valarray and counting the number of constants.  */
-  for (valtail = values, valnum = 0;
-       valtail;
-       valtail = TREE_CHAIN (valtail), valnum++)
+  for (valtail = values, valnum = 0; valtail;
+       valtail = (TREE_CODE (valtail) == COMPOUND_EXPR
+		  ? TREE_OPERAND (valtail, 1)
+		  : TREE_CHAIN (valtail)), valnum++)
     {
-      register tree val = TREE_VALUE (valtail);
+      register tree val = (TREE_CODE (valtail) == COMPOUND_EXPR
+			   ? TREE_OPERAND (valtail, 0)
+			   : TREE_CODE (valtail) == TREE_LIST
+			   ? TREE_VALUE (valtail)
+			   : valtail);
+      /* We could have nested comma expressions; retrieve their rightmost
+	 element, ensuring that preceding ones produce no side-effects.  */
+      while (TREE_CODE (val) == COMPOUND_EXPR)
+	{
+	  if (TREE_SIDE_EFFECTS (TREE_OPERAND (val, 0)))
+	    goto invalid_initializer;
+	  val = TREE_OPERAND (val, 1);
+	}
       STRIP_NOPS (val);
       if (TREE_CODE (val) != INTEGER_CST && TREE_CODE (val) != REAL_CST)
 	{
-	  error("expected a constant expression");
+	  invalid_initializer:
+	  error ("expected a constant expression");
 	  return error_mark_node;
 	}
       valarray[valnum] = convert_and_check (vtype, val);
@@ -7301,6 +7312,34 @@ cb_is_builtin_identifier (p)
 /* APPLE LOCAL end Symbol Separation */
 
 /* APPLE LOCAL begin CW asm blocks */
+/* Perform the default conversion of functions to pointers; simplified
+   version for use with functions mentioned in CW-style asm.
+   Return the result of converting EXP.  For any other expression, just
+   return EXP.  */
+
+static tree
+cw_asm_default_function_conversion (exp)
+     tree exp;
+{
+  tree type = TREE_TYPE (exp);
+  enum tree_code code = TREE_CODE (type);
+
+  /* Strip NON_LVALUE_EXPRs and no-op conversions, since we aren't using as
+     an lvalue. 
+
+     Do not use STRIP_NOPS here!  It will remove conversions from pointer
+     to integer and cause infinite recursion.  */
+  while (TREE_CODE (exp) == NON_LVALUE_EXPR
+	 || (TREE_CODE (exp) == NOP_EXPR
+	     && TREE_TYPE (TREE_OPERAND (exp, 0)) == TREE_TYPE (exp)))
+    exp = TREE_OPERAND (exp, 0);
+
+  if (code == FUNCTION_TYPE)
+    return build_unary_op (ADDR_EXPR, exp, 0);
+
+  return exp;
+}
+
 /* Build an asm statement from CW-syntax bits.  */
 tree
 cw_asm_stmt (expr, args)
@@ -7316,7 +7355,7 @@ cw_asm_stmt (expr, args)
   char matchbuf[20];
 
   cw_asm_in_operands = 0;
-  VARRAY_TREE_INIT (cw_asm_reg_vars, 20, "cw_asm_reg_vars");
+  VARRAY_TREE_INIT (cw_asm_operands, 20, "cw_asm_operands");
   outputs = NULL_TREE;
   inputs = NULL_TREE;
   clobbers = NULL_TREE;
@@ -7392,11 +7431,17 @@ cw_asm_stmt (expr, args)
   sexpr = build_string (strlen (cw_asm_buffer), cw_asm_buffer);
 
   /* Treat each C variable seen as a input, and locals as outputs also.  */
-  for (n = 0; n < VARRAY_ACTIVE_SIZE (cw_asm_reg_vars); ++n)
+  for (n = 0; n < VARRAY_ACTIVE_SIZE (cw_asm_operands); ++n)
     {
-      tree var = VARRAY_TREE (cw_asm_reg_vars, n);
+      tree var = VARRAY_TREE (cw_asm_operands, n);
 
-      if (TREE_CODE (var) == PARM_DECL)
+      if (TREE_CODE (var) == FUNCTION_DECL)
+	{
+	  str = build_string (1, "s");
+	  one = build_tree_list (build_tree_list (NULL_TREE, str), var);
+	  inputs = chainon (inputs, one);
+	}
+      else if (TREE_CODE (var) == PARM_DECL)
 	{
 	  str = build_string (1, "b");
 	  one = build_tree_list (build_tree_list (NULL_TREE, str), var);
@@ -7414,6 +7459,12 @@ cw_asm_stmt (expr, args)
 	}
     }
   
+  /* Perform default conversions on function inputs. 
+     Don't do this for other types as it would screw up operands
+     expected to be in memory.  */
+  for (tail = inputs; tail; tail = TREE_CHAIN (tail))
+    TREE_VALUE (tail) = cw_asm_default_function_conversion (TREE_VALUE (tail));
+
   /* Treat as volatile always.  */
   stmt = add_stmt (build_stmt (ASM_STMT, ridpointers[(int) RID_VOLATILE],
 			       sexpr, outputs, inputs, clobbers));
@@ -7450,6 +7501,14 @@ print_cw_asm_operand (buf, arg)
       if ((idnum = cw_asm_get_register_var (arg)) >= 0)
 	{
 	  strcat (buf, "%");
+	  sprintf (buf + strlen (buf), "%d", idnum);
+	}
+      break;
+
+    case FUNCTION_DECL:
+      if ((idnum = cw_asm_get_register_var (arg)) >= 0)
+	{
+	  strcat (buf, "%z");
 	  sprintf (buf + strlen (buf), "%d", idnum);
 	}
       break;
@@ -7493,13 +7552,13 @@ cw_asm_get_register_var (var)
 {
   unsigned int n;
 
-  for (n = 0; n < VARRAY_ACTIVE_SIZE (cw_asm_reg_vars); ++n)
+  for (n = 0; n < VARRAY_ACTIVE_SIZE (cw_asm_operands); ++n)
     {
-      if (var == VARRAY_TREE (cw_asm_reg_vars, n))
+      if (var == VARRAY_TREE (cw_asm_operands, n))
 	return n;
     }
-  VARRAY_PUSH_TREE (cw_asm_reg_vars, var);
-  return VARRAY_ACTIVE_SIZE (cw_asm_reg_vars) - 1;
+  VARRAY_PUSH_TREE (cw_asm_operands, var);
+  return VARRAY_ACTIVE_SIZE (cw_asm_operands) - 1;
 }
 
 tree

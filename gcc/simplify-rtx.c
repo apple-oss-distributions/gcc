@@ -784,6 +784,19 @@ simplify_binary_operation (code, mode, op0, op1)
   rtx trueop0 = avoid_constant_pool_reference (op0);
   rtx trueop1 = avoid_constant_pool_reference (op1);
 
+  /* APPLE LOCAL begin - single-set constant propagation */
+  
+  /* In combine optimization, use cross block constant propagation for
+     registers that are only set a single time. */
+
+  if (flag_ss_const_prop)
+    {
+      trueop0 = ss_constant_propagation (trueop0);
+      trueop1 = ss_constant_propagation (trueop1);
+    }
+
+  /* APPLE LOCAL end - single-set constnat propagation
+
   /* Relational operations don't work here.  We must know the mode
      of the operands in order to do the comparison correctly.
      Assuming a full word can give incorrect results.
@@ -2530,7 +2543,7 @@ simplify_subreg (outermode, op, innermode, byte)
 	    break;
 
 	  /* We can't handle this case yet.  */
-	  if (GET_MODE_BITSIZE (outermode) >= HOST_BITS_PER_WIDE_INT)
+	  if (HOST_BITS_PER_WIDE_INT > HOST_BITS_PER_INT && GET_MODE_BITSIZE (outermode) >= HOST_BITS_PER_WIDE_INT)
 	    return NULL_RTX;
 
 	  part = offset >= HOST_BITS_PER_WIDE_INT;

@@ -1431,13 +1431,19 @@ regmove_optimize (f, nregs, regmove_dump_file)
 			    success = 1;
 			  else
 			    {
+			      /* APPLE LOCAL don't recog intermediate form */
 			      /* Change all source operands back.
-				 This modifies the dst as a side-effect.  */
-			      validate_replace_rtx (dst, src, insn);
+				 This modifies the dst as a side-effect.
+				 It is possible to get an invalid insn
+				 here, temporarily, so don't try to
+				 validate it.  */
+			      validate_replace_rtx_group (dst, src, insn);
 			      /* Now make sure the dst is right.  */
 			      validate_change (insn,
 					       recog_data.operand_loc[match_no],
-					       dst, 0);
+					       dst, 1);
+			      apply_change_group ();
+			      /* APPLE LOCAL end */
 			    }
 			}
 		      break;

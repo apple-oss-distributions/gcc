@@ -65,7 +65,8 @@ tree get_super_receiver				PARAMS ((void));
 void objc_clear_super_receiver			PARAMS ((void));
 /* APPLE LOCAL Objective-C++ */
 tree get_class_ivars_from_name			PARAMS ((tree));
-tree get_class_ivars				PARAMS ((tree));
+/* APPLE LOCAL bitfields */
+/* 'get_class_ivars' has been made static.  */
 tree get_class_reference			PARAMS ((tree));
 tree get_static_reference			PARAMS ((tree, tree));
 tree get_object_reference			PARAMS ((tree));

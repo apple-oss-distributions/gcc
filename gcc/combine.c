@@ -2884,6 +2884,18 @@ try_combine (i3, i2, i1, new_direct_jump_p)
   combine_successes++;
   undo_commit ();
 
+  /* APPLE LOCAL begin single-set constant propagation */
+  /* We're about to replace i2, and possibly i1, and we may have
+     reused the i2 destination register.  If i2 was a (SET (REG...)),
+     and we've hijacked its destination register, we must tell the
+     Single-Set-Constant-Propagator to forget whatever it knows about
+     that register.  */
+  if (newi2pat
+      && (GET_CODE (i2pat) == SET)
+      && (GET_CODE (SET_DEST (i2pat)) == REG))
+    ss_replace_assignment (i2pat, newi2pat);
+  /* APPLE LOCAL end single-set constant propagation */
+
   /* Clear this here, so that subsequent get_last_value calls are not
      affected.  */
   subst_prev_insn = NULL_RTX;
@@ -11360,6 +11372,7 @@ simplify_comparison (code, pop0, pop1)
       if (have_insn_for (COMPARE, tmode))
 	{
 	  int zero_extended;
+	  rtx new_op0, new_op1;
 
 	  /* If the only nonzero bits in OP0 and OP1 are those in the
 	     narrower mode and this is an equality or unsigned comparison,
@@ -11392,11 +11405,20 @@ simplify_comparison (code, pop0, pop1)
 				  gen_lowpart_for_combine (tmode,
 							   XEXP (op0, 1)));
 
-	      op0 = gen_lowpart_for_combine (tmode, op0);
-	      if (zero_extended && GET_CODE (op1) == CONST_INT)
-		op1 = GEN_INT (INTVAL (op1) & GET_MODE_MASK (mode));
-	      op1 = gen_lowpart_for_combine (tmode, op1);
-	      break;
+	      /* APPLE LOCAL ban undefined SUBREG */
+	      /* We can't accept a (necessarily paradoxical) SUBREG
+		 here, as the high bits of it are undefined. */
+	      new_op0 = gen_lowpart_for_combine (tmode, op0);
+	      new_op1 = gen_lowpart_for_combine (tmode, op1);
+	      if (GET_CODE (new_op0) != SUBREG 
+	          && (op1 == new_op1 || GET_CODE (new_op1) != SUBREG))
+		{
+		  op0 = new_op0;
+		  op1 = new_op1;
+		  if (zero_extended && GET_CODE (op1) == CONST_INT)
+		    op1 = GEN_INT (INTVAL (op1) & GET_MODE_MASK (mode));
+		  break;
+		}
 	    }
 
 	  /* If this is a test for negative, we can make an explicit

@@ -517,6 +517,7 @@ check_for_cross_compilers()
 #
 configure_gcc() 
 {
+    export CONFIG_SITE=$SRCROOT/config.apple
     for target in $TARGETS; do
 	for host in $HOSTS; do
 	    $n mkdir -p $OBJROOT/cc-$target-on-$host
@@ -548,6 +549,7 @@ configure_gcc()
 			     "Default cc      = `\cc -v 2>&1 | fgrep 'gcc version' | \
 						 sed -e 's/.*version \([^ ,]*\),.*version \([^ ]*\).*/version \2, \1/'`" \
 			     "Curr. hdrs      = `\ls -l /usr/include/gcc/darwin/default | sed -e 's,.*-> \(.*\),\1,'`" \
+			     "CONFIG_SITE     = $CONFIG_SITE" \
 			     "ENABLE_CHECKING = ${ENABLE_CHECKING:---enable-checking}"
 		$n rm -f make.id
 		$n echo $SRCROOT/gcc:$arch > make.id
@@ -576,6 +578,7 @@ configure_gcc()
 	    fi
 	done
     done
+    unset CONFIG_SITE
 }
 
 #---------------------------------------------------------------------------#
@@ -1727,6 +1730,22 @@ install_html()
     if [ -d $OBJROOT/cc-$buildhost-on-$buildhost/HTML ]; then
 	mkdir -p $DSTROOT/Developer/Documentation/DeveloperTools
 	cp -r $OBJROOT/cc-$buildhost-on-$buildhost/HTML/* $DSTROOT/Developer/Documentation/DeveloperTools
+    fi
+    # Install the libstdc++ documentation
+    if [ -d $SRCROOT/libstdc++-v3/docs/html/ ]; then
+	mkdir -p $DSTROOT/Developer/Documentation/DeveloperTools/gcc-3.3
+	mkdir -p $DSTROOT/Developer/Documentation/DeveloperTools/gcc-3.3/libstdc++
+	libstdcxx_html_subdirs="17_intro 18_support 19_diagnostics 20_util 21_strings 22_locale 23_containers 24_iterators 25_algorithms 26_numerics 27_io ext faq"
+	cp $SRCROOT/libstdc++-v3/docs/html/*.html $DSTROOT/Developer/Documentation/DeveloperTools/gcc-3.3/libstdc++
+	if [ -r $SRCROOT/libstdc++-v3/docs/html/lib3styles.css ]; then
+	    cp $SRCROOT/libstdc++-v3/docs/html/lib3styles.css $DSTROOT/Developer/Documentation/DeveloperTools/gcc-3.3/libstdc++/
+	fi
+	for libstdcxx_html_subdir in $libstdcxx_html_subdirs; do
+	    if [ -d $SRCROOT/libstdc++-v3/docs/html/$libstdcxx_html_subdir ]; then
+		mkdir -p $DSTROOT/Developer/Documentation/DeveloperTools/gcc-3.3/libstdc++/$libstdcxx_html_subdir
+		cp $SRCROOT/libstdc++-v3/docs/html/$libstdcxx_html_subdir/*.html $DSTROOT/Developer/Documentation/DeveloperTools/gcc-3.3/libstdc++/$libstdcxx_html_subdir
+	    fi
+	done
     fi
 }
 

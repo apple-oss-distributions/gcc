@@ -109,6 +109,10 @@ static bool nonoverlapping_component_refs_p PARAMS ((tree, tree));
 static tree decl_for_component_ref	PARAMS ((tree));
 static rtx adjust_offset_for_component_ref PARAMS ((tree, rtx));
 static int nonoverlapping_memrefs_p	PARAMS ((rtx, rtx));
+/* APPLE LOCAL */
+static int overlapping_trees_p		PARAMS ((tree, tree));
+static int overlapping_memrefs_p	PARAMS ((rtx, rtx));
+/* APPLE LOCAL end */
 static int write_dependence_p           PARAMS ((rtx, rtx, int));
 
 static int nonlocal_mentioned_p_1       PARAMS ((rtx *, void *));
@@ -2061,6 +2065,65 @@ nonoverlapping_memrefs_p (x, y)
   return sizex >= 0 && offsety >= offsetx + sizex;
 }
 
+/* APPLE LOCAL aliasing improvement */
+/* Helper for the following.  Return 1 only if we're sure of overlap. */
+
+static int
+overlapping_trees_p (exprx, expry)
+    tree exprx, expry;
+{
+  /* If no info about either one, can't tell. */
+  if (exprx == 0 || expry == 0)
+    return 0;
+
+  /* Top level code must match. */
+  if (TREE_CODE (exprx) != TREE_CODE (expry))
+    return 0;
+
+  /* Components.  */
+  if (TREE_CODE (exprx) == COMPONENT_REF)
+    {
+      /* They must refer to the same field... */
+      if (TREE_OPERAND (exprx, 1) != TREE_OPERAND (expry, 1))
+	return 0;
+      /* ...of the same object.  (The object may be null, which 
+	 will compare as not overlapping.) */
+      return overlapping_trees_p (TREE_OPERAND (exprx, 0), 
+				  TREE_OPERAND (expry, 0));
+    }
+
+  /* Pointers. */
+  if (TREE_CODE (exprx) == INDIRECT_REF)
+    return overlapping_trees_p (TREE_OPERAND (exprx, 0), 
+				TREE_OPERAND (expry, 0));
+
+  if (TREE_CODE (exprx) == VAR_DECL
+      || TREE_CODE (exprx) == PARM_DECL
+      || TREE_CODE (exprx) == CONST_DECL
+      || TREE_CODE (exprx) == FUNCTION_DECL)
+    return exprx == expry;
+
+  return 0;
+}
+
+/* Return 1 if memrefs definitely overlap, 0 otherwise. */
+
+static int
+overlapping_memrefs_p (x, y)
+     rtx x, y;
+{
+  tree exprx = MEM_EXPR (x), expry = MEM_EXPR (y);
+  rtx offsetx = MEM_OFFSET (x), offsety = MEM_OFFSET (y);
+
+  /* See if offsets collide.  Known but different offsets do not
+     overlap.  Unknown offsets will if the underlying object is the same. */
+  if (offsetx != 0 && offsety != 0 && !rtx_equal_p (offsetx, offsety))
+    return 0;
+
+  return overlapping_trees_p (exprx, expry);
+}
+/* APPLE LOCAL end aliasing */
+
 /* True dependence: X is read after store in MEM takes place.  */
 
 int
@@ -2113,6 +2176,10 @@ true_dependence (mem, mem_mode, x, varies)
 	       || (GET_CODE (base) == SYMBOL_REF
 		   && CONSTANT_POOL_ADDRESS_P (base))))
     return 0;
+
+  /* APPLE LOCAL */
+  if (overlapping_memrefs_p (mem, x))
+    return 1;
 
   if (! base_alias_check (x_addr, mem_addr, GET_MODE (x), mem_mode))
     return 0;
@@ -2182,6 +2249,10 @@ canon_true_dependence (mem, mem_mode, mem_addr, x, varies)
     return 0;
 
   x_addr = get_addr (XEXP (x, 0));
+
+  /* APPLE LOCAL */
+  if (overlapping_memrefs_p (mem, x))
+    return 1;
 
   if (! base_alias_check (x_addr, mem_addr, GET_MODE (x), mem_mode))
     return 0;

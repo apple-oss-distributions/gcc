@@ -1004,7 +1004,8 @@ type_access_control (type, val)
 {
   if (val == NULL_TREE
       || (TREE_CODE (val) != TEMPLATE_DECL && TREE_CODE (val) != TYPE_DECL)
-      || ! DECL_CLASS_SCOPE_P (val))
+      || ! DECL_CLASS_SCOPE_P (val)
+      || processing_specialization)
     return;
 
   if (type_lookups == error_mark_node)

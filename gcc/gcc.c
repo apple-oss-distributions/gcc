@@ -239,6 +239,9 @@ static int use_constant_cfstrings = 0;
 static const char *macosx_deployment_target = 0;
 static unsigned int macosx_version_min_required = 0;
 
+/* APPLE LOCAL 3313335 */
+static char *cc_print_options = 0;
+static char *cc_print_options_filename;
 /* The following table should be NULL-terminated and kept in 
    lexicographic order. */
    
@@ -880,9 +883,7 @@ static const char *asm_options =
 /* APPLE LOCAL fat builds */
 /* APPLE LOCAL Symbol Separation */
 /* Add fsave-repository constructs for Symbol Separation */
-/* APPLE LOCAL -fast */
 "%a %Y \
- %{fast:-force_cpusubtype_ALL}\
  %{@:-o %f%u%O}\
  %{!@:%{c:%W{o*}%{!o*:%{!fsave-repository*:-o %w%b%O} %{fsave-repository*:-o %w%i%O}}}\
       %{!c:%{!fsave-repository*:-o %d%w%u%O} %{fsave-repository*:%W{o*}%{!o*:-o %w%i%O}}}}";
@@ -2826,7 +2827,8 @@ execute ()
 
   /* If -v, print what we are about to do, and maybe query.  */
 
-  if (verbose_flag)
+  /* APPLE LOCAL 3313335 */
+  if (verbose_flag || cc_print_options)
     {
       /* For help listings, put a blank line between sub-processes.  */
       if (print_help_list)
@@ -2837,31 +2839,59 @@ execute ()
 	{
 	  const char *const *j;
 
-	  if (verbose_only_flag)
+	  /* APPLE LOCAL 3313335 and 3360444 */
+	  /* APPLE LOCAL merge note : Use f instead of stderr to print options.
+	     By default f is stdderr, but we want to give CC_PRINT_OPTIONS_FILE
+	     one chance to override it.  */
+	  FILE *f = stderr;
+	  if (cc_print_options)
+	    { 
+	      if (cc_print_options_filename)
+		{
+		  f = fopen (cc_print_options_filename, "a");
+		  if (!f)
+		    {
+		      fprintf (stderr, "can not open CC_PRINT_OPTIONS_FILE %s\n",
+			       cc_print_options_filename);
+		      exit (1);
+		    }
+		}
+	      fprintf (f, "[Loggng gcc options]");
+	    }
+	  /* APPLE LOCAL end 3313335 and 3360444 */
+
+	  /* APPLE LOCAL 3313335 */
+	  if (verbose_only_flag || cc_print_options)
 	    {
 	      for (j = commands[i].argv; *j; j++)
 		{
 		  const char *p;
-		  fprintf (stderr, " \"");
+		  fprintf (f, " \"");
 		  for (p = *j; *p; ++p)
 		    {
 		      if (*p == '"' || *p == '\\' || *p == '$')
-			fputc ('\\', stderr);
-		      fputc (*p, stderr);
+			fputc ('\\', f);
+		      fputc (*p, f);
 		    }
-		  fputc ('"', stderr);
+		  fputc ('"', f);
 		}
 	    }
 	  else
 	    for (j = commands[i].argv; *j; j++)
-	      fprintf (stderr, " %s", *j);
+	      fprintf (f, " %s", *j);
 
 	  /* Print a pipe symbol after all but the last command.  */
 	  if (i + 1 != n_commands)
-	    fprintf (stderr, " |");
-	  fprintf (stderr, "\n");
+	    fprintf (f, " |");
+	  fprintf (f, "\n");
+
+	  /* APPLE LOCAL begin 3313335 and 3360444 */
+	  if (cc_print_options_filename)
+	    fclose (f);
+	  /* APPLE LOCAL end 3313335 and 3360444 */ 
 	}
       fflush (stderr);
+      
       if (verbose_only_flag != 0)
 	return 0;
 #ifdef DEBUG
@@ -3725,6 +3755,24 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
 	  save_temps_flag = 1;
 	  n_switches++;
 	}
+      /* APPLE LOCAL begin 3235250 */
+      else if (strcmp (argv[i], "-weak_library") == 0)
+	{
+	  if (i + 1 == argc)
+	    fatal ("argument to `-weak_library' is missing");
+
+	  n_infiles += 2;
+	  i++;
+	}
+      else if (strcmp (argv[i], "-weak_framework") == 0)
+	{
+	  if (i + 1 == argc)
+	    fatal ("argument to `-weak_framework' is missing");
+
+	  n_infiles += 2;
+	  i++;
+	}
+      /* APPLE LOCAL end 3235250 */
       /* APPLE LOCAL begin Symbol Separation */
       else if (strcmp (argv[i], "-save-repository") == 0)
 	{
@@ -3808,6 +3856,14 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
 	  fatal ("unrecognized option `--load-pch`");
 	}
       /* APPLE LOCAL end PFE */
+      /* APPLE LOCAL begin fast */
+      else if (strcmp (argv[i], "-fast") == 0
+	       || strcmp (argv[i], "-fastf") == 0)
+	{
+	  execv ("/usr/libexec/gcc/darwin/ppc/3.3-fast/driver", argv);
+	  fatal ("-fast driver couldn't be run: %s", xstrerror (errno));
+	}
+      /* APPLE LOCAL end fast */
       else if (argv[i][0] == '-' && argv[i][1] != 0)
 	{
 	  const char *p = &argv[i][1];
@@ -4208,21 +4264,42 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
 	  infiles[n_infiles].language = "*";
 	  infiles[n_infiles++].name = argv[i];
 	}
+      /* APPLE LOCAL begin 3235250 */
+      else if (strncmp (argv[i], "-weak-l", 7) == 0)
+	{
+	  infiles[n_infiles].language = "*";
+	  infiles[n_infiles++].name = argv[i];
+	}
+      else if (strcmp (argv[i], "-weak_library") == 0)
+	{
+	  infiles[n_infiles].language = "*";
+          infiles[n_infiles++].name = argv[i];
+          infiles[n_infiles].language = "*";
+          infiles[n_infiles++].name = argv[++i];
+	}
+      else if (strcmp (argv[i], "-weak_framework") == 0)
+	{
+	  infiles[n_infiles].language = "*";
+          infiles[n_infiles++].name = argv[i];
+          infiles[n_infiles].language = "*";
+          infiles[n_infiles++].name = argv[++i];
+	}
+      /* APPLE LOCAL end 3235250 */
       else if (strcmp (argv[i], "-specs") == 0)
 	i++;
       else if (strncmp (argv[i], "-specs=", 7) == 0)
 	;
       /* APPLE LOCAL begin -ObjC 2001-08-03 sts */
-      else if (strcmp (argv[i], "-ObjC") == 0)
+      else if (!strcmp (argv[i], "-ObjC") || !strcmp (argv[i], "-fobjc"))
         {
 	  default_language = "objective-c";
-	  infiles[n_infiles].language = "*";
-	  infiles[n_infiles++].name = "-ObjC";
+	  add_linker_option ("-ObjC", 5);
         }
-      else if (strcmp (argv[i], "-fobjc") == 0)
-	default_language = "objective-c";
       else if (strcmp (argv[i], "-ObjC++") == 0)
-	default_language = "objective-c++";
+        {
+	  default_language = "objective-c++";
+	  add_linker_option ("-ObjC", 5);
+        }
       /* APPLE LOCAL end -ObjC 2001-08-03 sts */
       else if (strcmp (argv[i], "-time") == 0)
 	;
@@ -6607,6 +6684,11 @@ main (argc, argv)
   char *specs_file;
   const char *p;
   struct user_specs *uptr;
+
+  /* APPLE LOCAL begin 3313335 */
+  cc_print_options = getenv ("CC_PRINT_OPTIONS");
+  cc_print_options_filename = getenv ("CC_PRINT_OPTIONS_FILE");
+  /* APPLE LOCAL end 3313335 */
 
   p = argv[0] + strlen (argv[0]);
   while (p != argv[0] && !IS_DIR_SEPARATOR (p[-1]))

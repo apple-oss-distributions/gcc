@@ -187,6 +187,10 @@ build_zero_init (tree type, tree nelts, bool static_storage_p)
 
      -- if T is a reference type, no initialization is performed.  */
 
+  /* APPLE LOCAL radar 3295186 */
+  my_friendly_assert (nelts == NULL_TREE || TREE_CODE (nelts) == INTEGER_CST,
+		      20030618);
+
   if (type == error_mark_node)
     ;
   else if (static_storage_p && zero_init_p (type))
@@ -239,6 +243,9 @@ build_zero_init (tree type, tree nelts, bool static_storage_p)
       /* Iterate over the array elements, building initializations.  */
       inits = NULL_TREE;
       max_index = nelts ? nelts : array_type_nelts (type);
+      /* APPLE LOCAL radar 3295186 */
+      my_friendly_assert (TREE_CODE (max_index) == INTEGER_CST, 20030618);
+
       for (index = size_zero_node;
 	   !tree_int_cst_lt (max_index, index);
 	   index = size_binop (PLUS_EXPR, index, size_one_node))
@@ -300,7 +307,9 @@ build_default_init (type, nelts)
      standard says we should have generated would be precisely the
      same as that obtained by calling build_zero_init below, so things
      work out OK.  */
-  if (TYPE_NEEDS_CONSTRUCTING (type))
+  /* APPLE LOCAL radar 3295186 */
+  if (TYPE_NEEDS_CONSTRUCTING (type)
+      || (nelts && TREE_CODE (nelts) != INTEGER_CST))
     return NULL_TREE;
       
   /* At this point, TYPE is either a POD class type, an array of POD
@@ -1607,7 +1616,7 @@ build_offset_ref (type, name)
 
   decl = maybe_dummy_object (type, &basebinfo);
 
-  if (BASELINK_P (name))
+  if (BASELINK_P (name) || DECL_P (name))
     member = name;
   else
     {

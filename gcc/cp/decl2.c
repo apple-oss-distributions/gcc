@@ -98,10 +98,6 @@ static void import_export_class	PARAMS ((tree));
 /* APPLE LOCAL end improved vtable emission */
 static tree get_guard_bits PARAMS ((tree));
 
-/* APPLE LOCAL AltiVec */
-static int altivec_is_vector_constant_element	PARAMS ((tree));
-static int altivec_is_vector_constant_list	PARAMS ((tree));
-
 /* A list of static class variables.  This is needed, because a
    static class variable can be declared inside the class without
    an initializer, and then initialized, statically, outside the class.  */
@@ -3220,35 +3216,6 @@ reparse_absdcl_as_expr (type, decl)
   return finish_call_expr (decl, NULL_TREE, /*disallow_virtual=*/false);
 }
 
-/* APPLE LOCAL begin AltiVec */
-/* Return TRUE if VALUE is a constant suitable for a vector element.  */
-
-static int
-altivec_is_vector_constant_element (value)
-     tree value;
-{
-  STRIP_TYPE_NOPS (value);
-  return (TREE_CODE (value) == INTEGER_CST 
-	  || TREE_CODE (value) == REAL_CST);
-}
-
-/* Return TRUE if all elements of LIST (known to be a TREE_LIST) are
-   constants suitable for a vector element.  */
-
-static int
-altivec_is_vector_constant_list (list)
-     tree list;
-{
-  while (list)
-    {
-      if (!altivec_is_vector_constant_element (TREE_VALUE (list)))
-	return FALSE;
-      list = TREE_CHAIN (list);
-    }
-  return TRUE;
-}
-/* APPLE LOCAL end AltiVec */
-
 /* This is something of the form `int ((int)(int)(int)1)' that has turned
    out to be an expr.  Since it was parsed like a type, we need to wade
    through and fix that.  Since casts are right-associative, we are
@@ -3262,24 +3229,9 @@ reparse_absdcl_as_casts (decl, expr)
      tree decl, expr;
 {
   tree type;
-  int non_void_p = 0;
+  /* APPLE LOCAL AltiVec */
+  int non_void_p = 0, vector_p = 0;
 
-  /* APPLE LOCAL begin AltiVec */  
-  if (TREE_CODE (expr) != TREE_LIST)
-    {
-      /* If EXPR is not a TREE_LIST, but could be a vector constant, turn it
-	 into a TREE_LIST with one element.  */
-      if (altivec_is_vector_constant_element (expr))
-	expr = build_tree_list (NULL_TREE, expr);
-    }
-  else if (!altivec_is_vector_constant_list (expr))
-    {
-      /* If EXPR is a TREE_LIST, but cannot be a vector constant, reduce
-	 the compound expression now.  */
-      expr = build_x_compound_expr (expr);
-    }
-  /* APPLE LOCAL end AltiVec */
-  
   if (TREE_CODE (expr) == CONSTRUCTOR
       && TREE_TYPE (expr) == 0)
     {
@@ -3307,22 +3259,17 @@ reparse_absdcl_as_casts (decl, expr)
 	non_void_p = 1;
       /* APPLE LOCAL begin AltiVec */
       if (TREE_CODE (type) == VECTOR_TYPE
-	  && TREE_CODE (expr) == TREE_LIST)
-	/* Any EXPR that is a TREE_LIST is suitable as a vector constant.
-	   If TYPE is a VECTOR_TYPE, parse it as a vector constant.  */
+	  && (vector_p = 1, 
+	      !TREE_TYPE (expr)
+	      || TREE_CODE (TREE_TYPE (expr)) != VECTOR_TYPE))
 	expr = altivec_vector_constant (type, expr);
       else
-	{
-	  /* If TYPE was not a VECTOR_TYPE, but EXPR was a TREE_LIST, turn
-	     EXPR back into a value and treat this as a cast.  */
-	  if (TREE_CODE (expr) == TREE_LIST)
-	    expr = build_x_compound_expr (expr);
-	  expr = build_c_cast (type, expr);
-	}
+	expr = build_c_cast (type, expr);
       /* APPLE LOCAL end AltiVec */
     }
 
-  if (warn_old_style_cast && ! in_system_header
+  /* APPLE LOCAL AltiVec */
+  if (warn_old_style_cast && ! in_system_header && !vector_p
       && non_void_p && current_lang_name != lang_name_c)
     warning ("use of old-style cast");
 
@@ -3733,15 +3680,15 @@ build_offset_ref_call_from_tree (tree fn, tree args)
   /* This code is not really correct (for example, it does not
      handle the case that `A::f' is overloaded), but it is
      historically how we have handled this situation.  */
-  object_addr = build_unary_op (ADDR_EXPR, TREE_OPERAND (fn, 0), 0);
   if (TREE_CODE (TREE_OPERAND (fn, 1)) == FIELD_DECL)
     fn = resolve_offset_ref (fn);
   else
     {
+      object_addr = build_unary_op (ADDR_EXPR, TREE_OPERAND (fn, 0), 0);
       fn = TREE_OPERAND (fn, 1);
       fn = get_member_function_from_ptrfunc (&object_addr, fn);
+      args = tree_cons (NULL_TREE, object_addr, args);
     }
-  args = tree_cons (NULL_TREE, object_addr, args);
   return build_function_call (fn, args);
 }
 
@@ -5150,6 +5097,53 @@ handle_class_head (tag_kind, scope, id, attributes, defn_p, new_type_p)
       if (!xrefd_p && PROCESSING_REAL_TEMPLATE_DECL_P ())
 	decl = push_template_decl (decl);
     }
+
+  return decl;
+}
+
+/* Like handle_class_head but for a definition of a class specialization.
+   DECL is a TYPE_DECL node representing the class.  NEW_TYPE_P is set to
+   nonzero, if we push into the scope containing the to be defined
+   aggregate.
+
+   Return a TYPE_DECL for the type declared by ID in SCOPE.  */
+
+tree
+handle_class_head_apparent_template (decl, new_type_p)
+    tree decl;
+    int *new_type_p;
+{
+  tree context;
+  tree current;
+
+  if (decl == error_mark_node)
+    return decl;
+
+  current = current_scope ();
+  if (current == NULL_TREE)
+    current = current_namespace;
+
+  *new_type_p = 0;
+  
+  /* For a definition, we want to enter the containing scope
+     before looking up any base classes etc. Only do so, if this
+     is different to the current scope.  */
+  context = CP_DECL_CONTEXT (decl);
+
+  if (IMPLICIT_TYPENAME_P (context))
+    context = TREE_TYPE (context);
+
+  *new_type_p = (current != context
+               && TREE_CODE (context) != TEMPLATE_TYPE_PARM
+               && TREE_CODE (context) != BOUND_TEMPLATE_TEMPLATE_PARM);
+  if (*new_type_p)
+    push_scope (context);
+
+  if (TREE_CODE (TREE_TYPE (decl)) == RECORD_TYPE)
+    /* We might be specializing a template with a different
+       class-key.  */
+    CLASSTYPE_DECLARED_CLASS (TREE_TYPE (decl))
+      = (current_aggr == class_type_node);
 
   return decl;
 }

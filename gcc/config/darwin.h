@@ -234,8 +234,6 @@ Boston, MA 02111-1307, USA.  */
 /* Note that options taking arguments may appear multiple times on a
    command line with different arguments each time, so put a * after
    their names so all of them get passed.  */
-/* APPLE LOCAL -fast */
-/* Supply -force_cpusubtype_ALL when -fast is used.  */
 #define LINK_SPEC  \
   "%{static}%{!static:-dynamic} \
    %{!Zdynamiclib: \
@@ -270,7 +268,6 @@ Boston, MA 02111-1307, USA.  */
    %{Zdylib_file*:-dylib_file %*} \
    %{Zdynamic:-dynamic}\
    %{Zexported_symbols_list*:-exported_symbols_list %*} \
-   %{fast:-force_cpusubtype_ALL}\
    %{Zflat_namespace:-flat_namespace} \
    %{headerpad_max_install_names*} \
    %{Zimage_base*:-image_base %*} \
@@ -1175,6 +1172,9 @@ do { fputs (".zerofill __DATA, __common, ", (FILE));            \
         in_section = no_section;                                \
       } while (0)
 /* APPLE LOCAL end zerofill turly 20020218  */
+
+/* APPLE LOCAL begin CW asm blocks */
+#define CW_ASM_SPECIAL_LABEL(ID) darwin_cw_asm_special_label (ID)
 
 #undef ASM_APP_ON
 #define ASM_APP_ON ""

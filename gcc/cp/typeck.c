@@ -4411,19 +4411,19 @@ build_unary_op (code, xarg, noconvert)
       {
 	tree addr;
 
-	if (TREE_CODE (arg) == COMPONENT_REF
-	    && DECL_C_BIT_FIELD (TREE_OPERAND (arg, 1)))
+	if (TREE_CODE (arg) != COMPONENT_REF)
+	  addr = build_address (arg);
+	else if (DECL_C_BIT_FIELD (TREE_OPERAND (arg, 1)))
 	  {
 	    error ("attempt to take address of bit-field structure member `%D'",
 		   TREE_OPERAND (arg, 1));
 	    return error_mark_node;
 	  }
-	else if (TREE_CODE (arg) == COMPONENT_REF
-		 && TREE_CODE (TREE_OPERAND (arg, 0)) == INDIRECT_REF
-		 && (TREE_CODE (TREE_OPERAND (TREE_OPERAND (arg, 0), 0))
-		     == INTEGER_CST))
+	else
 	  {
-	    /* offsetof idiom, fold it.  */
+	    /* Unfortunately we cannot just build an address
+	       expression here, because we would not handle
+	       address-constant-expressions or offsetof correctly.  */
 	    tree field = TREE_OPERAND (arg, 1);
 	    tree rval = build_unary_op (ADDR_EXPR, TREE_OPERAND (arg, 0), 0);
 	    tree binfo = lookup_base (TREE_TYPE (TREE_TYPE (rval)),
@@ -4436,8 +4436,6 @@ build_unary_op (code, xarg, noconvert)
 	    addr = fold (build (PLUS_EXPR, argtype, rval,
 				cp_convert (argtype, byte_position (field))));
 	  }
-	else
-	  addr = build_address (arg);
 
 	if (TREE_CODE (argtype) == POINTER_TYPE
 	    && TREE_CODE (TREE_TYPE (argtype)) == METHOD_TYPE)
@@ -4714,6 +4712,8 @@ build_x_compound_expr (list)
          statement: we should warn if it doesn't have any side-effects,
          unless it was explicitly cast to (void).  */
       if ((extra_warnings || warn_unused_value)
+	   /* APPLE LOCAL AltiVec */
+	   && !flag_altivec
            && !(TREE_CODE (TREE_VALUE(list)) == CONVERT_EXPR
                 && VOID_TYPE_P (TREE_TYPE (TREE_VALUE(list)))))
         warning("left-hand operand of comma expression has no effect");
@@ -4762,7 +4762,8 @@ build_compound_expr (list)
     return error_mark_node;
 
   /* When pedantic, a compound expression cannot be a constant expression.  */
-  if (! TREE_SIDE_EFFECTS (first) && ! pedantic)
+  /* APPLE LOCAL AltiVec */
+  if (! TREE_SIDE_EFFECTS (first) && !flag_altivec && ! pedantic)
     return rest;
 
   return build (COMPOUND_EXPR, TREE_TYPE (rest), first, rest);

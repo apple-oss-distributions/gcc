@@ -2148,12 +2148,14 @@ move_block_from_reg (regno, x, nregs, size)
 
   /* If SIZE is that of a mode no bigger than a word, just use that
      mode's store operation.  */
-  if (size <= UNITS_PER_WORD
+/* APPLE LOCAL begin 64bit registers, ABI32bit */
+  if (size <= ABI_UNITS_PER_WORD
       && (mode = mode_for_size (size * BITS_PER_UNIT, MODE_INT, 0)) != BLKmode)
     {
       emit_move_insn (adjust_address (x, mode, 0), gen_rtx_REG (mode, regno));
       return;
     }
+/* APPLE LOCAL end 64bit registers, ABI32bit */
 
   /* Blocks smaller than a word on a BYTES_BIG_ENDIAN machine must be aligned
      to the left before storing to memory.  Note that the previous test
@@ -2298,7 +2300,7 @@ emit_group_load (dst, orig_src, ssize)
       src = orig_src;
       if (GET_CODE (orig_src) != MEM
 	  /* APPLE LOCAL: darwin native */
-	  && (ALWAYS_PUSH_CONSTS_USING_REGS_P || !CONSTANT_P (orig_src)
+	  && (ALWAYS_PUSH_CONSTS_USING_REGS_P && GET_MODE(dst) != DImode || !CONSTANT_P (orig_src)
 	      || (GET_MODE (orig_src) != mode
 		  && GET_MODE (orig_src) != VOIDmode)))
 	{
@@ -2347,6 +2349,8 @@ emit_group_load (dst, orig_src, ssize)
 	  else
 	    abort ();
 	}
+      else if (CONSTANT_P (src) && GET_MODE(dst) == DImode)
+	tmps[i] = simplify_gen_subreg (mode, src, GET_MODE(dst), bytepos);
       else if (CONSTANT_P (src)
 	       || (GET_CODE (src) == REG && GET_MODE (src) == mode))
 	tmps[i] = src;

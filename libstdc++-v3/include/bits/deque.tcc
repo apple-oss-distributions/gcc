@@ -61,6 +61,12 @@
 #ifndef __GLIBCPP_INTERNAL_DEQUE_TCC
 #define __GLIBCPP_INTERNAL_DEQUE_TCC
 
+/* APPLE LOCAL begin libstdc++ debug mode */
+#ifdef _GLIBCXX_DEBUG
+#  define deque _Release_deque
+#endif
+/* APPLE LOCAL end libstdc++ debug mode */
+
 namespace std
 { 
   template <typename _Tp, typename _Alloc>
@@ -774,6 +780,12 @@ namespace std
       _M_finish._M_set_node(__new_nstart + __old_num_nodes - 1);
     }
 } // namespace std 
-  
+
+/* APPLE LOCAL begin libstdc++ debug mode */
+#ifdef _GLIBCXX_DEBUG
+#  undef deque
+#endif
+/* APPLE LOCAL end libstdc++ debug mode */
+
 #endif /* __GLIBCPP_INTERNAL_DEQUE_TCC */
 

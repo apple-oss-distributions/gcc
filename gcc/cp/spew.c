@@ -993,7 +993,7 @@ yylex ()
 	    {
 	      scan_tokens (2);
 	      toky = nth_token (2);
-	      if (tokx->yychar == '(')
+	      if (toky->yychar == '(')
 		/* do nothing */ ;
 	      else
 		yychr = SCSPEC;

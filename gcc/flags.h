@@ -229,6 +229,15 @@ extern int flag_branch_probabilities;
 
 extern int flag_reorder_blocks;
 
+/* APPLE LOCAL begin - single-set constant propagation */
+
+/* Nonzero indicates that combine optimization should use cross-block
+   constant propagation for registers that are only set a single time. */
+
+extern int flag_ss_const_prop;
+
+/* APPLE LOCAL end - single-set constant propagation */
+
 /* APPLE LOCAL begin - rarely executed bb optimization */
 
 /* Nonzero if basic blocks should be separated into hot and cold sections in .o */

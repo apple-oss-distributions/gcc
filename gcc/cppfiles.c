@@ -2402,8 +2402,17 @@ _load_include_headers (pfile, includehash, name)
     memcpy (name, path->name, path->len);
     name[path->len] = 0;
     
-    /* no need to check for existence...already done by append_include_chain() */
+    /* There was a comment here that said "no need to check for
+       existence...already done by append_include_chain()", but it's possible
+       that the directory might have existed before, but was deleted
+       since then.  (That, of course, is a fatal error.)  */
     directory = opendir(name);
+    if (directory == NULL)
+      {
+	cpp_error (pfile, DL_ERROR, 
+		   "couldn't open %s: %s", name, xstrerror (errno));
+	return;
+      }
     while ((directory_entry = readdir(directory)) != NULL) 
       {
 	if (directory_entry->d_name[0] == '.') /* for now, assume headers cannot begin with "."  */
@@ -2444,8 +2453,18 @@ _load_framework_directories (pfile, frameworkhash, name)
       /* cannot depend on path->name being null terminated (weird) */
       memcpy (name, path->name, path->len);
       name[path->len] = 0;
-      /* no need to check for existence...already done by append_include_chain() */
+      /* There was a comment here that said "no need to check for
+	 existence...already done by append_include_chain()", but it's
+	 possible that the directory might have existed before, but
+	 was deleted since then.  (That, of course, is a fatal
+	 error.)  */
       directory = opendir(name);
+      if (directory == NULL)
+	{
+	  cpp_error (pfile, DL_ERROR, 
+		     "couldn't open %s: %s", name, xstrerror (errno));
+	  return;
+	}
       while ((directory_entry = readdir(directory)) != NULL) 
         {
 	  int len = strlen (directory_entry->d_name);
