@@ -5901,7 +5901,7 @@ main (argc, argv)
         if (index_header_list_filename && *index_header_list_filename)
           {
             read_indexed_header_list ();
-	    /* Irrespective of if indexed_header file is present or not,
+	    /* Irrespective of indexed_header file being present or not,
 	       switch ON indexed_header list.  */
             flag_check_indexed_header_list = 1;
           }

@@ -294,6 +294,7 @@ Boston, MA 02111-1307, USA.  */
    !strcmp (STR, "undefined") ? 1 :		\
    !strcmp (STR, "bundle_loader") ? 1 :		\
    !strcmp (STR, "multiply_defined") ? 1 :	\
+   !strcmp (STR, "seg_addr_table_filename") ? 1 :	\
    !strcmp (STR, "dylib_file") ? 1 :		\
    !strcmp (STR, "segaddr") ? 2 :		\
    !strcmp (STR, "sectobjectsymbols") ? 2 :	\
@@ -325,6 +326,7 @@ Boston, MA 02111-1307, USA.  */
    !strcmp (STR, "init") ? 1 :			\
    !strcmp (STR, "header-mapfile") ? 1 :	\
    !strcmp (STR, "precomp-trustfile") ? 1 :	\
+   !strcmp (STR, "weak_reference_mismatches") ? 1 : \
    0)
 #endif
 
@@ -451,7 +453,7 @@ Boston, MA 02111-1307, USA.  */
 		%{A} %{d} %{e*} %{m} %{N} %{n} %{p} \
 		%{r} %{s} %{Si}%{Sn} %{T*} %{t} %{u*} %{X} %{x} %{z} %{y*} \
 		%{!A:%{!nostdlib:%{!nostartfiles:%S}}} \
-		%{L*} %o %{!nostdlib:%G %L %{!A:%E}} \
+		%{L*} %D %o %{!nostdlib:%G %L %{!A:%E}} \
 		%{.C:\\| /usr/bin/c++filt}%{.M:\\| /usr/bin/c++filt} \
 		%{.cc:\\| /usr/bin/c++filt} \
 		%{!.C:%{!.M:%{!.cc:%{ObjC++:\\| /usr/bin/c++filt}}}}}}}}}}}"
@@ -476,6 +478,7 @@ Boston, MA 02111-1307, USA.  */
 %{execute*} %{preload*} %{fvmlib*} \
 %{bundle_loader*} %{private_bundle} %{multiply_defined*} \
 %{flat_namespace} %{force_flat_namespace} %{twolevel_namespace} \
+%{twolevel_namespace_hints} %{seg_addr_table_filename*} \
 %{sub_library*} %{nomultidefs} \
 %{client_name*} %{allowable_client*} \
 %{segalign*} %{seg1addr*} %{segaddr*} %{segprot*} \
@@ -488,6 +491,7 @@ Boston, MA 02111-1307, USA.  */
 %{dylinker} %{dylinker_install_name*} %{output_for_dyld} \
 %{headerpad_max_install_names} \
 %{prebind_all_twolevel_modules} \
+%{weak_reference_mismatches*} \
 %{keep_private_externs} %{prebind} %{noprebind}"
 #endif
 

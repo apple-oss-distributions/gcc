@@ -346,7 +346,7 @@ static tree init_module_descriptor		PROTO((tree));
 static tree build_objc_method_call		PROTO((int, tree, tree, tree, tree, tree));
 static void generate_strings			PROTO((void));
 static void build_selector_translation_table	PROTO((void));
-static tree build_ivar_chain			PROTO((tree, int));
+static tree build_ivar_chain			PROTO((tree));
 
 static tree build_ivar_template			PROTO((void));
 static tree build_method_template		PROTO((void));
@@ -3027,31 +3027,29 @@ objc_copy_list (list, head)
 }
 
 /* Used by: build_private_template, get_class_ivars, and
-   continue_class.  COPY is 1 when called from @defs.  In this case
-   copy all fields.  Otherwise don't copy leaf ivars since we rely on
-   them being side-effected exactly once by finish_struct.  */
+   continue_class.  This function constructs a list of all
+   the ivars in INTERFACE (including any superclasses).
+   It copies each ivar node along the way, since we don't
+   want to alter the original ivar list further down during
+   compilation.  */
 
-/* zlaski 2001-Nov-06: It turns out that not copying leaf ivars causes
-   bitfields in the base class to be sometimes treated as integers (which
-   changes the layout of the class).  While this is a bug, it CANNOT BE
-   FIXED, since that would break binary compatibility.  See Radars
-   2788414 and 2787108 for more info.  */
-   
 static tree
-build_ivar_chain (interface, copy)
+build_ivar_chain (interface)
      tree interface;
-     int copy;
 {
   tree my_name, super_name, ivar_chain;
 
   my_name = CLASS_NAME (interface);
   super_name = CLASS_SUPER_NAME (interface);
 
-  /* Possibly copy leaf ivars.  */
-  if (copy)
-    objc_copy_list (CLASS_IVARS (interface), &ivar_chain);
-  else
-    ivar_chain = CLASS_IVARS (interface);
+  /* Copy leaf ivars.  */
+  objc_copy_list (CLASS_IVARS (interface), &ivar_chain);
+  /* APPLE LOCAL bitfield alignment */
+  /* Save off a pointer to ivars for the current class only
+     (i.e., excluding any superclasses); these must be side-effected
+     by 'finish_struct' exactly once.  */
+  if (!CLASS_OWN_IVARS (interface))
+    CLASS_OWN_IVARS (interface) = ivar_chain;
 
   while (super_name)
     {
@@ -3111,7 +3109,7 @@ build_private_template (class)
     {
       uprivate_record = objcplus_start_struct (RECORD_TYPE, CLASS_NAME (class));
 
-      ivar_context = build_ivar_chain (class, 0);
+      ivar_context = build_ivar_chain (class);
 
       objcplus_finish_struct (uprivate_record, ivar_context);
 
@@ -4526,7 +4524,8 @@ generate_ivar_lists ()
   else
     UOBJC_CLASS_VARIABLES_decl = 0;
 
-  chain = CLASS_IVARS (implementation_template);
+  /* APPLE LOCAL bitfield alignment */
+  chain = CLASS_OWN_IVARS (implementation_template);
   if (chain)
     {
       size = list_length (chain);
@@ -6952,9 +6951,9 @@ get_class_ivars (interface)
      using temporary storage.  */
 #ifdef OBJCPLUS
   return build_tree_list ((tree)access_default_node, 
-			  build_ivar_chain (interface, 1));
+			  build_ivar_chain (interface));
 #else
-  return build_ivar_chain (interface, 1);
+  return build_ivar_chain (interface);
 #endif
 }
 
@@ -7191,7 +7190,8 @@ start_class (code, class_name, super_name, protocol_list)
 #endif
 
     class = make_node (code);
-    TYPE_BINFO (class) = make_tree_vec (5);
+  /* APPLE LOCAL bitfield alignment */
+  TYPE_BINFO (class) = make_tree_vec (6);
 
 #ifdef OBJCPLUS    
     current_obstack = ambient_obstack;
@@ -7406,7 +7406,7 @@ continue_class (class)
 #ifdef OBJCPLUS
 	  build_private_template (class);
 #else
-	  objcplus_finish_struct (record, build_ivar_chain (class, 0));
+	  objcplus_finish_struct (record, build_ivar_chain (class));
 	  CLASS_STATIC_TEMPLATE (class) = record;
 #endif
 
@@ -9856,7 +9856,7 @@ emit_class_ivars(class_name)
 {
     tree interface = lookup_interface (class_name);
     if (interface) {
-      tree ivar = build_ivar_chain (interface, 1);  /* 1 = make a copy */
+      tree ivar = build_ivar_chain (interface);  
       /* finish_member_declaration takes only one decl at a time */
       for(; ivar; ivar = TREE_CHAIN (ivar)) {
         finish_member_declaration (copy_node(ivar));
