@@ -23,10 +23,10 @@
 - (void)not_eq { }
 @end
 
-/* { dg-final { scan-assembler  "\\+\\[Int1 and_eq:and:\\]" } } */
-/* { dg-final { scan-assembler  "\\-\\[Int1 or_eq:or:\\]" } } */
-/* { dg-final { scan-assembler  "\\-\\[Int1 not:xor:\\]" } } */
-/* { dg-final { scan-assembler  "\\-\\[Int1 bitand:bitor:\\]" } } */
-/* { dg-final { scan-assembler  "\\-\\[Int1 compl:xor_eq:\\]" } } */
-/* { dg-final { scan-assembler  "\\-\\[Int1 not_eq\\]" } } */
+/* { dg-final { scan-assembler  "\\+\\\[Int1 and_eq:and:\\]" } } */
+/* { dg-final { scan-assembler  "\\-\\\[Int1 or_eq:or:\\]" } } */
+/* { dg-final { scan-assembler  "\\-\\\[Int1 not:xor:\\]" } } */
+/* { dg-final { scan-assembler  "\\-\\\[Int1 bitand:bitor:\\]" } } */
+/* { dg-final { scan-assembler  "\\-\\\[Int1 compl:xor_eq:\\]" } } */
+/* { dg-final { scan-assembler  "\\-\\\[Int1 not_eq\\]" } } */
 

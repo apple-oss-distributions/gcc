@@ -179,6 +179,11 @@ struct file_stack *input_file_stack;
 /* Incremented on each change to input_file_stack.  */
 int input_file_stack_tick;
 
+/* APPLE LOCAL begin read-from-stdin */
+  int predictive_compilation = -1;
+/* APPLE LOCAL end read-from-stdin */
+
+
 /* Name to use as base of names for dump output files.  */
 
 const char *dump_base_name;
@@ -1385,6 +1390,10 @@ static const lang_independent_options f_options[] =
   { "indirect-data", &flag_indirect_data, 1,
     N_("Generate code suitable for fast turn around debugging") },
   /* APPLE LOCAL END fix-and-continue mrs  */
+  /* APPLE LOCAL begin read-from-stdin */
+  { "predictive-compilation", &predictive_compilation, 0,
+    N_("Read from stdin but for predictive compilation") },
+  /* APPLE LOCAL end read-from-stdin */
   /* APPLE LOCAL begin -ffppc 2001-08-01 sts */
   { "fppc", &flag_fppc, 1,
    N_("Perform floating-point precision-control pass") },
@@ -4418,6 +4427,10 @@ decode_f_option (arg)
     {
       flag_debug_gen_index = 1;
     }
+/* APPLE LOCAL begin read-from-stdin */
+  else if ((option_value = skip_leading_substring (arg, "predictive-compilation=")))
+    predictive_compilation = read_integral_parameter (option_value, arg - 2, predictive_compilation);
+/* APPLE LOCAL end read-from-stdin */
   else
     return 0;
 

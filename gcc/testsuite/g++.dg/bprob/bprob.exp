@@ -24,6 +24,13 @@ if { [istarget mmix-*-*]
     return
 }
 
+# APPLE LOCAL begin ObjC++
+# FIXME: This file is broken for the ObjC++ redo of g++ tests.
+if { $tool == "obj-c++" } {
+    return
+}
+# APPLE LOCAL end ObjC++
+
 # The procedures in profopt.exp need these parameters.
 set tool g++
 set profile_option -fprofile-arcs

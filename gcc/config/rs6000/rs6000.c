@@ -1573,13 +1573,6 @@ rs6000_override_options (default_cpu)
       flag_pic = 0;
     }
 
-  /* APPLE LOCAL long-branch */
-  if (TARGET_LONG_BRANCH && (flag_pic != 0))
-    {
-      warning ("ignoring -mlong-branch, superflous when PIC is on; use with -static") ;
-      target_flags &= ( ~ MASK_LONG_BRANCH) ;
-    }
-
   /* For Darwin, always silently make -fpic and -fPIC identical.  */
   if (flag_pic == 1 && DEFAULT_ABI == ABI_DARWIN)
     flag_pic = 2;
@@ -4237,7 +4230,7 @@ init_cumulative_args (cum, fntype, libname, incoming)
   /* Check for a longcall attribute.  */
   if (fntype
       /* APPLE LOCAL long-branch */
-      && 0 /*TARGET_LONG_BRANCH *//* disabled 25jan02 seh */ 
+      && TARGET_LONG_BRANCH
       && lookup_attribute ("longcall", TYPE_ATTRIBUTES (fntype))
       && !lookup_attribute ("shortcall", TYPE_ATTRIBUTES (fntype)))
     cum->call_cookie = CALL_LONG;
@@ -12533,6 +12526,7 @@ rs6000_emit_prologue ()
 	  /* If we're saving vector or FP regs via a function call,
 	     then don't bother with this ObjC R12 optimization.
 	     This test also eliminates world_save.  */
+	  && (!info->world_save_p)
 	  && (info->first_altivec_reg_save > LAST_ALTIVEC_REGNO
 	      || VECTOR_SAVE_INLINE (info->first_altivec_reg_save))
 	  && (info->first_fp_reg_save == 64 
@@ -12671,8 +12665,7 @@ rs6000_emit_prologue ()
 					    gen_rtx_REG (Pmode, 
 							 LINK_REGISTER_REGNUM));
       RTVEC_ELT (p, j++) = gen_rtx_USE (VOIDmode,
-					gen_rtx_SYMBOL_REF (Pmode,
-							    "*save_world"));
+					gen_rtx_SYMBOL_REF (Pmode, "*save_world"));
       if ( gen_following_label )
 	RTVEC_ELT (p, j++) = gen_rtx_USE (VOIDmode, const0_rtx);
       /* We do floats first so that the instruction pattern matches
@@ -13493,7 +13486,7 @@ rs6000_emit_epilogue (sibcall)
   if (info->world_save_p)
     {
       int i, j;
-      char rname[30];
+      char rname[30], *rnamep;
       const char *alloc_rname;
       rtvec p;
 
@@ -13535,8 +13528,8 @@ rs6000_emit_epilogue (sibcall)
 		       + LAST_ALTIVEC_REGNO + 1 - info->first_altivec_reg_save
 		       + 63 + 1 - info->first_fp_reg_save);
 
-      strcpy(rname, (current_function_calls_eh_return) ?
-			"*eh_rest_world_r10" : "*rest_world");
+      strcpy (rname, (current_function_calls_eh_return)
+	      ? "*eh_rest_world_r10" : "*rest_world");
       alloc_rname = ggc_strdup (rname);
 
       j = 0;
@@ -16001,9 +15994,28 @@ symbolic_operand (op)
 }
 #endif
 
+#define GEN_LOCAL_LABEL_FOR_SYMBOL(BUF,SYMBOL,LENGTH,N)		\
+  do {								\
+    const char *const symbol_ = (SYMBOL);			\
+    char *buffer_ = (BUF);					\
+    if (symbol_[0] == '"')					\
+      {								\
+        sprintf(buffer_, "\"L%d$%s", (N), symbol_+1);		\
+      }								\
+    else if (name_needs_quotes(symbol_))			\
+      {								\
+        sprintf(buffer_, "\"L%d$%s\"", (N), symbol_);		\
+      }								\
+    else							\
+      {								\
+        sprintf(buffer_, "L%d$%s", (N), symbol_);		\
+      }								\
+  } while (0)
+
 #ifdef RS6000_LONG_BRANCH
 
 static tree stub_list = 0;
+static int local_label_unique_number = 0;
 
 /* ADD_COMPILER_STUB adds the compiler generated stub for handling 
    procedure calls to the linked list.  */
@@ -16022,7 +16034,6 @@ add_compiler_stub (label_name, function_name, line_number)
 
 #define STUB_LABEL_NAME(STUB)     TREE_VALUE (STUB)
 #define STUB_FUNCTION_NAME(STUB)  TREE_PURPOSE (STUB)
-#define STUB_LINE_NUMBER(STUB)    TREE_INT_CST_LOW (TREE_TYPE (STUB))
 
 /* OUTPUT_COMPILER_STUB outputs the compiler generated stub for
    handling procedure calls from the linked list and initializes the
@@ -16033,33 +16044,86 @@ output_compiler_stub ()
 {
   tree stub;
   const char *name;
+  char *local_label_0;
+  const char *non_lazy_pointer_name, *unencoded_non_lazy_pointer_name;
+  int length;
 
-  if (!flag_pic)
-    for (stub = stub_list; stub; stub = TREE_CHAIN (stub))
-      {
-	fprintf (asm_out_file,
-		 "%s:\n", IDENTIFIER_POINTER(STUB_LABEL_NAME(stub)));
+  for (stub = stub_list; stub; stub = TREE_CHAIN (stub))
+    {
+      fprintf (asm_out_file,
+	       "%s:\n", IDENTIFIER_POINTER(STUB_LABEL_NAME(stub)));
 
-#if defined (DBX_DEBUGGING_INFO) || defined (XCOFF_DEBUGGING_INFO)
-	if (write_symbols == DBX_DEBUG || write_symbols == XCOFF_DEBUG)
-	  fprintf (asm_out_file, "\t.stabd 68,0,%d\n", STUB_LINE_NUMBER(stub));
-#endif /* DBX_DEBUGGING_INFO || XCOFF_DEBUGGING_INFO */
+      /* APPLE LOCAL begin structor thunks */
+      name = IDENTIFIER_POINTER (STUB_FUNCTION_NAME (stub));
 
-	/* APPLE LOCAL begin structor thunks */
-	name = IDENTIFIER_POINTER (STUB_FUNCTION_NAME (stub));
+      /* If PIC and the callee has no stub, do indirect call through a
+	 non-lazy-pointer.  'save_world' expects a parameter in R11;
+	 theh dyld_stub_binding_helper (part of the Mach-O stub
+	 interface) expects a different parameter in R11.  This is
+	 effectively a "non-lazy stub."  By-the-way, a
+	 "non-lazy-pointer" is a .long that gets coalesced with others
+	 of the same value, so one NLP suffices for an entire
+	 application.  */
+      if (flag_pic && (machopic_classify_ident (get_identifier (name)) == MACHOPIC_UNDEFINED))
+	{
+	  /* This is the address of the non-lazy pointer; load from it
+	     to get the address we want.  */
+	  non_lazy_pointer_name = machopic_non_lazy_ptr_name (name);
+	  machopic_validate_stub_or_non_lazy_ptr (non_lazy_pointer_name,
+						  /* non-lazy-pointer */0);
+	  unencoded_non_lazy_pointer_name =
+	    (*targetm.strip_name_encoding) (non_lazy_pointer_name);
+	  length = strlen (name);
+	  local_label_0 = alloca (length + 32);
+	  GEN_LOCAL_LABEL_FOR_SYMBOL (local_label_0, name, length,
+				      local_label_unique_number);
+	  local_label_unique_number++;
+	  fprintf (asm_out_file, "\tmflr r0\n");
+	  fprintf (asm_out_file, "\tbcl 20,31,%s\n", local_label_0);
+	  fprintf (asm_out_file, "%s:\n", local_label_0);
+	  fprintf (asm_out_file, "\tmflr r12\n");
+	  fprintf (asm_out_file, "\taddis r12,r12,ha16(");
+	  assemble_name (asm_out_file, non_lazy_pointer_name);
+	  fprintf (asm_out_file, "-%s)\n", local_label_0);
+	  fprintf (asm_out_file, "\tlwz r12,lo16(");
+	  assemble_name (asm_out_file, non_lazy_pointer_name);
+	  fprintf (asm_out_file, "-%s)(r12)\n", local_label_0);
+	  fprintf (asm_out_file, "\tmtlr r0\n");
+	  fprintf (asm_out_file, "\tmtctr r12\n");
+	  fprintf (asm_out_file, "\tbctr\n");
+	}
+      else if (flag_pic)	/* Far call to a stub.  */
+	{
+	  fputs ("\tmflr r0\n", asm_out_file);
+	  fprintf (asm_out_file, "\tbcl 20,31,%s_pic\n",
+	       IDENTIFIER_POINTER(STUB_LABEL_NAME(stub)));
+	  fprintf (asm_out_file, "%s_pic:\n",
+		   IDENTIFIER_POINTER(STUB_LABEL_NAME(stub)));
+	  fputs ("\tmflr r12\n", asm_out_file);
 
-	fputs ("\tlis r12,hi16(", asm_out_file);
-	ASM_OUTPUT_LABELREF (asm_out_file, name);
-	fputs (")\n\tori r12,r12,lo16(", asm_out_file);
-	ASM_OUTPUT_LABELREF (asm_out_file, name);
-	fputs (")\n\tmtctr r12\n\tbctr\n", asm_out_file);
-	/* APPLE LOCAL end structor thunks */
+	  fputs ("\taddis r12,r12,ha16(", asm_out_file);
+	  ASM_OUTPUT_LABELREF (asm_out_file, name);
+	  fprintf (asm_out_file, " - %s_pic)\n", IDENTIFIER_POINTER(STUB_LABEL_NAME(stub)));
+		   
+	  fputs ("\tmtlr r0\n", asm_out_file);
 
-#if defined (DBX_DEBUGGING_INFO) || defined (XCOFF_DEBUGGING_INFO)
-	if (write_symbols == DBX_DEBUG || write_symbols == XCOFF_DEBUG)
-	  fprintf(asm_out_file, "\t.stabd 68,0,%d\n", STUB_LINE_NUMBER (stub));
-#endif /* DBX_DEBUGGING_INFO || XCOFF_DEBUGGING_INFO */
-      }
+	  fputs ("\taddi r12,r12,lo16(", asm_out_file);
+	  ASM_OUTPUT_LABELREF (asm_out_file, name);
+	  fprintf (asm_out_file, " - %s_pic)\n", IDENTIFIER_POINTER(STUB_LABEL_NAME(stub)));
+
+	  fputs ("\tmtctr r12\n", asm_out_file);
+	  fputs ("\tbctr\n", asm_out_file);
+	}
+      else
+	{
+	  fputs ("\tlis r12,hi16(", asm_out_file);
+	  ASM_OUTPUT_LABELREF (asm_out_file, name);
+	  fputs (")\n\tori r12,r12,lo16(", asm_out_file);
+	  ASM_OUTPUT_LABELREF (asm_out_file, name);
+	  fputs (")\n\tmtctr r12\n\tbctr\n", asm_out_file);
+	}
+      /* APPLE LOCAL end structor thunks */
+    }
 
   stub_list = 0;
 }
@@ -16098,17 +16162,70 @@ get_prev_label (function_name)
    CALL_DEST is the routine we are calling.  */
 
 char *
-output_call (insn, call_dest, operand_number)
+output_call (insn, call_dest, operand_number, suffix)
      rtx insn;
      rtx call_dest;
      int operand_number;
+     char *suffix;
 {
   static char buf[256];
-  if (GET_CODE (call_dest) == SYMBOL_REF && TARGET_LONG_BRANCH && !flag_pic)
+  const char *far_call_instr_str=NULL, *near_call_instr_str=NULL;
+  rtx pattern;
+
+  switch (GET_CODE (insn))
+    {
+    case CALL_INSN:
+      far_call_instr_str = "jbsr";
+      near_call_instr_str = "bl";
+      pattern = NULL_RTX;
+      break;
+    case JUMP_INSN:
+      far_call_instr_str = "jmp";
+      near_call_instr_str = "b";
+      pattern = NULL_RTX;
+      break;
+    case INSN:
+      pattern = PATTERN (insn);
+      break;
+    default:
+      abort();
+      break;
+    }
+
+  if (GET_CODE (call_dest) == SYMBOL_REF && TARGET_LONG_BRANCH)
     {
       tree labelname;
       tree funname = get_identifier (XSTR (call_dest, 0));
       
+      {
+	static int warned = 0;
+	if (flag_reorder_blocks_and_partition && !warned)
+	  {
+	    error ("-mlongcall and -freorder-blocks-and-partition not supported simultaneously");
+	    warned = 1;
+	  }
+      }
+	  
+      /* This insn represents a prologue or epilogue.  */
+      if ((pattern != NULL_RTX) && GET_CODE (pattern) == PARALLEL)
+	{
+	  rtx parallel_first_op = XVECEXP (pattern, 0, 0);
+	  switch (GET_CODE (parallel_first_op))
+	    {
+	    case CLOBBER:	/* Prologue: a call to save_world.  */
+	      far_call_instr_str = "jbsr";
+	      near_call_instr_str = "bl";
+	      break;
+	    case RETURN:	/* Epilogue: a call to rest_world.  */
+	      far_call_instr_str = "jmp";
+	      near_call_instr_str = "b";
+	      break;
+	    default:
+	      abort();
+	      break;
+	    }
+	}
+
       if (no_previous_def (funname))
 	{
 	  int line_number = 0;
@@ -16126,37 +16243,16 @@ output_call (insn, call_dest, operand_number)
       else
 	labelname = get_prev_label (funname);
 
-      sprintf (buf, "jbsr %%z%d,%.246s",
+      sprintf (buf, "%s %%z%d,%.246s", far_call_instr_str,
 	       operand_number, IDENTIFIER_POINTER (labelname));
-      return buf;
     }
   else
-    {
-      sprintf (buf, "bl %%z%d", operand_number);
-      return buf;
-    }
+    sprintf (buf, "%s %%z%d", near_call_instr_str, operand_number);
+  strcat (buf, suffix);
+  return buf;
 }
 
 #endif /* RS6000_LONG_BRANCH */
-
-#define GEN_LOCAL_LABEL_FOR_SYMBOL(BUF,SYMBOL,LENGTH,N)		\
-  do {								\
-    const char *const symbol_ = (SYMBOL);			\
-    char *buffer_ = (BUF);					\
-    if (symbol_[0] == '"')					\
-      {								\
-        sprintf(buffer_, "\"L%d$%s", (N), symbol_+1);		\
-      }								\
-    else if (name_needs_quotes(symbol_))			\
-      {								\
-        sprintf(buffer_, "\"L%d$%s\"", (N), symbol_);		\
-      }								\
-    else							\
-      {								\
-        sprintf(buffer_, "L%d$%s", (N), symbol_);		\
-      }								\
-  } while (0)
-
 
 /* Generate PIC and indirect symbol stubs.  */
 
@@ -16183,7 +16279,9 @@ machopic_output_stub (file, symb, stub)
   GEN_LAZY_PTR_NAME_FOR_SYMBOL (lazy_ptr_name, symb, length);
 
   local_label_0 = alloca (length + 32);
-  GEN_LOCAL_LABEL_FOR_SYMBOL (local_label_0, symb, length, 0);
+  GEN_LOCAL_LABEL_FOR_SYMBOL (local_label_0, symb, length,
+			      local_label_unique_number);
+  local_label_unique_number++;
 
   if (flag_pic == 2)
     machopic_picsymbol_stub1_section ();

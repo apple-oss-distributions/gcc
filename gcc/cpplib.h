@@ -267,6 +267,7 @@ struct cpp_options
   /* APPLE LOCAL begin read-from-stdin */
   /* function name that should be used in issung diagnostics when input is read from stdin */
   const char *stdin_diag_filename;
+  int predictive_compilation_size;
   /* APPLE LOCAL end read-from-stdin */
 
   /* The language we're preprocessing.  */
@@ -879,7 +880,7 @@ extern int cpp_read_state PARAMS ((cpp_reader *, const char *, FILE *,
 				   struct save_macro_data *));
 /* APPLE LOCAL begin read-from-stdin */
 extern bool read_from_stdin PARAMS ((cpp_reader *));
-extern void set_stdin_option PARAMS ((cpp_reader *, const char*));
+extern void set_stdin_option PARAMS ((cpp_reader *, const char*, int));
 /* APPLE LOCAL end read-from-stdin */
 
 /* In cppmain.c */

@@ -364,14 +364,17 @@ extern int target_flags;
   /* APPLE LOCAL AltiVec */\
   {"vrsave",		- MASK_NO_VRSAVE, ""},				\
   {"no-vrsave",		MASK_NO_VRSAVE, ""},				\
-  /* APPLE LOCAL dynamic-no-pic  */\
+  /* APPLE LOCAL dynamic-no-pic  */					\
   {"dynamic-no-pic",	MASK_MACHO_DYNAMIC_NO_PIC,			\
 	N_("Generate code suitable for executables (NOT shared libs)")},\
   {"no-dynamic-no-pic",	-MASK_MACHO_DYNAMIC_NO_PIC, ""},		\
-  /* APPLE LOCAL long-branch  */						\
+  /* APPLE LOCAL long-branch  */					\
   {"long-branch",	MASK_LONG_BRANCH,				\
 	N_("Generate 32-bit call addresses (range > 64M)")},		\
   {"no-long-branch",	-MASK_LONG_BRANCH, ""},				\
+  {"longcall",	MASK_LONG_BRANCH,					\
+	N_("Generate 32-bit call addresses (range > 64M)")},		\
+  {"no-longcall",	-MASK_LONG_BRANCH, ""},				\
   SUBTARGET_SWITCHES							\
   {"",			TARGET_DEFAULT | MASK_SCHED_PROLOG,		\
 			""}}
@@ -1098,8 +1101,7 @@ extern int rs6000_default_long_calls;
       = call_really_used_regs[RS6000_PIC_OFFSET_TABLE_REGNUM] = 1;	\
   if (DEFAULT_ABI == ABI_DARWIN						\
       && PIC_OFFSET_TABLE_REGNUM != INVALID_REGNUM)			\
-    global_regs[RS6000_PIC_OFFSET_TABLE_REGNUM]				\
-      = fixed_regs[RS6000_PIC_OFFSET_TABLE_REGNUM]			\
+      fixed_regs[RS6000_PIC_OFFSET_TABLE_REGNUM]			\
       = call_used_regs[RS6000_PIC_OFFSET_TABLE_REGNUM]			\
       = call_really_used_regs[RS6000_PIC_OFFSET_TABLE_REGNUM] = 1;	\
   if (TARGET_ALTIVEC)                                                   \

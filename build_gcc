@@ -1187,7 +1187,7 @@ build_libgcc()
 	    libname=libcc_kext.a
     	    extra_args="-static $extra_args"
     	    if [ "$target" = "ppc" ]; then
-    	    	extra_args="$extra_args -mlong-branch"
+    	    	extra_args="$extra_args -mlongcall"
     	    fi
     	    ;;
     	static)

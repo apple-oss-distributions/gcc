@@ -319,6 +319,24 @@ supported in GCC 3.3; use the new form instead.</p>
   library.  It is not recommended for deployment builds, because it
   introduces substantial overhead.</p>
 
+<h3>Wide character support</h3>
+<p>Mac OS X 10.3 adds support for the <tt>wchar_t</tt> data type and
+  for the library functions that manipulate wide strings, as required
+  by the ISO C99 standard.  On Mac OS X 10.3, GCC 3.3 adds support
+  for wide character manipulation in C++.  For
+  example, <tt>std::wstring</tt> is now enabled.</p>
+
+<p>Note that wide character support is unavailable on previous
+  releases of Mac OS X.  Programs that are intended to be run on
+  previous versions of Mac OS X should avoid <tt>wchar_t</tt> and
+  <tt>wstring</tt>.
+</p>
+
+<p>Wide character support is provided for compliance with the ISO C
+  and C++ standards, and for ease of porting applications from
+  other operating systems.  New Mac OS X applications should instead
+  use Apple's Unicode APIs, such as CFString and NSString.</p>
+
 <h3>ObjC/ObjC++ exception and synchronization support</h3>
 <p>
 The Objective-C language now offers syntactic support for structured
@@ -592,15 +610,11 @@ Here are some interesting optimizations that aren't included by -O2 or
 Optimizes code for Altivec.  Code built with this flag might not run
 on G3 processors.
 </p>
-<p>
-<b>-mtune=7400 -mtune=7450 -mtune=750 -mtune=970</b><br>
-or alternatively:<br>
-<b>-mtune=G3 -mtune=G4  -mtune=G5</b><br>
-Optimizes for speed on the indicated chip (750 is G3, 7400 is G4, 7450
-is G4+, 970 is G5). The default is close to 7400, but produces
-slightly smaller and slower code.  Code built with these flags will
-still run on any processor; if you only want code that runs on one
-processor, you may use <tt>-mcpu=7400</tt> and similar.
+<p><b>-mtune=G3 -mtune=G4 -mtune=G5</b><br> Optimizes for speed on the
+indicated chip. The default is close to G4, but produces slightly
+smaller and slower code.  Code built with these flags will still run
+on any processor; if you only want code that runs on one processor,
+you may use <tt>-mcpu=G4</tt> and similar.
 </p>
 <p>
 When <b>-mtune=G5</b> is used in conjunction with <b>-O3</b>, the following alignment flags should also be enabled for optimum performance:
@@ -676,7 +690,7 @@ grouped under the following categories.
 <li><p><code>-fast</code> enables the <tt>-ffast-math</tt> option, which
 allows certain unsafe math operations for performance gains.</p></li>
 
-   
+ 
 <li><p>Strict aliasing rules.
    <code>-fast</code> allows the compiler to assume the strictest
    aliasing rules applicable to the language being compiled.
@@ -693,15 +707,15 @@ allows certain unsafe math operations for performance gains.</p></li>
    -fgcse-mem-alias 
 </pre>
 
-<p>Warning: the behavior of correct programs will not be affected by
-  strict aliasing, but programs that make use of nonportable type
+<p>Warning: the behavior of standard-conforming programs will not be affected by
+  strict aliasing, but programs that make use of nonstandard type
   conversions may behave in unexpected ways.</p>
 </li>
 
 <li><p><code>-fast</code> enables various performance-related code
 transformations. These include loop unrolling, transposing nested
 loops to improve locality of array element access, conversion of
-certain initiliazation loops to <tt>memset</tt> calls, and inline
+certain initialization loops to <tt>memset</tt> calls, and inline
 expansion of calls to library functions such as <tt>floor</tt>. 
 <tt>-fast</tt> enables the following code transformation options:
 </p>
@@ -770,8 +784,23 @@ expansion of calls to library functions such as <tt>floor</tt>.
   different set of optimization options.  The intention behind this
   option is that <code>-fast</code> will enable optimizations that
   result in the fastest code for most applications.</li>
+<li>The <code>-malign-natural</code> option incorporated in <code>-fast</code>
+   results in non-ABI-conforming code, 
+   which can cause problems when mixing code compiled with and without 
+   <code>-fast</code>.
+   In particular, some of the functions in the C++ I/O libraries
+   do not currently work properly on
+   MacOSX 10.3 when linked with code compiled <code>-fast</code>.  Use 
+   <code>-fastf</code> (below) for C++ on MacOSX 10.3.</li>
 </ul>
   
+<H2>Optimization using the new <code>-fastf</code> flag</H2>
+<p><code>-fastf</code> is just like <code>-fast</code> (above), except that it
+   does not set <code>-malign-natural</code>.  This is useful for cases
+   where the ABI incompatibilities introduced by <code>-malign-natural</code>
+   cause problems.  In particular, C++ on MacOSX 10.3 should use
+   <code>-fastf</code> rather than <code>-fast</code>.
+</p>
 
 <H2>How to build the compiler from source</H2>
 

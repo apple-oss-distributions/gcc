@@ -1,6 +1,4 @@
-# APPLE LOCAL file Objective-C++
-# GCC Objective-C++ testsuite that uses the `dg.exp' driver.
-#   Copyright (C) 2002 Free Software Foundation, Inc.
+#   Copyright (C) 1997 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,23 +14,24 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
 
+# GCC testsuite that uses the `dg.exp' driver.
+
 # Load support procs.
-load_lib obj-c++-dg.exp
+load_lib gcc-dg.exp
 
 # If a testcase doesn't have special options, use these.
-global DEFAULT_CXXFLAGS
-if ![info exists DEFAULT_CXXFLAGS] then {
-    set DEFAULT_CXXFLAGS ""
+global DEFAULT_CFLAGS
+if ![info exists DEFAULT_CFLAGS] then {
+    set DEFAULT_CFLAGS " -ansi -pedantic-errors -Wno-long-double -fast"
+
 }
 
 # Initialize `dg'.
 dg-init
 
-# Gather a list of all tests.
-set all [lsort [find $srcdir/g++.dg *.C]]
-
 # Main loop.
-dg-runtest $all	"" "$DEFAULT_CXXFLAGS"
+dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/*.\[cS\]]] \
+	"" $DEFAULT_CFLAGS
 
 # All done.
 dg-finish

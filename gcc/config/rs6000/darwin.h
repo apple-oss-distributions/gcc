@@ -146,13 +146,15 @@ Boston, MA 02111-1307, USA.  */
 /* Define cutoff for using external functions to save floating point.
    For Darwin, use the function for more than a few registers.  */
 
-#define FP_SAVE_INLINE(FIRST_REG) ((FIRST_REG) > 60 && (FIRST_REG) < 64)
+/* APPLE LOCAL long-branch */
+#define FP_SAVE_INLINE(FIRST_REG) (((FIRST_REG) > 60 && (FIRST_REG) < 64) || TARGET_LONG_BRANCH)
 
 /* APPLE LOCAL begin AltiVec */
 /* Define cutoff for using external functions to save vector registers.  */
 
+/* APPLE LOCAL long-branch */
 #define VECTOR_SAVE_INLINE(FIRST_REG) \
-  ((FIRST_REG) >= LAST_ALTIVEC_REGNO - 1 && (FIRST_REG) <= LAST_ALTIVEC_REGNO)
+  (((FIRST_REG) >= LAST_ALTIVEC_REGNO - 1 && (FIRST_REG) <= LAST_ALTIVEC_REGNO) || TARGET_LONG_BRANCH)
 
 /* vector pixel and vector bool are aliases of other vector types.  */
 

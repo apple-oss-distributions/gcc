@@ -2111,11 +2111,13 @@ cpp_get_options (pfile)
 }
 
 /* APPLE LOCAL begin read-from-stdin */
-void set_stdin_option(pfile, arg)
+void set_stdin_option(pfile, arg, predict_comp)
 cpp_reader *pfile;
 const char* arg;
+int predict_comp;
 {
   CPP_OPTION (pfile, stdin_diag_filename) =  arg;
+  CPP_OPTION (pfile, predictive_compilation_size) =  predict_comp;
 }
 /* APPLE LOCAL end read-from-stdin */
 

@@ -629,10 +629,13 @@ c_common_decode_option (argc, argv)
       return 1;
     }
   /* APPLE LOCAL begin read-from-stdin */
-  else if (!strcmp(opt, "-stdin") && in_fname)
+  else if ((predictive_compilation >= 0 || !strcmp(opt, "-stdin"))
+	   && in_fname && !stdin_filename)
   {
     stdin_filename = xstrdup (in_fname);
     in_fname = "-";
+    if (!strcmp(opt, "-stdin"))
+      predictive_compilation = 0;
     return 1;
   }
   /* APPLE LOCAL end read-from-stdin */
@@ -1608,7 +1611,7 @@ c_common_post_options ()
     in_fname = "";
     /* APPLE LOCAL begin read-from-stdin */
     if (stdin_filename != NULL)
-	set_stdin_option(parse_in, stdin_filename);
+	set_stdin_option(parse_in, stdin_filename, predictive_compilation);
     /* APPLE LOCAL end read-from-stdin */
   }
 
