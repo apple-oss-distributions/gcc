@@ -12,11 +12,8 @@
 #undef STANDARD_INCLUDE_DIR
 #define STANDARD_INCLUDE_DIR "/include"
 
-
-/* We have atexit.  */
-#define HAVE_ATEXIT
-
 /* Implicit library calls should use memcpy, not bcopy, etc.  */
+#undef TARGET_MEM_FUNCTIONS
 #define TARGET_MEM_FUNCTIONS
 
 /* The system headers under GNU are C++-aware.  */

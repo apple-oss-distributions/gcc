@@ -807,7 +807,7 @@ Tue Mar  5 02:27:35 1996  Jeffrey A. Law  <law@cygnus.com
 	(hppa_expand_prologue): If optimizing for space, emit an out of
 	line prologue.
 	(hppa_expand_epilogue): Similarly.
-	(override_options): Optimizing for space is not compatable with
+	(override_options): Optimizing for space is not compatible with
 	either profiling or PIC code generation.
 	* pa.md (outline_prologue_call): New pattern.
 	(outline_epilogue_call): Likewise.
@@ -3880,7 +3880,7 @@ Wed Dec  6 06:58:23 1995  Richard Earnshaw (rearnsha@armltd.co.uk)
 	using prog_mode attribute.
 	(function units "write_buf", "write_blockage"): Model the write buffer
 	as two function units, so that conflicts are avoided more often.
-	(funcion unit "core"): New function unit, so that elapsed cycles can
+	(function unit "core"): New function unit, so that elapsed cycles can
 	be more accurately determined.
 	(all anonymous patterns): Add names.
 	(mulsidi3, umulsidi3): New patterns available with fast multiply
@@ -4184,7 +4184,7 @@ Thu Nov 30 12:27:22 1995  Michael Meissner  <meissner@tiktok.cygnus.com>
 	(ASM_SPEC): Pass appropriate -mxxx switches to the assembler based
 	on the -mcpu=xxx options.
 	(ASM_OUTPUT_INT): Move here from eabi.h.
-	(ENCODE_SECTION_INFO): If -mcall-{nt,aixdesc} add approriate magic
+	(ENCODE_SECTION_INFO): If -mcall-{nt,aixdesc} add appropriate magic
 	so function name has two or one leading periods.
 	(ASM_OUTPUT_SOURCE_LINE): Delete, use version in svr4.h.
 	(trampoline macros): Call trampoline functions in rs6000.c.
@@ -4259,7 +4259,7 @@ Wed Nov 29 14:06:13 1995  Jim Wilson  <wilson@cygnus.com>
 
 Wed Nov 29 13:59:58 1995  J"orn Rennecke (amylaar@meolyon.hanse.de)
 
-	* c-decl.c (duplicate_decls): Add new paramter different_binding_level.
+	* c-decl.c (duplicate_decls): Add new parameter different_binding_level.
 	Lots of changes to use new new parameter.
 	(pushdecl): Delete variable declared_global.  New variable
 	different_binding_level and code to set it.  Move extern/static
@@ -5704,7 +5704,7 @@ Sun Aug 13 14:50:58 1995  Jim Wilson  <wilson@chestnut.cygnus.com>
 	* Makefile.in (gfloat.h): Add a - before the rm command.
 
 	* loop.c (find_and_verify_loops): Set dest_loop only if
-	JUMP_LABEL (insn) is non-zero.
+	JUMP_LABEL (insn) is nonzero.
 
 Mon Jul 31 14:31:53 1995  Ian Lance Taylor  <ian@cygnus.com>
 
@@ -5807,7 +5807,7 @@ Fri Jul 28 08:47:51 1995  Jim Wilson  <wilson@chestnut.cygnus.com>
 	(xcoffout_begin_function): Call dbxout_parms and
 	ASM_OUTPUT_SOURCE_LINE.
 
-	* va-mips.h: Change every occurance of #if __mips>=3 to
+	* va-mips.h: Change every occurrence of #if __mips>=3 to
 	#ifdef __mips64.
 	* mips/abi64.h (CPP_SPEC): Output -D__mips64 when -mips3, or -mips4,
 	or -mgp64.  Output -U__mips64 when -mgp32.
@@ -6057,7 +6057,7 @@ Mon Jul 17 06:41:19 1995  Richard Kenner  (kenner@vlsi1.ultra.nyu.edu)
 
 	* xm-alpha.h (sbrk): Add declaration.
 
-	* convert.c (convert_to_integer): If TYPE is a enumeral type or
+	* convert.c (convert_to_integer): If TYPE is an enumeral type or
 	if its precision is not the same as the size of its mode,
 	convert in two steps.
 
@@ -7968,7 +7968,7 @@ Tue May  9 18:25:34 1995  Richard Kenner  <kenner@vlsi1.ultra.nyu.edu>
 
 Tue May  9 15:52:05 1995  Michael Meissner  <meissner@cygnus.com>
 
-	* config.sub: Recognize powerpcle as the little endian varient of
+	* config.sub: Recognize powerpcle as the little endian variant of
 	the PowerPC.  Recgonize ppc as a PowerPC variant, and ppcle as a
 	powerpcle variant.  Convert pentium into i586, not i486.  Add p5
 	alias for i586.  Map new x86 variants p6, k5, nexgen into i586
@@ -8538,7 +8538,7 @@ Tue Apr 25 18:52:43 1995  Stephen R. van den Berg  (berg@pool.informatik.rwth-aa
 	(mark_regs_pat, straighten_stack): New functions.
 	(reg_to_stack): Amend initialisation of FP_mode_reg.
 	Mark FP registers mentioned in USE insns before NOTE_INSN_FUNCTION_BEG.
-	(get_true_reg): Eliminate FP subreg accesses in favour of the
+	(get_true_reg): Eliminate FP subreg accesses in favor of the
 	actual FP register in use.
 	(record_reg_life_pat): Make it work on SUBREGs as well.  Make use of
 	the new mark_regs_pat function.  Handle USE insns if called unnested.
@@ -8552,7 +8552,7 @@ Tue Apr 25 18:52:43 1995  Stephen R. van den Berg  (berg@pool.informatik.rwth-aa
 	Delete the no_live_regs shortcut to save space.
 	Use stackentry state to determine filled registers.
 	(replace_reg): Accept COMPLEX_FLOAT as well.
-	(move_for_stack_reg): Optimise away some pointer dereferencing.
+	(move_for_stack_reg): Optimize away some pointer dereferencing.
 	(subst_stack_regs): Make sure the stack is in the right order
 	and of the right size for register passing.
 	(goto_block_pat): Make sure the stack is in the right order
@@ -8841,7 +8841,7 @@ Sat Apr 15 13:26:34 1995  Richard Kenner  (kenner@vlsi1.ultra.nyu.edu)
 Sat Apr 15 12:11:46 1995  Brendan Kehoe  <brendan@cygnus.com>
 
 	* alpha/alpha.c (output_epilog): Initialize fp_offset to 0, and
-	make sure it's non-zero before we try to use it to restore the
+	make sure it's nonzero before we try to use it to restore the
 	frame pointer.
 
 Fri Apr 14 19:45:05 1995  Jason Merrill  <jason@phydeaux.cygnus.com>
@@ -9913,7 +9913,7 @@ Fri Mar 10 05:50:11 1995  Oliver Kellogg  (Oliver.Kellogg@RST13.DASA.DBMAIL.d400
 
 	* 1750a.c (sectname): Reverse Init and Normal.
 	(print_operand_address, case PLUS): Add case for LABEL_REF.
-	(print_operand_address, case LABEL_REF): Split fom SYMBOL_REF.
+	(print_operand_address, case LABEL_REF): Split from SYMBOL_REF.
 	(print_operand_address, case CODE_LABEL): New case.
 	(ASM_FILE_END): Delete.
 	* 1750a.h (FUNCTION_EPILOGUE): Restore stack before freeing local vars.

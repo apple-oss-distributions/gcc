@@ -1,0 +1,438 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<!-- APPLE LOCAL file: release notes --> 
+<HTML>
+<HEAD><TITLE>GCC 3.3 Release Notes</TITLE>
+</HEAD>
+<body bgcolor="#FFFFFF">
+
+   <table border=0 cellspacing=0 width=600 valign=left>
+   <tr>
+   <td>
+   <p><font size="-2" face="Geneva,Helvetica,Arial">
+   <b>PATH<spacer type=horizontal size=5>&nbsp;</b></font><a href="../../../index.html" target="_top"><font size="-2" face="Geneva,Helvetica,Arial">Documentation</font></a>
+   <font size="-2" face="Geneva,Helvetica,Arial"> <b>&gt;
+   </b> Release Notes</font></p>
+   </td>
+   </tr>
+   </table>
+   <br>
+   <!-- end of path --><a href="index.html"><img src="Images/up.gif" alt="Table of Contents" align=bottom></a>
+
+
+<h1>Mac OS X 10.3 Developer Tools Release Notes:<br>GCC 3.3</h1>
+
+<p>
+These notes describe GCC 3.3, which is based on version 3.3 of the
+Free Software  Foundation's GCC compiler suite. GCC 3.3 will be the
+default compiler on Mac OS X for C, C++, Objective-C, and
+Objective-C++ source code after this package is installed.  GCC 3.1,
+which was the default compiler in the Mac OS X 10.2 Development Tools,
+continues to be provided for backward compatibility.  GCC 2.95 is also
+still provided for backwards compatibility.
+</p>
+
+<p>These release notes are not comprehensive.  For a
+complete list of compiler changes, please also consult the <a
+href="Compiler.html">release notes for the compiler in the Mac OS X
+Developer Tools 10.1 release.</a></p>
+
+<H2>Switching to GCC 3.3</H2>
+
+<p>
+The Development Tools package provides three compilers: GCC 2, based
+on version 2.95 of the Free Software  Foundation's GCC compiler suite,
+GCC 3 (also called GCC 3.1), based on version 3.1 of the Free Software
+Foundation's GCC compiler suite, and GCC 3.3, which is based on
+version 3.3 of the Free Software  Foundation's GCC compiler suite.
+</p>
+<p>
+Here are some important things to keep in mind before you switch from
+GCC 2 or GCC 3.1 to GCC 3.3:
+</p>
+<UL>
+<li> Recompile all your C++ code, including libraries and
+frameworks. GCC 3 has a new application binary interface (ABI) for
+C++, including changes to name mangling, exception handling, and class
+layout and alignment. You do not need to recompile C or Objective-C
+code.                         
+<li> Do not ignore warnings. GCC 3.3 enforces the C and C++ standards
+much more strictly. New warnings may point out errors that GCC 2 or
+GCC 3.1 overlooked.                         
+<li>Test your code. Even if the compiler doesn't raise any errors or
+warnings, your code may rely on idiosyncrasies in GCC 2 or GCC 3.1
+that GCC 3.3 handles differently.</li> 
+<li> If you're creating kernel extensions that must run on Mac OS X
+10.1 and earlier, you must use GCC 2. If the extensions will run only
+on Mac OS X 10.2 and later, you should use GCC 3.1 or GCC 3.3.</li> 
+<li> The C++ ABI changed between GCC 2 and GCC 3.1, and again between
+GCC 3.1 and GCC 3.1.  <i>Do not link C++ modules compiled with one of
+these compilers against modules compiled with any of the other two
+compilers.</i>  The changes between GCC 3.1 and GCC 3.3 were small,
+but, even if the modules appear to link correctly, C++ ABI differences
+may cause problems in exception handling that will not manifest
+themselves until run time.  (Note that this warning does not apply to
+kernel extensions, but to ordinary non-kernel C++.  The restrictions
+for kernel extensions are different, and are given above.)</li>
+</UL>
+
+<H3>Switching between compilers</H3>
+
+<p>
+All three compilers may coexist on the same system. GCC 3.3 is always
+available as /usr/bin/gcc-3.3, GCC 3.1 is always available as
+/usr/bin/gcc-3.1 and /usr/bin/gcc3, and GCC 2 is always available as
+/usr/bin/gcc2. In addition, there are symbolic links at /usr/bin/cc
+and /usr/bin/gcc that point to the selected compiler. By default, the
+selected compiler is GCC 3.3.</p>
+
+<p>
+However, if you have a lot of make files and shell scripts that refer
+to /usr/bin/cc or /usr/bin/gcc, changing all those references to your
+compiler of choice may be impractical. In that case, use the
+gcc_select command to change the selected compiler.
+</p>
+<p>
+To use GCC 2 as the selected compiler:
+</p>
+<UL>
+<li>Open the Terminal, and enter sudo /usr/sbin/gcc_select 2.  If
+you're asked, enter your password.</li>
+<li> This command line logs in as root, makes the neccesary changes,
+and leaves you logged in under your original account. When it's done,
+/usr/bin/cc and /usr/bin/gcc use GCC 2. </li>
+</UL>
+<p>
+To use GCC 3.1 as the selected compiler:
+</p>
+<UL>
+<li>Open the Terminal, and enter <tt>sudo /usr/sbin/gcc_select
+3.1</tt> or <tt>sudo /usr/sbin/gcc_select 3</tt>.  If you're asked,
+enter your password.</li>
+<li> This command line logs in as root, makes the neccesary changes,
+and leaves you logged in under your original account. When it's done,
+/usr/bin/cc and /usr/bin/gcc use GCC 3.1. </li>
+</UL>
+<p>
+To use GCC 3.3 as the selected compiler:
+</p>
+<UL>
+<li>Open the Terminal, and enter <tt>sudo /usr/sbin/gcc_select
+3.3</tt>.  If you're asked, enter your password.</li>
+<li> This command line logs in as root, makes the neccesary changes,
+and leaves you logged in under your original account. When it's done,
+/usr/bin/cc and /usr/bin/gcc use GCC 3.3. </li>
+</UL>
+<p>
+To see which compiler version you are using, enter <tt>gcc
+-v</tt>. For more help on gcc_select, enter <tt>/usr/sbin/gcc_select
+-h.</tt></p> 
+<p>
+To switch between compiler versions in Project Builder: <font color="red">to be
+written</font></p>
+
+<H2>Documentation</H2>
+
+<p>
+Documentation for the 3.3 compiler is available in <a
+href="file:///Developer/Documentation/DeveloperTools/gcc-3.3/gcc/index.html">/Developer/Documentation/DeveloperTools/gcc-3.3</a>.  Documentation for the 3.1 compiler is available in <a
+href="file:///Developer/Documentation/DeveloperTools/gcc-3.1/gcc/index.html">/Developer/Documentation/DeveloperTools/gcc-3.1</a>.</p>
+
+<H2>Compiler option compatibility issues</H2>
+
+<font color="red">
+<p>All of this is just a sketch of what we need to say.  It needs to
+be filled in.</p>
+<UL>
+<li>-traditional-cpp has changed.
+<li>-nostdinc is enforced more strictly by GCC 3.3
+<li> The Apple build number is now output with the --version option, -->
+                                --and the format of the -v output has -->
+                                --changed.  The --version output is
+                                intended to be machine-parseable.
+<li> The compiler now checks that an option is valid for the current
+language, and warns if an invalid option is passed.  For instance,
+-frtti is no longer silently accepted by the C and objective-C
+compilers.
+<li> Changes in warnings, and switches that control warnings.
+<li> <i>What else?</i>
+</UL>
+</font>
+<H2>Source code compatibility issues</H2>
+
+<p>Some source code will need to be changed when moving to GCC 3.3 because
+the new compiler adheres more closely to the rules of the relevant
+language standards.  Here are some specific areas where you may notice
+a difference:</p>
+
+<UL>
+<li> C++: in-class initialization of things that aren't integer
+constant expressions
+<li> C++: address of cast
+<li> C++: phase 2 name lookup of members of a base class template
+<li> C99: floating-point hex constants
+<li> GCC inserts new #pragma GCC set_debug_pwd as part of new
+Distributed Builds feature. This may surprise tools and scripts that
+depend on the exact form of preprocessed output from GCC.
+<li> GCC 3.3 warns about nested comments with -Wall turned on
+<li> GCC 3.3 does not support token pasting to create new invalid
+tokens.
+<li> GCC 3.3 enforces #import and #include semantics strictly compared
+to cpp-precomp.
+<li> Because of the removal of cpp-precomp, the 3.3 compiler's
+preprocessor is stricter and more standards compliant (similar to the
+preprocessor used in 3.1 when -no-cpp-precomp or PFE was in use).
+<li> <font color="red"><i>What else?</i></font>
+</UL>
+
+<H2>Precompiled headers</H2>
+
+<p>Apple's 3.3 compilers support a new form of precompiled headers.
+The new form is used automatically by Project Builder if you specify a
+prefix header; if you're using some other build system, such as
+<tt>make</tt>, see <a
+href="file:///Developer/Documentation/DeveloperTools/gcc-3.3/gcc/Precompiled-Headers.html">/Developer/Documentation/DeveloperTools/gcc-3.3/gcc/Precompiled-Headers.html</a>.</p>
+
+<p>cpp-precomp is no longer supported in the 3.3 compilers; use
+precompiled headers instead. <font color="red">Do we need more detail
+here?</font></p>
+
+<p>GCC 3.1's form of precompiled headers, "PFE", is no longer
+supported in GCC 3.3; use the new form instead. <font color="red">Do
+we need to say something about how the PCH usage model differs from
+PFE, and how to adapt PFE makefiles?</font></p>
+
+</UL>
+<p>
+<H2>New language features</H2>
+
+<h3>ObjC/ObjC++ exception and synchronization support</h3>
+<p>
+The Objective-C language now offers syntactic support for structured
+exception handling that is similar to what is offered by C++ and
+Java.  To enable the new syntax, you must pass the '-fobjc-exceptions'
+options to the ObjC/ObjC++ compiler, and/or set the
+MACOSX_DEPLOYMENT_TARGET environment variable to "10.3".</p>
+<p>
+<PRE>
+   @try {
+       ...
+          @throw expr;
+       ...
+    }
+    @catch (AnObjCClass *exc) {
+       ...
+         @throw expr;
+       ...
+         @throw;
+       ...
+     }
+     @catch (AnotherClass *exc) {
+       ...
+      }
+     @catch (id allOthers) {
+       ...
+     }
+     @finally {
+       ...
+     }
+</PRE>
+<p>
+The @throw statement may appear anywhere in an Objective-C program;
+when used inside of a @catch block, the @throw may appear without an
+argument (as show above), in which case the object caught by the
+@catch will be rethrown.</p>
+<p>
+Note that only (pointers to) Objective-C objects may be thrown and
+caught using this scheme.  When an object is thrown, it will be caught
+by the nearest @catch clause capable of handling objects of that type,
+just as is the case in C++ and Java.  A @catch(id) clause (as shown
+above) may also be provided to catch any and all Objective-C
+exceptions not caught by previous @catch clauses.</p>
+<p>
+The @finally clause, if present, will be executed upon exit from the
+immediately preceding @try-@catch section.  This will happen
+regardless of whether any exceptions are thrown, caught or rethrown
+inside the @try-@catch section, just as is the case in Java.</p>
+<p>
+There are several caveats to using the new exception mechanism:</p>
+<ul>
+<li>
+ Although currently designed to be binary compatible with 
+ NS_HANDLER-style idioms provided by the NSException class, the new
+ exceptions can only be used on Mac OS X 10.3 (Panther) and later
+ systems, due to additional functionality needed in the Objective-C
+ runtime.
+</li>
+<li>
+ As mentioned above, the new exceptions do not support handling
+ types other than Objective-C objects.  
+ The Objective-C exception model does not interoperate with C++
+ exceptions at this time.  This means you cannot throw and catch
+ exceptions between the two exception-handling mechanisms.
+</li>
+</ul>
+<p>
+The '-fobjc-exceptions' switch also enables the use of synchronization
+blocks for thread-safe execution:
+</p>
+<PRE>
+   @synchronized (ObjCClass *lock) {
+        ...
+   }
+</PRE>
+
+<h3> CodeWarrior-style inline assembly</h3>
+
+<H2>Compilation speed</H2>
+
+<font color="red">
+
+<p>
+We've improved compilation speed in general.  Additionally, we need to
+say something about the usage model of these new features:
+<UL>
+<li> DistCC</li>
+<li> Speculative Compilation</li>
+<li> ZeroLink</li>
+<li> Fix&amp;Continue</li>
+<li> Symbol Separation (no IDE support but available from command
+line)</li>
+</UL>
+
+</font>
+
+<H2>Major bugs fixed in this release</H2>
+
+<UL>
+<li> Type checking has been fixed and improved in many situations
+involving Objective-C message dispatching and protocol lookup.
+<li> Type checking has been fixed and improved in may situations
+involving Objective-C protocols.
+<li> In Objective-C when -Wselector is used, check the whole list of
+selectors at the end of compilation, and emit a warning if a
+@selector() is not known.
+</UL>
+
+<H2>Optimization</H2>
+
+<p>
+GCC 3.3 has greatly improved code optimization, especially for Altivec
+code. If you've turned off optimization before, particularly if you
+are switching from GCC2, it's recommended that you turn it on
+now. Many bugs and inefficiencies have been fixed.</p>
+<p>
+Project Builder automatically chooses the recommended optimization
+level for you. Just be sure to build with the pbxbuild tool or to
+choose the Deployment build style before building your final product.</p>
+<p>
+For deployment builds, the recommended setting is -Os, which produces
+the smallest possible binary size. Generally, a binary that's smaller
+is also faster. That's because a large application spends much of its
+time paging its binary code in and out of memory. The smaller the
+binary, the less the application needs to page. For example, say a
+binary uses aggressive function inlining. That binary saves time with
+fewer function calls, but it could easily spend far more time paging
+the binary code containing those inlined functions in and out of
+memory.</p>
+<p>
+For debugging versions, the recommended optimization level is -O0.</p>
+<p>
+Here are the different levels for C, C++, Objective-C and
+Objective-C++:</p>
+
+<UL>
+<li>No optimization (-O0). This option level is intended for
+debugging; it ensures that the debugger works as you would expect. </li>
+<li>Simple optimizations (-O) performs simple optimizations, including
+automatic register allocation and jump threading.  This optimization
+level makes a trade-off between compile speed and execution speed.
+<li>More optimizations (-O2)performs all of GCC's optimizations that
+don't involve a space-time trade-off. In addition to all the
+optimizations for level 1, it performs common subexpression
+elimination, strength reduction, and loop optimizations. It also
+considers any function declared with the inline keyword for inlining.</li>
+<li>Optimization for speed (-O3) performs still more optimizations. It
+can be best for code that contains lots of loops and computation. In
+addition to all the optimizations for level 2, it considers all
+functions for inlining, even if they aren't declared with the inline
+keyword.</li>
+<li>Optimization for code size (-Os) produces the smallest binary
+size. It performs no loop unrolling, scheduling optimizations, or
+register renaming. The performance is similar to -O2.  </li>
+</UL>
+<p>
+When performing function inlining, GCC 3 inlines forward-referenced
+functions in addition to the functions it inlined before. A function
+is inlined if it's smaller than the inlining limit. The default limit
+is 600 internal GCC instructions. To raise the limit, add
+-finline-limit=number to the command line. Raising this limit too high
+can slow down compiling, increase the size of your executables with
+too much inlining, and lower execution speed.</p>
+<p>
+Here are some interesting optimizations that aren't included by -O2 or
+-O3:</p> 
+<p>
+<b>-faltivec</b><br>
+Optimizes code for Altivec.  Code built with this flag might not run
+on G3 processors.
+</p>
+<p>
+<b>-mtune=7400 -mtune=7450 -mtune=750 -mtune=970</b><br>
+or alternatively:<br>
+<b>-mtune=G3 -mtune=G4  -mtune=G5</b><br>
+Optimizes for speed on the indicated chip (750 is G3, 7400 is G4, 7450
+is G4+, 970 is G5). The default is close to 7400, but produces
+slightly smaller and slower code.  Code built with these flags will
+still run on any processor; if you only want code that runs on one
+processor, you may use <tt>-mcpu=7400</tt> and similar.
+</p>
+<p>
+<b>-mdynamic-no-pic</b><br>
+Produces better code for references to static and global
+data. Generally, you should use this option when building an
+executable. Do not use it when building shared libraries or plug-ins
+because the produced code is not valid for them.
+</p>
+<p>
+<b>-funroll-loops</b><br>
+Unrolls loops. Unrolling makes the code larger, but may make it faster
+by reducing the number of branches executed.
+</p>
+<p>
+<b>-ffast-math</b><br>
+Enables some floating point optimizations that are not
+IEEE754-compliant, but which usually work. Programs which require
+strict IEEE compliance may not work with this option.
+</p>
+<p>
+<b>-fstrict-aliasing</b><br>
+Optimize code by making more aggressive assumptions about whether
+pointers can point to the same objects as other pointers. Programs
+which use pointers a lot may benefit from this, but programs that
+don't strictly follow the ISO C rules about the type with which an
+object may be accessed may behave unexpectedly.
+</p>
+
+<H2>How to build the compiler yourself</H2>
+
+<p>
+<font color="red">We need to say where to get the source.  Do we
+know?</font>
+</p>
+
+<H2>Areas where we differ from gcc on other platforms</H2>
+
+<UL>
+<li> The Darwin developer tools use STABS as their debugging format,
+and do not support DWARF.</li>
+<li> Altivec implementation is different <font
+color="red">Details?</font>
+<li> Apple's version of GCC 3.3 supports precompiled headers (PCH).  In the
+"generic" FSF GCC, precompiled headers will not appear until version 3.4.</li>
+</UL>
+
+<hr>
+<p>Copyright (c) 2001,2002,2003 Apple Computer, Inc.</p>
+
+</BODY>
+</HTML>

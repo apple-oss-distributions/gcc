@@ -1,5 +1,5 @@
 /* Base configuration file for all OpenBSD targets.
-   Copyright (C) 1999 Free Software Foundation, Inc.
+   Copyright (C) 1999, 2000 Free Software Foundation, Inc.
 
 This file is part of GNU CC.
 
@@ -78,12 +78,16 @@ Boston, MA 02111-1307, USA.  */
    since all code must be compiled with -pthread to work. 
    This two-stage defines makes it easy to pick that for targets that
    have subspecs.  */
+#ifdef CPP_CPU_SPEC
+#define OBSD_CPP_SPEC "%(cpp_cpu) %{posix:-D_POSIX_SOURCE} %{pthread:-D_POSIX_THREADS}"
+#else
 #define OBSD_CPP_SPEC "%{posix:-D_POSIX_SOURCE} %{pthread:-D_POSIX_THREADS}"
+#endif
 
 /* LIB_SPEC appropriate for OpenBSD.  Select the appropriate libc, 
    depending on profiling and threads.  Basically, 
    -lc(_r)?(_p)?, select _r for threads, and _p for p or pg.  */
-#define OBSD_LIB_SPEC "-lc%{pthread:_r}%{p:_p}%{!p:%{pg:_p}}"
+#define OBSD_LIB_SPEC "%{!shared:-lc%{pthread:_r}%{p:_p}%{!p:%{pg:_p}}}"
 
 #ifndef OBSD_HAS_CORRECT_SPECS
 
@@ -103,6 +107,7 @@ Boston, MA 02111-1307, USA.  */
    pic code.  */
 #undef ASM_SPEC
 #define ASM_SPEC "%{fpic:-k} %{fPIC:-k -K} %|"
+
 #else
 /* Since we use gas, stdin -> - is a good idea, but we don't want to
    override native specs just for that.  */
@@ -116,10 +121,10 @@ Boston, MA 02111-1307, USA.  */
 #undef LINK_SPEC
 #ifdef OBSD_NO_DYNAMIC_LIBRARIES
 #define LINK_SPEC \
-  "%{!nostdlib:%{!r*:%{!e*:-e start}}} -dc -dp %{assert*}"
+  "%{g:%{!nostdlib:-L/usr/lib/debug}} %{!nostdlib:%{!r*:%{!e*:-e start}}} -dc -dp %{assert*}"
 #else
 #define LINK_SPEC \
-  "%{!nostdlib:%{!r*:%{!e*:-e start}}} -dc -dp %{R*} %{static:-Bstatic} %{assert*}"
+  "%{g:%{!nostdlib:-L/usr/lib/debug}} %{!shared:%{!nostdlib:%{!r*:%{!e*:-e start}}}} %{shared:-Bshareable -x} -dc -dp %{R*} %{static:-Bstatic} %{assert*}"
 #endif
 
 #undef LIB_SPEC
@@ -135,12 +140,11 @@ Boston, MA 02111-1307, USA.  */
 /* Implicit calls to library routines.  */
 
 /* Use memcpy and memset instead of bcopy and bzero.  */
+#ifndef TARGET_MEM_FUNCTIONS
 #define TARGET_MEM_FUNCTIONS
+#endif
 
 /* Miscellaneous parameters.  */
-
-/* Tell libgcc2.c that OpenBSD targets support atexit.  */
-#define HAVE_ATEXIT
 
 /* Controlling debugging info: dbx options.  */
 
@@ -171,10 +175,12 @@ Boston, MA 02111-1307, USA.  */
 #undef TYPE_ASM_OP
 #undef SIZE_ASM_OP
 #undef SET_ASM_OP
+#undef GLOBAL_ASM_OP
 
-#define TYPE_ASM_OP	".type"
-#define SIZE_ASM_OP	".size"
-#define SET_ASM_OP	".set"
+#define TYPE_ASM_OP	"\t.type\t"
+#define SIZE_ASM_OP	"\t.size\t"
+#define SET_ASM_OP	"\t.set\t"
+#define GLOBAL_ASM_OP	"\t.globl\t"
 
 /* The following macro defines the format used to output the second
    operand of the .type assembler directive.  */
@@ -199,11 +205,7 @@ Boston, MA 02111-1307, USA.  */
 #undef ASM_DECLARE_FUNCTION_NAME
 #define ASM_DECLARE_FUNCTION_NAME(FILE, NAME, DECL)			\
   do {									\
-    fprintf (FILE, "\t%s\t", TYPE_ASM_OP);				\
-    assemble_name (FILE, NAME);						\
-    fputs (" , ", FILE);						\
-    fprintf (FILE, TYPE_OPERAND_FMT, "function");			\
-    putc ('\n', FILE);							\
+    ASM_OUTPUT_TYPE_DIRECTIVE (FILE, NAME, "function");			\
     ASM_DECLARE_RESULT (FILE, DECL_RESULT (DECL));			\
     ASM_OUTPUT_LABEL(FILE, NAME);					\
   } while (0)
@@ -212,38 +214,29 @@ Boston, MA 02111-1307, USA.  */
 #ifndef OBSD_HAS_DECLARE_FUNCTION_SIZE
 /* Declare the size of a function.  */
 #undef ASM_DECLARE_FUNCTION_SIZE
-#define ASM_DECLARE_FUNCTION_SIZE(FILE, FNAME, DECL)			\
-  do {									\
-    if (!flag_inhibit_size_directive)					\
-      {									\
-	fprintf (FILE, "\t%s\t", SIZE_ASM_OP);				\
-	assemble_name (FILE, (FNAME));					\
-	fputs (" , . - ", FILE);					\
-	assemble_name (FILE, (FNAME));					\
-	putc ('\n', FILE);						\
-      }									\
+#define ASM_DECLARE_FUNCTION_SIZE(FILE, FNAME, DECL)		\
+  do {								\
+    if (!flag_inhibit_size_directive)				\
+      ASM_OUTPUT_MEASURED_SIZE (FILE, FNAME);			\
   } while (0)
 #endif
 
 #ifndef OBSD_HAS_DECLARE_OBJECT
 /* Extra assembler code needed to declare an object properly.  */
 #undef ASM_DECLARE_OBJECT_NAME
-#define ASM_DECLARE_OBJECT_NAME(FILE, NAME, DECL)			\
-  do {									\
-    fprintf (FILE, "\t%s\t ", TYPE_ASM_OP);				\
-    assemble_name (FILE, NAME);						\
-    fputs (" , ", FILE);						\
-    fprintf (FILE, TYPE_OPERAND_FMT, "object");				\
-    putc ('\n', FILE);							\
-    size_directive_output = 0;						\
-    if (!flag_inhibit_size_directive && DECL_SIZE (DECL))		\
-      {									\
-	size_directive_output = 1;					\
-	fprintf (FILE, "\t%s\t", SIZE_ASM_OP);				\
-	assemble_name (FILE, NAME);					\
-	fprintf (FILE, " , %d\n", int_size_in_bytes (TREE_TYPE (DECL)));\
-      }									\
-    ASM_OUTPUT_LABEL (FILE, NAME);					\
+#define ASM_DECLARE_OBJECT_NAME(FILE, NAME, DECL)		\
+  do {								\
+      HOST_WIDE_INT size;					\
+      ASM_OUTPUT_TYPE_DIRECTIVE (FILE, NAME, "object");		\
+      size_directive_output = 0;				\
+      if (!flag_inhibit_size_directive				\
+	  && (DECL) && DECL_SIZE (DECL))			\
+	{							\
+	  size_directive_output = 1;				\
+	  size = int_size_in_bytes (TREE_TYPE (DECL));		\
+	  ASM_OUTPUT_SIZE_DIRECTIVE (FILE, NAME, size);		\
+	}							\
+      ASM_OUTPUT_LABEL (FILE, NAME);				\
   } while (0)
 
 /* Output the size directive for a decl in rest_of_decl_compilation
@@ -254,16 +247,16 @@ Boston, MA 02111-1307, USA.  */
 #undef ASM_FINISH_DECLARE_OBJECT
 #define ASM_FINISH_DECLARE_OBJECT(FILE, DECL, TOP_LEVEL, AT_END)	 \
 do {									 \
-     char *name = XSTR (XEXP (DECL_RTL (DECL), 0), 0);			 \
+     const char *name = XSTR (XEXP (DECL_RTL (DECL), 0), 0);		 \
+     HOST_WIDE_INT size;						 \
      if (!flag_inhibit_size_directive && DECL_SIZE (DECL)		 \
          && ! AT_END && TOP_LEVEL					 \
 	 && DECL_INITIAL (DECL) == error_mark_node			 \
 	 && !size_directive_output)					 \
        {								 \
 	 size_directive_output = 1;					 \
-	 fprintf (FILE, "\t%s\t", SIZE_ASM_OP);			 \
-	 assemble_name (FILE, name);					 \
-	 fprintf (FILE, " , %d\n", int_size_in_bytes (TREE_TYPE (DECL)));\
+	 size = int_size_in_bytes (TREE_TYPE (DECL));			 \
+	 ASM_OUTPUT_SIZE_DIRECTIVE (FILE, name, size);			 \
        }								 \
    } while (0)
 #endif
@@ -282,21 +275,8 @@ do {									 \
   do { fputs ("\t.weak\t", FILE); assemble_name (FILE, NAME); \
        fputc ('\n', FILE); } while (0)
 #endif
-
-/* Tell the assembler that a symbol is global.  */
-#ifndef ASM_GLOBALIZE_LABEL
-#define ASM_GLOBALIZE_LABEL(FILE,NAME) \
-  do { fputs ("\t.globl\t", FILE); assemble_name (FILE, NAME); \
-       fputc ('\n', FILE); } while(0)
-#endif
-
 
 /* Storage layout.  */
-
-/* We don't have to worry about binary compatibility with older C++ code,
-   but there is a big known bug with vtable thunks which has not been
-   fixed yet, so DON'T activate it by default.  */
-/* #define DEFAULT_VTABLE_THUNKS 1 */
 
 
 /* Otherwise, since we support weak, gthr.h erroneously tries to use
@@ -307,5 +287,5 @@ do {									 \
    code layout needs HANDLE_PRAGMA_WEAK asserted for __attribute((weak)) to
    work.  On the other hand, we don't define HANDLE_PRAGMA_WEAK directly,
    as this depends on a few other details as well...  */
-#define HANDLE_SYSV_PRAGMA
+#define HANDLE_SYSV_PRAGMA 1
 

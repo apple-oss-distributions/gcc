@@ -1,5 +1,5 @@
 /* Definitions for Rs6000 running LynxOS.
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2000, 2002 Free Software Foundation, Inc.
    Contributed by David Henkel-Wallace, Cygnus Support (gumby@cygnus.com)
 
 This file is part of GNU CC.
@@ -19,8 +19,6 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-#include <lynx.h>
-
 /* Definitions we want to override with those from rs6000.h: */
 #undef LIB_SPEC
 #undef PTRDIFF_TYPE
@@ -29,19 +27,16 @@ Boston, MA 02111-1307, USA.  */
 #undef ASM_FILE_START
 #undef EXTRA_SECTIONS
 #undef READONLY_DATA_SECTION
+#undef READONLY_DATA_SECTION_ASM_OP
 #undef EXTRA_SECTION_FUNCTIONS
-#undef SELECT_RTX_SECTION
-#undef SELECT_SECTION
+#undef TARGET_ASM_SELECT_RTX_SECTION
+#undef TARGET_ASM_SELECT_SECTION
 #undef USER_LABEL_PREFIX
 #undef ASM_OUTPUT_LABELREF
 #undef ASM_OUTPUT_INTERNAL_LABEL
 #undef ASM_GENERATE_INTERNAL_LABEL
 #undef ASM_OUTPUT_COMMON
 #undef ASM_OUTPUT_LOCAL
-#undef ASM_OUTPUT_CONSTRUCTOR
-#undef ASM_OUTPUT_DESTRUCTOR
-#undef CTORS_SECTION_FUNCTION
-#undef DTORS_SECTION_FUNCTION
 
 #undef SDB_DEBUGGING_INFO
 #undef DBX_DEBUGGING_INFO
@@ -51,12 +46,29 @@ Boston, MA 02111-1307, USA.  */
 
 #include <rs6000/rs6000.h>
 
+/* Print subsidiary information on the compiler version in use.  */
+#define TARGET_VERSION fprintf (stderr, " (LynxOS-RS/6000)");
+
 /* LynxOS has signed chars, regardless of what most R/S 6000 systems do */
 #undef DEFAULT_SIGNED_CHAR
 #define DEFAULT_SIGNED_CHAR 1
 
-#undef CPP_PREDEFINES
-#define CPP_PREDEFINES "-Acpu(rs6000) -Amachine(rs6000) -Asystem(lynx) -Asystem(unix) -DLynx -D_IBMR2 -Dunix -Drs6000 -Dlynx -DLYNX"
+#undef TARGET_OS_CPP_BUILTINS
+#define TARGET_OS_CPP_BUILTINS()         \
+  do                                     \
+    {                                    \
+      builtin_assert ("cpu=rs6000");     \
+      builtin_assert ("machine=rs6000"); \
+      builtin_assert ("system=lynx");    \
+      builtin_assert ("system=unix");    \
+      builtin_define_std ("Lynx");       \
+      builtin_define ("_IBMR2");         \
+      builtin_define_std ("unix");       \
+      builtin_define_std ("rs6000");     \
+      builtin_define_std ("lynx");       \
+      builtin_define_std ("LYNX");       \
+    }                                    \
+  while (0)
 
 #undef LINK_SPEC
 #define LINK_SPEC "-T0x10001000 -H0x1000 -D0x20000000 -btextro -bhalt:4 -bnodelcsect -bnso -bro -bnoglink %{v} %{b*}"
@@ -71,7 +83,7 @@ Boston, MA 02111-1307, USA.  */
 
 #undef ENDFILE_SPEC
 
-/* This can become more refined as we have more powerpc options. */
+/* This can become more refined as we have more powerpc options.  */
 #undef ASM_SPEC
 #define ASM_SPEC "-u %(asm_cpu)"
 
@@ -96,9 +108,8 @@ do {								\
 #undef OBJECT_FORMAT_ROSE
 #undef MD_EXEC_PREFIX
 #undef REAL_LD_FILE_NAME
-#undef REAL_NM_FILE_NAME
 #undef REAL_STRIP_FILE_NAME
 
-/* LynxOS doesn't have mcount. */
+/* LynxOS doesn't have mcount.  */
 #undef FUNCTION_PROFILER
 #define FUNCTION_PROFILER(file, profile_label_no)

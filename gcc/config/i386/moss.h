@@ -1,5 +1,5 @@
 /* Definitions for Intel 386 running MOSS
-   Copyright (C) 1996 Free Software Foundation, Inc.
+   Copyright (C) 1996, 2001 Free Software Foundation, Inc.
    Contributed by Bryan Ford <baford@cs.utah.edu>
 
 This file is part of GNU CC.
@@ -19,11 +19,20 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-/* I believe in reuse... */
-#include "i386/linux.h"
-
-#undef CPP_PREDEFINES
-#define CPP_PREDEFINES "-D__ELF__ -Di386 -Dmoss -Asystem(posix) -Acpu(i386) -Amachine(i386)"
+#undef TARGET_OS_CPP_BUILTINS /* config.gcc includes i386/linux.h.  */
+#define TARGET_OS_CPP_BUILTINS()		\
+  do						\
+    {						\
+	builtin_define_std ("moss");		\
+	builtin_define ("__ELF__");		\
+	builtin_assert ("system=posix");	\
+	if (flag_pic)				\
+	  {					\
+	    builtin_define ("__PIC__");		\
+	    builtin_define ("__pic__");		\
+	  }					\
+    }						\
+  while (0)
 
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC  "crt0.o%s"

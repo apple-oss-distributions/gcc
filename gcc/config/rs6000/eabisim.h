@@ -1,6 +1,6 @@
 /* Support for GCC on simulated PowerPC systems targeted to embedded ELF
    systems.
-   Copyright (C) 1995, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 2000 Free Software Foundation, Inc.
    Contributed by Cygnus Support.
 
 This file is part of GNU CC.
@@ -20,14 +20,22 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-#include "rs6000/eabi.h"
-
 #undef TARGET_VERSION
 #define TARGET_VERSION fprintf (stderr, " (PowerPC Simulated)");
 
-#undef CPP_PREDEFINES
-#define CPP_PREDEFINES \
-  "-DPPC -D__embedded__ -D__simulator__ -Asystem(embedded) -Asystem(simulator) -Acpu(powerpc) -Amachine(powerpc)"
+#undef TARGET_OS_CPP_BUILTINS
+#define TARGET_OS_CPP_BUILTINS()           \
+  do                                       \
+    {                                      \
+      builtin_define_std ("PPC");          \
+      builtin_define ("__embedded__");     \
+      builtin_define ("__simulator__");    \
+      builtin_assert ("system=embedded");  \
+      builtin_assert ("system=simulator"); \
+      builtin_assert ("cpu=powerpc");      \
+      builtin_assert ("machine=powerpc");  \
+    }                                      \
+  while (0)
 
 /* Make the simulator the default */
 #undef	LIB_DEFAULT_SPEC

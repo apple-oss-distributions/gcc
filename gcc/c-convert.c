@@ -1,22 +1,22 @@
 /* Language-level data type conversion for GNU C.
-   Copyright (C) 1987, 1988, 1991, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1987, 1988, 1991, 1998, 2002 Free Software Foundation, Inc.
 
-This file is part of GNU CC.
+This file is part of GCC.
 
-GNU CC is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
 
-GNU CC is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
 
 You should have received a copy of the GNU General Public License
-along with GNU CC; see the file COPYING.  If not, write to
-the Free Software Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  */
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
 
 
 /* This file contains the functions for converting C expressions
@@ -25,9 +25,11 @@ Boston, MA 02111-1307, USA.  */
    but what kind of conversions it does will depend on the language.  */
 
 #include "config.h"
+#include "system.h"
 #include "tree.h"
 #include "flags.h"
 #include "convert.h"
+#include "c-common.h"
 #include "toplev.h"
 
 /* Change of width--truncation and extension of integers or reals--
@@ -41,7 +43,8 @@ Boston, MA 02111-1307, USA.  */
    Here is a list of all the functions that assume that widening and
    narrowing is always done with a NOP_EXPR:
      In convert.c, convert_to_integer.
-     In c-typeck.c, build_binary_op (boolean ops), and truthvalue_conversion.
+     In c-typeck.c, build_binary_op (boolean ops), and
+	c_common_truthvalue_conversion.
      In expr.c: expand_expr, for operands of a MULT_EXPR.
      In fold-const.c: fold.
      In tree.c: get_narrower and get_unwidened.  */
@@ -60,12 +63,14 @@ tree
 convert (type, expr)
      tree type, expr;
 {
-  register tree e = expr;
-  register enum tree_code code = TREE_CODE (type);
+  tree e = expr;
+  enum tree_code code = TREE_CODE (type);
 
   if (type == TREE_TYPE (expr)
-      || TREE_CODE (expr) == ERROR_MARK)
+      || TREE_CODE (expr) == ERROR_MARK
+      || code == ERROR_MARK || TREE_CODE (TREE_TYPE (expr)) == ERROR_MARK)
     return expr;
+
   if (TYPE_MAIN_VARIANT (type) == TYPE_MAIN_VARIANT (TREE_TYPE (expr)))
     return fold (build1 (NOP_EXPR, type, expr));
   if (TREE_CODE (TREE_TYPE (expr)) == ERROR_MARK)
@@ -85,7 +90,17 @@ convert (type, expr)
 #endif
   if (code == INTEGER_TYPE || code == ENUMERAL_TYPE)
     return fold (convert_to_integer (type, e));
-  if (code == POINTER_TYPE)
+  if (code == BOOLEAN_TYPE)
+    {
+      tree t = c_common_truthvalue_conversion (expr);
+      /* If it returns a NOP_EXPR, we must fold it here to avoid
+	 infinite recursion between fold () and convert ().  */
+      if (TREE_CODE (t) == NOP_EXPR)
+	return fold (build1 (NOP_EXPR, type, TREE_OPERAND (t, 0)));
+      else
+	return fold (build1 (NOP_EXPR, type, t));
+    }
+  if (code == POINTER_TYPE || code == REFERENCE_TYPE)
     return fold (convert_to_pointer (type, e));
   if (code == REAL_TYPE)
     return fold (convert_to_real (type, e));

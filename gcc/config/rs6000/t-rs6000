@@ -1,27 +1,10 @@
-# Do not build libgcc1.
-LIBGCC1 =
-CROSS_LIBGCC1 =
+# General rules that all rs6000/ targets must have.
 
-# These are really part of libgcc1, but this will cause them to be
-# built correctly, so... [taken from t-sparclite]
-LIB2FUNCS_EXTRA = fp-bit.c dp-bit.c vrsave.S
-LIBGCC2_INCLUDES = -Iginclude
-TARGET_LIBGCC2_CFLAGS = -fvec
+gt-rs6000.h: s-gtype ; @true
 
-dp-bit.c: $(srcdir)/config/fp-bit.c
-	cat $(srcdir)/config/fp-bit.c > dp-bit.c
+rs6000.o: $(CONFIG_H) $(SYSTEM_H) $(RTL_H) $(REGS_H) hard-reg-set.h \
+  real.h insn-config.h conditions.h insn-attr.h flags.h $(RECOG_H) \
+  $(OBSTACK_H) $(TREE_H) $(EXPR_H) $(OPTABS_H) except.h function.h \
+  output.h $(BASIC_BLOCK_H) $(INTEGRATE_H) toplev.h $(GGC_H) $(HASHTAB_H) \
+  $(TM_P_H) $(TARGET_H) $(TARGET_DEF_H) langhooks.h reload.h gt-rs6000.h
 
-fp-bit.c: $(srcdir)/config/fp-bit.c
-	echo '#define FLOAT' > fp-bit.c
-	cat $(srcdir)/config/fp-bit.c >> fp-bit.c
-
-vrsave.S: $(srcdir)/config/rs6000/vrsave.asm
-	cat $(srcdir)/config/rs6000/vrsave.asm > vrsave.S
-
-# Build the libraries for both hard and soft floating point
-
-MULTILIB_OPTIONS = msoft-float
-MULTILIB_DIRNAMES = soft-float
-
-LIBGCC = stmp-multilib
-INSTALL_LIBGCC = install-multilib

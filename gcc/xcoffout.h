@@ -1,26 +1,26 @@
 /* XCOFF definitions.  These are needed in dbxout.c, final.c,
-   and xcoffout.h. 
-   Copyright (C) 1998 Free Software Foundation, Inc.
+   and xcoffout.h.
+   Copyright (C) 1998, 2000, 2002 Free Software Foundation, Inc.
 
-This file is part of GNU CC.
+This file is part of GCC.
 
-GNU CC is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
 
-GNU CC is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
 
 You should have received a copy of the GNU General Public License
-along with GNU CC; see the file COPYING.  If not, write to
-the Free Software Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  */
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
 
 
-#define ASM_STABS_OP ".stabx"
+#define ASM_STABS_OP "\t.stabx\t"
 
 /* Tags and typedefs are C_DECL in XCOFF, not C_LSYM.  */
 
@@ -47,30 +47,14 @@ Boston, MA 02111-1307, USA.  */
 
 #define DBX_STATIC_CONST_VAR_CODE N_STSYM
 
-/* For static variables, output code to define the start of a static block.
-
-   ??? The IBM rs6000/AIX assembler has a bug that causes bss block debug
-   info to be occasionally lost.  A simple example is this:
-	int a; static int b;
-   The commands `gcc -g -c tmp.c; dump -t tmp.o' gives
-[10]	m   0x00000016         1     0    0x8f  0x0000            .bs
-[11]	m   0x00000000         1     0    0x90  0x0000            .es
-...
-[21]	m   0x00000000        -2     0    0x85  0x0000            b:S-1
-   which is wrong.  The `b:S-1' must be between the `.bs' and `.es'.
-   We can apparently work around the problem by forcing the text section
-   (even if we are already in the text section) immediately before outputting
-   the `.bs'.  This should be fixed in the next major AIX release (3.3?).  */
+/* For static variables, output code to define the start of a static block.  */
 
 #define DBX_STATIC_BLOCK_START(ASMFILE,CODE)				\
 {									\
   if ((CODE) == N_STSYM)						\
     fprintf ((ASMFILE), "\t.bs\t%s[RW]\n", xcoff_private_data_section_name);\
   else if ((CODE) == N_LCSYM)						\
-    {									\
-      fprintf ((ASMFILE), "%s\n", TEXT_SECTION_ASM_OP);			\
-      fprintf ((ASMFILE), "\t.bs\t%s\n", xcoff_bss_section_name);	\
-    }									\
+    fprintf ((ASMFILE), "\t.bs\t%s\n", xcoff_bss_section_name);	\
 }
 
 /* For static variables, output code to define the end of a static block.  */
@@ -103,11 +87,11 @@ Boston, MA 02111-1307, USA.  */
   if (current_sym_addr && current_sym_code == N_FUN		\
       && GET_CODE (current_sym_addr) == SYMBOL_REF)		\
     {								\
-      char *_p = XSTR (current_sym_addr, 0);			\
+      const char *_p = XSTR (current_sym_addr, 0);		\
       if (*_p == '*')						\
 	fprintf (asmfile, "%s", _p+1);				\
       else							\
-        for (; *_p != '[' && *_p; _p++)				\
+	for (; *_p != '[' && *_p; _p++)				\
 	  fprintf (asmfile, "%c", *_p);				\
     }								\
   else if (current_sym_addr)					\
@@ -136,7 +120,7 @@ Boston, MA 02111-1307, USA.  */
 
 /* Name of the current include file.  */
 
-extern char *xcoff_current_include_file;
+extern const char *xcoff_current_include_file;
 
 /* Names of bss and data sections.  These should be unique names for each
    compilation unit.  */
@@ -147,7 +131,7 @@ extern char *xcoff_read_only_section_name;
 
 /* Last source file name mentioned in a NOTE insn.  */
 
-extern char *xcoff_lastfile;
+extern const char *xcoff_lastfile;
 
 /* Don't write out path name for main source file.  */
 #define DBX_OUTPUT_MAIN_SOURCE_DIRECTORY(FILE,FILENAME)
@@ -172,6 +156,15 @@ extern char *xcoff_lastfile;
     }							\
 }
 
+/* .stabx has the type in a different place.  */
+#if 0  /* Do not emit any marker for XCOFF until assembler allows XFT_CV.  */
+#define DBX_OUTPUT_GCC_MARKER(FILE) \
+  fprintf ((FILE), "%s\"%s\",0,%d,0\n", ASM_STABS_OP, STABS_GCC_MARKER, \
+	   stab_to_sclass (N_GSYM))
+#else
+#define DBX_OUTPUT_GCC_MARKER(FILE)
+#endif
+
 /* Do not break .stabs pseudos into continuations.  */
 #define DBX_CONTIN_LENGTH 0
 
@@ -186,26 +179,29 @@ extern char *xcoff_lastfile;
 
 #define DEBUG_SYMS_TEXT
 
-/* Prototype functions in xcoffout.c. */
+/* Prototype functions in xcoffout.c.  */
 
-extern int stab_to_sclass			PROTO ((int));
+extern int stab_to_sclass			PARAMS ((int));
 #ifdef BUFSIZ
-extern void xcoffout_begin_function		PROTO ((FILE *, int));
-extern void xcoffout_begin_block		PROTO ((FILE *, int, int));
-extern void xcoffout_end_epilogue		PROTO ((FILE *));
-extern void xcoffout_end_function		PROTO ((FILE *, int));
-extern void xcoffout_end_block			PROTO ((FILE *, int, int));
+extern void xcoffout_begin_prologue		PARAMS ((unsigned int,
+							 const char *));
+extern void xcoffout_begin_block		PARAMS ((unsigned, unsigned));
+extern void xcoffout_end_epilogue		PARAMS ((unsigned int,
+							 const char *));
+extern void xcoffout_end_function		PARAMS ((unsigned int));
+extern void xcoffout_end_block			PARAMS ((unsigned, unsigned));
 #endif /* BUFSIZ */
 
 #ifdef TREE_CODE
-extern void xcoff_output_standard_types		PROTO ((tree));
+extern void xcoff_output_standard_types		PARAMS ((tree));
 #ifdef BUFSIZ
-extern void xcoffout_declare_function		PROTO ((FILE *, tree, char *));
+extern void xcoffout_declare_function		PARAMS ((FILE *, tree, const char *));
 #endif /* BUFSIZ */
 #endif /* TREE_CODE */
 
 #ifdef RTX_CODE
 #ifdef BUFSIZ
-extern void xcoffout_source_line		PROTO ((FILE *, char *, rtx));
+extern void xcoffout_source_line		PARAMS ((unsigned int,
+							 const char *));
 #endif /* BUFSIZ */
 #endif /* RTX_CODE */

@@ -1,5 +1,5 @@
 /* Definitions for Intel 386 running system V.
-   Copyright (C) 1988, 1996 Free Software Foundation, Inc.
+   Copyright (C) 1988, 1996, 2000, 2002 Free Software Foundation, Inc.
 
 This file is part of GNU CC.
 
@@ -18,17 +18,7 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-
-#include "i386/i386.h"
-
-/* Use default settings for system V.3.  */
-
-#include "svr3.h"
-
-/* Use the ATT assembler syntax.
-   This overrides at least one macro (USER_LABEL_PREFIX) from svr3.h.  */
-
-#include "i386/att.h"
+#define TARGET_VERSION fprintf (stderr, " (80386, ATT syntax)"); 
 
 /* Use crt1.o as a startup file and crtn.o as a closing file.  */
 
@@ -42,11 +32,17 @@ Boston, MA 02111-1307, USA.  */
 
 /* Specify predefined symbols in preprocessor.  */
 
-#define CPP_PREDEFINES "-Dunix -Asystem(svr3)"
+#define TARGET_OS_CPP_BUILTINS()		\
+  do						\
+    {						\
+	builtin_define_std ("unix");		\
+	builtin_assert ("system=svr3");		\
+    }						\
+  while (0)
 
-#define CPP_SPEC "%(cpp_cpu) %{posix:-D_POSIX_SOURCE}"
+#define CPP_SPEC "%{posix:-D_POSIX_SOURCE}"
 
-/* Writing `int' for a bitfield forces int alignment for the structure.  */
+/* Writing `int' for a bit-field forces int alignment for the structure.  */
 
 #define PCC_BITFIELD_TYPE_MATTERS 1
 
@@ -57,8 +53,7 @@ Boston, MA 02111-1307, USA.  */
 
 /* We want to be able to get DBX debugging information via -gstabs.  */
 
-#undef DBX_DEBUGGING_INFO
-#define DBX_DEBUGGING_INFO
+#define DBX_DEBUGGING_INFO 1
 
 #undef PREFERRED_DEBUGGING_TYPE
 #define PREFERRED_DEBUGGING_TYPE SDB_DEBUG
@@ -78,8 +73,8 @@ Boston, MA 02111-1307, USA.  */
    Since a frame pointer will be required in such a function, it is OK
    that the stack pointer is not restored.  */
 
-#undef FRAME_POINTER_REQUIRED
-#define FRAME_POINTER_REQUIRED \
+#undef SUBTARGET_FRAME_POINTER_REQUIRED
+#define SUBTARGET_FRAME_POINTER_REQUIRED \
   (current_function_calls_setjmp || current_function_calls_longjmp)
 
 /* Modify ASM_OUTPUT_LOCAL slightly to test -msvr3-shlib.  */
@@ -102,23 +97,14 @@ Boston, MA 02111-1307, USA.  */
 
    The __CTORS_LIST__ goes in the .init section.  Define CTOR_LIST_BEGIN
    and CTOR_LIST_END to contribute to the .init section an instruction to
-   push a word containing 0 (or some equivalent of that).
-
-   ASM_OUTPUT_CONSTRUCTOR should be defined to push the address of the
-   constructor.  */
+   push a word containing 0 (or some equivalent of that).  */
 
 #undef INIT_SECTION_ASM_OP
-#define INIT_SECTION_ASM_OP     ".section .init,\"x\""
+#define INIT_SECTION_ASM_OP     "\t.section .init,\"x\""
 
 #define CTOR_LIST_BEGIN				\
   asm (INIT_SECTION_ASM_OP);			\
   asm ("pushl $0")
 #define CTOR_LIST_END CTOR_LIST_BEGIN
 
-#define ASM_OUTPUT_CONSTRUCTOR(FILE,NAME)	\
-  do {						\
-    init_section ();				\
-    fprintf (FILE, "\tpushl $");		\
-    assemble_name (FILE, NAME);			\
-    fprintf (FILE, "\n");			\
-  } while (0)
+#define TARGET_ASM_CONSTRUCTOR  ix86_svr3_asm_out_constructor

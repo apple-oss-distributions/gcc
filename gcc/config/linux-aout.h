@@ -1,5 +1,5 @@
 /* Definitions for Linux-based GNU systems.
-   Copyright (C) 1995, 1997 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1997, 1999, 2000 Free Software Foundation, Inc.
    Contributed by H.J. Lu (hjl@nynexst.com)
 
 This file is part of GNU CC.
@@ -19,14 +19,11 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
-/* Don't assume anything about the header files. */
+/* Don't assume anything about the header files.  */
 #define NO_IMPLICIT_EXTERN_C
 
-#undef HAVE_ATEXIT
-#define HAVE_ATEXIT
-
 /* GNU/Linux uses ctype from glibc.a. I am not sure how complete it is.
-   For now, we play safe. It may change later. */
+   For now, we play safe. It may change later.  */
 
 #if 0
 #undef MULTIBYTE_CHARS
@@ -42,7 +39,7 @@ Boston, MA 02111-1307, USA.  */
 #undef ASM_APP_OFF
 #define ASM_APP_OFF "#NO_APP\n"
 
-#define SET_ASM_OP	".set"
+#define SET_ASM_OP	"\t.set\t"
 
-/* We need that too. */
-#define HANDLE_SYSV_PRAGMA
+/* We need that too.  */
+#define HANDLE_SYSV_PRAGMA 1

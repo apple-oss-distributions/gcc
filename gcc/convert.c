@@ -1,32 +1,35 @@
 /* Utility routines for data type conversion for GNU C.
-   Copyright (C) 1987, 88, 91-95, 97, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1987, 1988, 1991, 1992, 1993, 1994, 1995, 1997,
+   1998 Free Software Foundation, Inc.
 
-This file is part of GNU C.
+This file is part of GCC.
 
-GNU CC is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2, or (at your option)
-any later version.
+GCC is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2, or (at your option) any later
+version.
 
-GNU CC is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GCC is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+for more details.
 
 You should have received a copy of the GNU General Public License
-along with GNU CC; see the file COPYING.  If not, write to
-the Free Software Foundation, 59 Temple Place - Suite 330,
-Boston, MA 02111-1307, USA.  */
+along with GCC; see the file COPYING.  If not, write to the Free
+Software Foundation, 59 Temple Place - Suite 330, Boston, MA
+02111-1307, USA.  */
 
 
 /* These routines are somewhat language-independent utility function
    intended to be called by the language-specific convert () functions.  */
 
 #include "config.h"
+#include "system.h"
 #include "tree.h"
 #include "flags.h"
 #include "convert.h"
 #include "toplev.h"
+#include "langhooks.h"
 
 /* Convert EXPR to some pointer or reference type TYPE.
 
@@ -59,7 +62,8 @@ convert_to_pointer (type, expr)
 
       return
 	convert_to_pointer (type,
-			    convert (type_for_size (POINTER_SIZE, 0), expr));
+			    convert ((*lang_hooks.types.type_for_size)
+				     (POINTER_SIZE, 0), expr));
 
     default:
       error ("cannot convert to a pointer type");
@@ -106,8 +110,8 @@ convert_to_real (type, expr)
 
 /* Convert EXPR to some integer (or enum) type TYPE.
 
-   EXPR must be pointer, integer, discrete (enum, char, or bool), or float;
-   in other cases error is called.
+   EXPR must be pointer, integer, discrete (enum, char, or bool), float, or
+   vector; in other cases error is called.
 
    The result of this is always supposed to be a newly created tree node
    not in use in any existing structure.  */
@@ -118,12 +122,12 @@ convert_to_integer (type, expr)
 {
   enum tree_code ex_form = TREE_CODE (expr);
   tree intype = TREE_TYPE (expr);
-  int inprec = TYPE_PRECISION (intype);
-  int outprec = TYPE_PRECISION (type);
+  unsigned int inprec = TYPE_PRECISION (intype);
+  unsigned int outprec = TYPE_PRECISION (type);
 
   /* An INTEGER_TYPE cannot be incomplete, but an ENUMERAL_TYPE can
      be.  Consider `enum E = { a, b = (enum E) 3 };'.  */
-  if (!TYPE_SIZE (type))
+  if (!COMPLETE_TYPE_P (type))
     {
       error ("conversion to incomplete type");
       return error_mark_node;
@@ -136,8 +140,8 @@ convert_to_integer (type, expr)
       if (integer_zerop (expr))
 	expr = integer_zero_node;
       else
-	expr = fold (build1 (CONVERT_EXPR,
-			     type_for_size (POINTER_SIZE, 0), expr));
+	expr = fold (build1 (CONVERT_EXPR, (*lang_hooks.types.type_for_size)
+			     (POINTER_SIZE, 0), expr));
 
       return convert_to_integer (type, expr);
 
@@ -187,8 +191,8 @@ convert_to_integer (type, expr)
       else if (TREE_CODE (type) == ENUMERAL_TYPE
 	       || outprec != GET_MODE_BITSIZE (TYPE_MODE (type)))
 	return build1 (NOP_EXPR, type,
-		       convert (type_for_mode (TYPE_MODE (type),
-					       TREE_UNSIGNED (type)),
+		       convert ((*lang_hooks.types.type_for_mode)
+				(TYPE_MODE (type), TREE_UNSIGNED (type)),
 				expr));
 
       /* Here detect when we can distribute the truncation down past some
@@ -225,9 +229,11 @@ convert_to_integer (type, expr)
 
 	case LSHIFT_EXPR:
 	  /* We can pass truncation down through left shifting
-	     when the shift count is a nonnegative constant.  */
+	     when the shift count is a nonnegative constant and
+	     the target type is unsigned.  */
 	  if (TREE_CODE (TREE_OPERAND (expr, 1)) == INTEGER_CST
 	      && tree_int_cst_sgn (TREE_OPERAND (expr, 1)) >= 0
+	      && TREE_UNSIGNED (type)
 	      && TREE_CODE (TYPE_SIZE (type)) == INTEGER_CST)
 	    {
 	      /* If shift count is less than the width of the truncated type,
@@ -293,13 +299,13 @@ convert_to_integer (type, expr)
 	      {
 		/* Do the arithmetic in type TYPEX,
 		   then convert result to TYPE.  */
-		register tree typex = type;
+		tree typex = type;
 
 		/* Can't do arithmetic in enumeral types
 		   so use an integer type that will hold the values.  */
 		if (TREE_CODE (typex) == ENUMERAL_TYPE)
-		  typex = type_for_size (TYPE_PRECISION (typex),
-					 TREE_UNSIGNED (typex));
+		  typex = (*lang_hooks.types.type_for_size)
+		    (TYPE_PRECISION (typex), TREE_UNSIGNED (typex));
 
 		/* But now perhaps TYPEX is as wide as INPREC.
 		   In that case, do nothing special here.
@@ -308,14 +314,26 @@ convert_to_integer (type, expr)
 		  {
 		    /* Don't do unsigned arithmetic where signed was wanted,
 		       or vice versa.
-		       Exception: if either of the original operands were
-		       unsigned then can safely do the work as unsigned.
+		       Exception: if both of the original operands were
+ 		       unsigned then we can safely do the work as unsigned.
+		       Exception: shift operations take their type solely
+		       from the first argument.
+		       Exception: the LSHIFT_EXPR case above requires that
+		       we perform this operation unsigned lest we produce
+		       signed-overflow undefinedness.
 		       And we may need to do it as unsigned
 		       if we truncate to the original size.  */
-		    typex = ((TREE_UNSIGNED (TREE_TYPE (expr))
-			      || TREE_UNSIGNED (TREE_TYPE (arg0))
-			      || TREE_UNSIGNED (TREE_TYPE (arg1)))
-			     ? unsigned_type (typex) : signed_type (typex));
+		    if (TREE_UNSIGNED (TREE_TYPE (expr))
+			|| (TREE_UNSIGNED (TREE_TYPE (arg0))
+			    && (TREE_UNSIGNED (TREE_TYPE (arg1))
+				|| ex_form == LSHIFT_EXPR
+				|| ex_form == RSHIFT_EXPR
+				|| ex_form == LROTATE_EXPR
+				|| ex_form == RROTATE_EXPR))
+			|| ex_form == LSHIFT_EXPR)
+		      typex = (*lang_hooks.types.unsigned_type) (typex);
+		    else
+		      typex = (*lang_hooks.types.signed_type) (typex);
 		    return convert (type,
 				    fold (build (ex_form, typex,
 						 convert (typex, arg0),
@@ -331,13 +349,13 @@ convert_to_integer (type, expr)
 	  /* This is not correct for ABS_EXPR,
 	     since we must test the sign before truncation.  */
 	  {
-	    register tree typex = type;
+	    tree typex = type;
 
 	    /* Can't do arithmetic in enumeral types
 	       so use an integer type that will hold the values.  */
 	    if (TREE_CODE (typex) == ENUMERAL_TYPE)
-	      typex = type_for_size (TYPE_PRECISION (typex),
-				     TREE_UNSIGNED (typex));
+	      typex = (*lang_hooks.types.type_for_size)
+		(TYPE_PRECISION (typex), TREE_UNSIGNED (typex));
 
 	    /* But now perhaps TYPEX is as wide as INPREC.
 	       In that case, do nothing special here.
@@ -346,8 +364,10 @@ convert_to_integer (type, expr)
 	      {
 		/* Don't do unsigned arithmetic where signed was wanted,
 		   or vice versa.  */
-		typex = (TREE_UNSIGNED (TREE_TYPE (expr))
-			 ? unsigned_type (typex) : signed_type (typex));
+		if (TREE_UNSIGNED (TREE_TYPE (expr)))
+		  typex = (*lang_hooks.types.unsigned_type) (typex);
+		else
+		  typex = (*lang_hooks.types.signed_type) (typex);
 		return convert (type,
 				fold (build1 (ex_form, typex,
 					      convert (typex,
@@ -356,6 +376,12 @@ convert_to_integer (type, expr)
 	  }
 
 	case NOP_EXPR:
+	  /* Don't introduce a
+	     "can't convert between vector values of different size" error.  */
+	  if (TREE_CODE (TREE_TYPE (TREE_OPERAND (expr, 0))) == VECTOR_TYPE
+	      && (GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (TREE_OPERAND (expr, 0))))
+		  != GET_MODE_SIZE (TYPE_MODE (type))))
+	    break;
 	  /* If truncating after truncating, might as well do all at once.
 	     If truncating after extending, we may get rid of wasted work.  */
 	  return convert (type, get_unwidened (TREE_OPERAND (expr, 0), type));
@@ -380,6 +406,15 @@ convert_to_integer (type, expr)
       return convert (type,
 		      fold (build1 (REALPART_EXPR,
 				    TREE_TYPE (TREE_TYPE (expr)), expr)));
+
+    case VECTOR_TYPE:
+      if (GET_MODE_SIZE (TYPE_MODE (type))
+	  != GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (expr))))
+	{
+	  error ("can't convert between vector values of different size");
+	  return error_mark_node;
+	}
+      return build1 (NOP_EXPR, type, expr);
 
     default:
       error ("aggregate value used where an integer was expected");
@@ -443,23 +478,26 @@ convert_to_complex (type, expr)
     }
 }
 
-/* Convert EXPR to some vector type TYPE.
-
-   EXPR must be vector;
-   in other cases error is called.  */
+/* Convert EXPR to the vector type TYPE in the usual ways.  */
 
 tree
 convert_to_vector (type, expr)
      tree type, expr;
 {
-  register enum tree_code form = TREE_CODE (TREE_TYPE (expr));
+  switch (TREE_CODE (TREE_TYPE (expr)))
+    {
+    case INTEGER_TYPE:
+    case VECTOR_TYPE:
+      if (GET_MODE_SIZE (TYPE_MODE (type))
+	  != GET_MODE_SIZE (TYPE_MODE (TREE_TYPE (expr))))
+	{
+	  error ("can't convert between vector values of different size");
+	  return error_mark_node;
+	}
+      return build1 (NOP_EXPR, type, expr);
 
-  if (form == VECTOR_TYPE)
-    return build1 (NOP_EXPR, type, expr);
-
-  error ("vector value expected");
-
-  return build_vector (type, integer_zero_node, integer_zero_node,
-		       integer_zero_node, integer_zero_node);
+    default:
+      error ("can't convert value to a vector");
+      return convert_to_vector (type, integer_zero_node);
+    }
 }
-

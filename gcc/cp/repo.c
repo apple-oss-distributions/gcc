@@ -1,5 +1,5 @@
 /* Code to maintain a C++ template repository.
-   Copyright (C) 1995, 96-97, 1998 Free Software Foundation, Inc.
+   Copyright (C) 1995, 1996, 1997, 1998, 2000, 2001, 2002 Free Software Foundation, Inc.
    Contributed by Jason Merrill (jason@cygnus.com)
 
 This file is part of GNU CC.
@@ -32,27 +32,23 @@ Boston, MA 02111-1307, USA.  */
 #include "input.h"
 #include "obstack.h"
 #include "toplev.h"
+#include "diagnostic.h"
 
-extern char *getpwd PROTO((void));
+static tree repo_get_id PARAMS ((tree));
+static char *extract_string PARAMS ((char **));
+static const char *get_base_filename PARAMS ((const char *));
+static void open_repo_file PARAMS ((const char *));
+static char *afgets PARAMS ((FILE *));
+static void reopen_repo_file_for_write PARAMS ((void));
 
-static tree repo_get_id PROTO((tree));
-static char *extract_string PROTO((char **));
-static char *get_base_filename PROTO((const char *));
-static void open_repo_file PROTO((const char *));
-static char *afgets PROTO((FILE *));
-static void reopen_repo_file_for_write PROTO((void));
-
-static tree pending_repo;
-static tree original_repo;
+static GTY(()) tree pending_repo;
+static GTY(()) tree original_repo;
 static char *repo_name;
 static FILE *repo_file;
 
-static char *old_args, *old_dir, *old_main;
+static const char *old_args, *old_dir, *old_main;
 
-extern int flag_use_repository;
-extern int errorcount, sorrycount;
-extern struct obstack temporary_obstack;
-extern struct obstack permanent_obstack;
+static struct obstack temporary_obstack;
 
 #define IDENTIFIER_REPO_USED(NODE)   (TREE_LANG_FLAG_3 (NODE))
 #define IDENTIFIER_REPO_CHOSEN(NODE) (TREE_LANG_FLAG_4 (NODE))
@@ -97,15 +93,19 @@ static tree
 repo_get_id (t)
      tree t;
 {
-  if (TREE_CODE_CLASS (TREE_CODE (t)) == 't')
+  if (TYPE_P (t))
     {
+      tree vtable;
+
       /* If we're not done setting up the class, we may not have set up
 	 the vtable, so going ahead would give the wrong answer.
          See g++.pt/instantiate4.C.  */
-      if (TYPE_SIZE (t) == NULL_TREE || TYPE_BEING_DEFINED (t))
-	my_friendly_abort (981113);
+      if (!COMPLETE_TYPE_P (t) || TYPE_BEING_DEFINED (t))
+	abort ();
 
-      t = TYPE_BINFO_VTABLE (t);
+      vtable = get_vtbl_decl_for_binfo (TYPE_BINFO (t));
+
+      t = vtable;
       if (t == NULL_TREE)
 	return t;
     }
@@ -128,23 +128,29 @@ repo_template_used (t)
   if (id == NULL_TREE)
     return;
   
-  if (TREE_CODE_CLASS (TREE_CODE (t)) == 't')
+  if (TYPE_P (t))
     {
       if (IDENTIFIER_REPO_CHOSEN (id))
 	mark_class_instantiated (t, 0);
     }
-  else if (TREE_CODE_CLASS (TREE_CODE (t)) == 'd')
+  else if (DECL_P (t))
     {
       if (IDENTIFIER_REPO_CHOSEN (id))
-	mark_decl_instantiated (t, 0);
+	/* It doesn't make sense to instantiate a clone, so we
+	   instantiate the cloned function instead.  Note that this
+	   approach will not work correctly if collect2 assigns
+	   different clones to different files -- but it shouldn't.  */
+	mark_decl_instantiated (DECL_CLONED_FUNCTION_P (t)
+				? DECL_CLONED_FUNCTION (t) : t, 
+				0);
     }
   else
-    my_friendly_abort (1);
+    abort ();
 
   if (! IDENTIFIER_REPO_USED (id))
     {
       IDENTIFIER_REPO_USED (id) = 1;
-      pending_repo = perm_tree_cons (NULL_TREE, id, pending_repo);
+      pending_repo = tree_cons (NULL_TREE, id, pending_repo);
     }
 }
 
@@ -158,7 +164,7 @@ repo_vtable_used (t)
   if (! flag_use_repository)
     return;
 
-  pending_repo = perm_tree_cons (NULL_TREE, t, pending_repo);
+  pending_repo = tree_cons (NULL_TREE, t, pending_repo);
 }
 
 /* Note that an inline with external linkage has been used, and offer to
@@ -172,13 +178,14 @@ repo_inline_used (fn)
     return;
 
   /* Member functions of polymorphic classes go with their vtables.  */
-  if (DECL_FUNCTION_MEMBER_P (fn) && TYPE_VIRTUAL_P (DECL_CLASS_CONTEXT (fn)))
+  if (DECL_FUNCTION_MEMBER_P (fn) 
+      && TYPE_POLYMORPHIC_P (DECL_CONTEXT (fn)))
     {
-      repo_vtable_used (DECL_CLASS_CONTEXT (fn));
+      repo_vtable_used (DECL_CONTEXT (fn));
       return;
     }
 
-  pending_repo = perm_tree_cons (NULL_TREE, fn, pending_repo);
+  pending_repo = tree_cons (NULL_TREE, fn, pending_repo);
 }
 
 /* Note that a particular typeinfo node has been used, and offer to
@@ -237,7 +244,7 @@ extract_string (pp)
   return obstack_finish (&temporary_obstack);
 }
 
-static char *
+const char *
 get_base_filename (filename)
      const char *filename;
 {
@@ -265,7 +272,7 @@ get_base_filename (filename)
       return NULL;
     }
 
-  return file_name_nondirectory (filename);
+  return lbasename (filename);
 }        
 
 static void
@@ -278,13 +285,14 @@ open_repo_file (filename)
   if (s == NULL)
     return;
 
-  p = file_name_nondirectory (s);
-  p = rindex (p, '.');
+  p = lbasename (s);
+  p = strrchr (p, '.');
   if (! p)
     p = s + strlen (s);
 
-  obstack_grow (&permanent_obstack, s, p - s);
-  repo_name = obstack_copy0 (&permanent_obstack, ".rpo", 4);
+  repo_name = xmalloc (p - s + 5);
+  memcpy (repo_name, s, p - s);
+  memcpy (repo_name + (p - s), ".rpo", 5);
 
   repo_file = fopen (repo_name, "r");
 }
@@ -311,6 +319,8 @@ init_repo (filename)
   if (! flag_use_repository)
     return;
 
+  gcc_obstack_init (&temporary_obstack);
+
   open_repo_file (filename);
 
   if (repo_file == 0)
@@ -321,16 +331,13 @@ init_repo (filename)
       switch (buf[0])
 	{
 	case 'A':
-	  old_args = obstack_copy0 (&permanent_obstack, buf + 2,
-				    strlen (buf + 2));
+	  old_args = ggc_strdup (buf + 2);
 	  break;
 	case 'D':
-	  old_dir = obstack_copy0 (&permanent_obstack, buf + 2,
-				   strlen (buf + 2));
+	  old_dir = ggc_strdup (buf + 2);
 	  break;
 	case 'M':
-	  old_main = obstack_copy0 (&permanent_obstack, buf + 2,
-				    strlen (buf + 2));
+	  old_main = ggc_strdup (buf + 2);
 	  break;
 	case 'C':
 	case 'O':
@@ -346,7 +353,7 @@ init_repo (filename)
 	    else
 	      orig = NULL_TREE;
 
-	    original_repo = perm_tree_cons (orig, id, original_repo);
+	    original_repo = tree_cons (orig, id, original_repo);
 	  }
 	  break;
 	default:
@@ -445,3 +452,5 @@ finish_repo ()
   if (repo_file)
     fclose (repo_file);
 }
+
+#include "gt-cp-repo.h"

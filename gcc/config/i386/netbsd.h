@@ -1,21 +1,24 @@
-/* This is tested by i386gas.h.  */
-#define YES_UNDERSCORES
+#define TARGET_OS_CPP_BUILTINS()		\
+  do						\
+    {						\
+      NETBSD_OS_CPP_BUILTINS_AOUT();		\
+    }						\
+  while (0)
 
-#include <i386/gstabs.h>
-
-/* Get perform_* macros to build libgcc.a.  */
-#include <i386/perform.h>
-
-/* Get generic NetBSD definitions.  */
-#include <netbsd.h>
+#define TARGET_VERSION fprintf (stderr, " (NetBSD/i386 a.out)");
 
 /* This goes away when the math-emulator is fixed */
-#undef TARGET_DEFAULT
-#define TARGET_DEFAULT \
+#undef TARGET_SUBTARGET_DEFAULT
+#define TARGET_SUBTARGET_DEFAULT \
   (MASK_80387 | MASK_IEEE_FP | MASK_FLOAT_RETURNS | MASK_NO_FANCY_MATH_387)
 
-#undef CPP_PREDEFINES
-#define CPP_PREDEFINES "-Dunix -Di386 -D__NetBSD__ -Asystem(unix) -Asystem(NetBSD) -Acpu(i386) -Amachine(i386)"
+#undef SUBTARGET_EXTRA_SPECS
+#define SUBTARGET_EXTRA_SPECS			\
+  { "netbsd_cpp_spec", NETBSD_CPP_SPEC },
+
+#undef CPP_SPEC
+#define CPP_SPEC "%(netbsd_cpp_spec)"
+
 
 #undef SIZE_TYPE
 #define SIZE_TYPE "unsigned int"
@@ -23,36 +26,11 @@
 #undef PTRDIFF_TYPE
 #define PTRDIFF_TYPE "int"
 
-#undef WCHAR_TYPE
-#define WCHAR_TYPE "int"
-
-#undef WCHAR_UNSIGNED
-#define WCHAR_UNSIGNED 0
-
-#undef WCHAR_TYPE_SIZE
-#define WCHAR_TYPE_SIZE 32
-
 #undef ASM_APP_ON
 #define ASM_APP_ON "#APP\n"
 
 #undef ASM_APP_OFF
 #define ASM_APP_OFF "#NO_APP\n"
-
-/* The following macros are stolen from i386v4.h */
-/* These have to be defined to get PIC code correct */
-
-/* This is how to output an element of a case-vector that is relative.
-   This is only used for PIC code.  See comments by the `casesi' insn in
-   i386.md for an explanation of the expression this outputs. */
-
-#undef ASM_OUTPUT_ADDR_DIFF_ELT
-#define ASM_OUTPUT_ADDR_DIFF_ELT(FILE, BODY, VALUE, REL) \
-  fprintf (FILE, "\t.long _GLOBAL_OFFSET_TABLE_+[.-%s%d]\n", LPREFIX, VALUE)
-
-/* Indicate that jump tables go in the text section.  This is
-   necessary when compiling PIC code.  */
-
-#define JUMP_TABLES_IN_TEXT_SECTION 1
 
 /* Don't default to pcc-struct-return, because gcc is the only compiler, and
    we want to retain compatibility with older gcc versions.  */
@@ -85,3 +63,10 @@
    and initialization stuff better.  */
 #define DWARF2_UNWIND_INFO 0
 
+/* Redefine this so that it becomes "_GLOBAL_OFFSET_TABLE_" when the label
+   prefix is added.  */
+#undef GOT_SYMBOL_NAME
+#define GOT_SYMBOL_NAME "GLOBAL_OFFSET_TABLE_"
+
+/* Attempt to enable execute permissions on the stack.  */
+#define TRANSFER_FROM_TRAMPOLINE NETBSD_ENABLE_EXECUTE_STACK

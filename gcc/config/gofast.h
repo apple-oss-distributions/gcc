@@ -1,5 +1,5 @@
 /* US Software GOFAST floating point library support.
-   Copyright (C) 1994 Free Software Foundation, Inc.
+   Copyright (C) 1994, 1998, 1999, 2002 Free Software Foundation, Inc.
 
 This file is part of GNU CC.
 
@@ -43,34 +43,46 @@ Boston, MA 02111-1307, USA.  */
       neg_optab->handlers[(int) mode].libfunc = NULL_RTX; \
   } while (0)
 
+/* GCC does not use fpcmp/dpcmp for gt or ge because its own
+   FP-emulation library returns +1 for both > and unord.  So we leave
+   gt and ge unset, such that, instead of fpcmp(a,b) >[=], we generate
+   fpcmp(b,a) <[=] 0, which is unambiguous.  For unord libfuncs, we
+   use our own functions, since GOFAST doesn't supply them.  */
 #define GOFAST_RENAME_LIBCALLS \
-  add_optab->handlers[(int) SFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpadd"); \
-  add_optab->handlers[(int) DFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpadd"); \
-  sub_optab->handlers[(int) SFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpsub"); \
-  sub_optab->handlers[(int) DFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpsub"); \
-  smul_optab->handlers[(int) SFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpmul"); \
-  smul_optab->handlers[(int) DFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpmul"); \
-  flodiv_optab->handlers[(int) SFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpdiv"); \
-  flodiv_optab->handlers[(int) DFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpdiv"); \
-  cmp_optab->handlers[(int) SFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpcmp"); \
-  cmp_optab->handlers[(int) DFmode].libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpcmp"); \
+  add_optab->handlers[(int) SFmode].libfunc = init_one_libfunc ("fpadd"); \
+  add_optab->handlers[(int) DFmode].libfunc = init_one_libfunc ("dpadd"); \
+  sub_optab->handlers[(int) SFmode].libfunc = init_one_libfunc ("fpsub"); \
+  sub_optab->handlers[(int) DFmode].libfunc = init_one_libfunc ("dpsub"); \
+  smul_optab->handlers[(int) SFmode].libfunc = init_one_libfunc ("fpmul"); \
+  smul_optab->handlers[(int) DFmode].libfunc = init_one_libfunc ("dpmul"); \
+  sdiv_optab->handlers[(int) SFmode].libfunc = init_one_libfunc ("fpdiv"); \
+  sdiv_optab->handlers[(int) DFmode].libfunc = init_one_libfunc ("dpdiv"); \
+  cmp_optab->handlers[(int) SFmode].libfunc = init_one_libfunc ("fpcmp"); \
+  cmp_optab->handlers[(int) DFmode].libfunc = init_one_libfunc ("dpcmp"); \
 \
-  extendsfdf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fptodp"); \
-  truncdfsf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dptofp"); \
+  extendsfdf2_libfunc = init_one_libfunc ("fptodp"); \
+  truncdfsf2_libfunc = init_one_libfunc ("dptofp"); \
 \
-  eqsf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpcmp"); \
-  nesf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpcmp"); \
-  gtsf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpcmp"); \
-  gesf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpcmp"); \
-  ltsf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpcmp"); \
-  lesf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fpcmp"); \
+  eqhf2_libfunc = NULL_RTX; \
+  nehf2_libfunc = NULL_RTX; \
+  gthf2_libfunc = NULL_RTX; \
+  gehf2_libfunc = NULL_RTX; \
+  lthf2_libfunc = NULL_RTX; \
+  lehf2_libfunc = NULL_RTX; \
 \
-  eqdf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpcmp"); \
-  nedf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpcmp"); \
-  gtdf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpcmp"); \
-  gedf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpcmp"); \
-  ltdf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpcmp"); \
-  ledf2_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dpcmp"); \
+  eqsf2_libfunc = init_one_libfunc ("fpcmp"); \
+  nesf2_libfunc = init_one_libfunc ("fpcmp"); \
+  gtsf2_libfunc = NULL_RTX; \
+  gesf2_libfunc = NULL_RTX; \
+  ltsf2_libfunc = init_one_libfunc ("fpcmp"); \
+  lesf2_libfunc = init_one_libfunc ("fpcmp"); \
+\
+  eqdf2_libfunc = init_one_libfunc ("dpcmp"); \
+  nedf2_libfunc = init_one_libfunc ("dpcmp"); \
+  gtdf2_libfunc = NULL_RTX; \
+  gedf2_libfunc = NULL_RTX; \
+  ltdf2_libfunc = init_one_libfunc ("dpcmp"); \
+  ledf2_libfunc = init_one_libfunc ("dpcmp"); \
 \
   eqxf2_libfunc = NULL_RTX; \
   nexf2_libfunc = NULL_RTX; \
@@ -86,11 +98,11 @@ Boston, MA 02111-1307, USA.  */
   lttf2_libfunc = NULL_RTX; \
   letf2_libfunc = NULL_RTX; \
 \
-  floatsisf_libfunc = gen_rtx (SYMBOL_REF, Pmode, "sitofp"); \
-  floatsidf_libfunc = gen_rtx (SYMBOL_REF, Pmode, "litodp"); \
-  fixsfsi_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fptosi"); \
-  fixdfsi_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dptoli"); \
-  fixunssfsi_libfunc = gen_rtx (SYMBOL_REF, Pmode, "fptoui"); \
-  fixunsdfsi_libfunc = gen_rtx (SYMBOL_REF, Pmode, "dptoul"); \
+  floatsisf_libfunc = init_one_libfunc ("sitofp"); \
+  floatsidf_libfunc = init_one_libfunc ("litodp"); \
+  fixsfsi_libfunc = init_one_libfunc ("fptosi"); \
+  fixdfsi_libfunc = init_one_libfunc ("dptoli"); \
+  fixunssfsi_libfunc = init_one_libfunc ("fptoui"); \
+  fixunsdfsi_libfunc = init_one_libfunc ("dptoul"); \
 
 /* End of GOFAST_RENAME_LIBCALLS */

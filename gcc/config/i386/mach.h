@@ -1,16 +1,16 @@
 /* Configuration for an i386 running Mach as the target machine.  */
 
-/* We do want to add an underscore to the front of each user symbol.
-   i386/gas.h checks this.  */
-#define YES_UNDERSCORES
+#define TARGET_VERSION fprintf (stderr, " (80386, Mach)"); 
 
-#include "i386/gstabs.h"
-
-/* Get perform_* macros to build libgcc.a.  */
-#include "i386/perform.h"
-
-#undef CPP_PREDEFINES
-#define CPP_PREDEFINES "-Dunix -Di386 -DMACH -Asystem(unix) -Asystem(mach) -Acpu(i386) -Amachine(i386)"
+#define TARGET_OS_CPP_BUILTINS()		\
+  do						\
+    {						\
+	builtin_define_std ("unix");		\
+	builtin_define_std ("MACH");		\
+	builtin_assert ("system=unix");		\
+	builtin_assert ("system=mach");		\
+    }						\
+  while (0)
 
 /* Specify extra dir to search for include files.  */
 #define SYSTEM_INCLUDE_DIR "/usr/mach/include"

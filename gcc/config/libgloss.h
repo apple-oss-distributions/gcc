@@ -19,8 +19,11 @@ along with GNU CC; see the file COPYING.  If not, write to
 the Free Software Foundation, 59 Temple Place - Suite 330,
 Boston, MA 02111-1307, USA.  */
 
+/* This file should not be used for ELF targets, as this definition of
+   STARTFILE_SPEC is all wrong.  */
+
 /* The libgloss standard for crt0.s has the name based on the command line
-   option. */
+   option.  */
 #undef STARTFILE_SPEC
 #define STARTFILE_SPEC "%{!shared:%{pg:pgcrt0%O%s}%{!pg:%{p:pcrt0%O%s}%{!p:crt0%O%s}}}"
 
