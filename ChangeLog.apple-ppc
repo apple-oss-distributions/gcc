@@ -1,3 +1,18 @@
+2004-06-17  Jon Ziegler  <jonz@apple.com>
+
+	Radar 3693664
+	* Update pointers to source code in documentation to reflect new location.
+
+2004-06-16  Jon Ziegler  <jonz@apple.com>
+
+	Radar 3619941
+	* Revert to apple-gcc-1762 plus Dorit/Devang's 2004-06-15 patch.
+
+2004-06-15  Jon Ziegler  <jonz@apple.com>
+
+	Radar 3646298
+	* build_gcc: run ranlib on archives after strip(1)
+
 2004-06-07  Jon Ziegler  <jonz@apple.com>
 
 	Radar 3678979
