@@ -1130,10 +1130,6 @@ CUMULATIVE_ARGS;
 
 #define CALLER_SAVE_PROFITABLE(REFS,CALLS) 0
 
-/* Never pass data by reference.  */
-
-#define FUNCTION_ARG_PASS_BY_REFERENCE(CUM, MODE, TYPE, NAMED) 0
-
 #define FUNCTION_ARG_PARTIAL_NREGS(CUM, MODE, TYPE, NAMED) 0
 
 /* 1 if N is a possible register number for function argument passing.  */
@@ -1162,11 +1158,6 @@ CUMULATIVE_ARGS;
 
 #define DEFAULT_PCC_STRUCT_RETURN	0
 
-/* Varargs handling.  */
-
-#define EXPAND_BUILTIN_VA_ARG(valist, type) \
-  c4x_va_arg (valist, type)
-
 /* Generating Code for Profiling.  */
 
 /* Note that the generated assembly uses the ^ operator to load the 16
@@ -1192,10 +1183,6 @@ CUMULATIVE_ARGS;
 	fprintf (FILE, "\tcall\tmcount\n");			\
 	fprintf (FILE, "\tpop\tar2\n");				\
      }
-
-/* Implicit Calls to Library Routines.  */
-
-#define TARGET_MEM_FUNCTIONS
 
 /* CC_NOOVmode should be used when the first operand is a PLUS, MINUS, NEG
    or MULT.
@@ -1385,7 +1372,7 @@ CUMULATIVE_ARGS;
 
 #define LEGITIMATE_DISPLACEMENT_P(X) IS_DISP8_CONST (INTVAL (X))
 
-/* Descripting Relative Cost of Operations.  */
+/* Describing Relative Cost of Operations.  */
 
 #define	CANONICALIZE_COMPARISON(CODE, OP0, OP1)		\
 if (REG_P (OP1) && ! REG_P (OP0))			\
@@ -1464,8 +1451,6 @@ fini_section ()							\
       in_section = in_fini;					\
     }								\
 }
-
-#define ASM_STABS_OP "\t.stabs\t"
 
 /* Switch into a generic section.  */
 #define TARGET_ASM_NAMED_SECTION c4x_asm_named_section

@@ -14,6 +14,7 @@ details.  */
 
 #pragma interface
 
+#include <stddef.h>
 #include <java/lang/Object.h>
 #include <java/lang/String.h>
 #include <java/net/URL.h>
@@ -24,7 +25,9 @@ details.  */
 
 // We declare these here to avoid including gcj/cni.h.
 extern "C" void _Jv_InitClass (jclass klass);
-extern "C" void _Jv_RegisterClasses (jclass *classes);
+extern "C" void _Jv_RegisterClasses (const jclass *classes);
+extern "C" void _Jv_RegisterClasses_Counted (const jclass *classes,
+					     size_t count);
 
 // This must be predefined with "C" linkage.
 extern "C" void *_Jv_LookupInterfaceMethodIdx (jclass klass, jclass iface, 
@@ -39,10 +42,9 @@ enum
 
   JV_STATE_PRELOADING = 1,	// Can do _Jv_FindClass.
   JV_STATE_LOADING = 3,		// Has super installed.
-  JV_STATE_LOADED = 5,		// Is complete.
-    
-  JV_STATE_COMPILED = 6,	// This was a compiled class.
+  JV_STATE_COMPILED = 5,	// This was a compiled class.
 
+  JV_STATE_LOADED = 6,		// Is complete.
   JV_STATE_PREPARED = 7,	// Layout & static init done.
   JV_STATE_LINKED = 9,		// Strings interned.
 
@@ -213,7 +215,7 @@ public:
 
   inline jboolean isArray (void)
     {
-      return name->data[0] == '[';
+      return name->first() == '[';
     }
 
   inline jclass getComponentType (void)
@@ -311,7 +313,9 @@ private:
   friend class java::io::ObjectStreamClass;
 
   friend void _Jv_WaitForState (jclass, int);
-  friend void _Jv_RegisterClasses (jclass *classes);
+  friend void _Jv_RegisterClasses (const jclass *classes);
+  friend void _Jv_RegisterClasses_Counted (const jclass *classes, 
+					   size_t count);
   friend void _Jv_RegisterClassHookDefault (jclass klass);
   friend void _Jv_RegisterInitiatingLoader (jclass,java::lang::ClassLoader*);
   friend void _Jv_UnregisterClass (jclass);
@@ -329,7 +333,7 @@ private:
   friend void _Jv_InitNewClassFields (jclass klass);
 
   // in prims.cc
-  friend void _Jv_InitPrimClass (jclass, char *, char, int, _Jv_ArrayVTable *);
+  friend void _Jv_InitPrimClass (jclass, char *, char, int);
 
   friend void _Jv_PrepareCompiledClass (jclass);
   friend void _Jv_PrepareConstantTimeTables (jclass);

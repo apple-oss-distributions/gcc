@@ -1,5 +1,5 @@
 /* Target definitions for x86 running Darwin.
-   Copyright (C) 2001, 2002, 2004 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2002, 2004, 2005 Free Software Foundation, Inc.
    Contributed by Apple Computer Inc.
 
 This file is part of GCC.
@@ -36,6 +36,7 @@ Boston, MA 02111-1307, USA.  */
     {                                           \
       builtin_define ("__i386__");              \
       builtin_define ("__LITTLE_ENDIAN__");     \
+      /* APPLE LOCAL remove __MACH__ and __APPLE__, defined in gcc/config/darwin.h */\
       /* APPLE LOCAL constant cfstrings */	\
       SUBTARGET_OS_CPP_BUILTINS ();		\
     }                                           \
@@ -48,53 +49,21 @@ Boston, MA 02111-1307, USA.  */
 /* APPLE LOCAL dynamic-no-pic */
 /* APPLE LOCAL ignore -mcpu=G4 -mcpu=G5 */
 /* When -mdynamic-no-pic finally works, remove the "xx" below.  FIXME!!  */
-/* APPLE LOCAL gfull gused */
 #define CC1_SPEC "\
-%{gused: -g -feliminate-unused-debug-symbols %<gused }\
-%{gfull: -g -fno-eliminate-unused-debug-symbols %<gfull }\
-%{g: %{!gfull: -feliminate-unused-debug-symbols %<gfull }}\
-%{!static:%{!mxxdynamic-no-pic:-fPIC}} %<faltivec %<mlong-branch %<mlongcall %<mcpu=G4 %<mcpu=G5"
+%{g: %{!fno-eliminate-unused-debug-symbols: -feliminate-unused-debug-symbols }} \
+%{!static:%{!mxxdynamic-no-pic:-fPIC}} %<faltivec %<mno-fused-madd %<mlong-branch %<mlongcall %<mcpu=G4 %<mcpu=G5"
 
 
 /* APPLE LOCAL AltiVec */
 #define CPP_ALTIVEC_SPEC "%<faltivec"
 
-/* APPLE LOCAL begin 3492132 */
-
-#define ASM_SPEC "%(darwin_arch_asm_spec)\
-  -force_cpusubtype_ALL \
-  %{Zforce_cpusubtype_ALL:-force_cpusubtype_ALL} \
-  %{!Zforce_cpusubtype_ALL:%{mmmx:-force_cpusubtype_ALL}\
-			   %{msse:-force_cpusubtype_ALL}\
-			   %{msse2:-force_cpusubtype_ALL}}"
-
-#define DARWIN_ARCH_LD_SPEC                                                    \
-"%{march=i386: %{!Zdynamiclib:-arch i386} %{Zdynamiclib:-arch_only i386}}      \
- %{march=i486: %{!Zdynamiclib:-arch i486} %{Zdynamiclib:-arch_only i486}}      \
- %{march=i586: %{!Zdynamiclib:-arch i586} %{Zdynamiclib:-arch_only i586}}      \
- %{march=pentium: %{!Zdynamiclib:-arch pentium} %{Zdynamiclib:-arch_only pentium}}    \
- %{march=pentiumpro: %{!Zdynamiclib:-arch pentpro} %{Zdynamiclib:-arch_only pentpro}} \
- %{march=i686: %{!Zdynamiclib:-arch i686} %{Zdynamiclib:-arch_only i686}}             \
- %{march=pentium3: %{!Zdynamiclib:-arch pentIIm3} %{Zdynamiclib:-arch_only pentIIm3}} \
- %{!mcpu*:%{!march*:%{!Zdynamiclib:-arch i686} %{Zdynamiclib:-arch_only i686}}} "
-
-#define DARWIN_ARCH_ASM_SPEC        \
-"%{march=i386: -arch i386}          \
- %{march=i486: -arch i486}          \
- %{march=i586: -arch i586}          \
- %{march=pentium: -arch pentium}    \
- %{march=pentiumpro: -arch pentpro} \
- %{march=i686: -arch i686}          \
- %{march=pentium3: -arch pentIIm3}  \
- %{!mcpu*:%{!march*: -arch i686}} "
+#undef ASM_SPEC
+#define ASM_SPEC "-arch i386 -force_cpusubtype_ALL"
 
 #undef SUBTARGET_EXTRA_SPECS
-#define SUBTARGET_EXTRA_SPECS			      \
-  { "darwin_arch_asm_spec", DARWIN_ARCH_ASM_SPEC },   \
-  { "darwin_arch_ld_spec", DARWIN_ARCH_LD_SPEC },     \
-  { "darwin_arch", "i686" },
-
-/* APPLE LOCAL end 3492132 */
+#define SUBTARGET_EXTRA_SPECS					\
+  { "darwin_arch", "i386" },					\
+  { "darwin_subarch", "i386" },
 
 /* Use the following macro for any Darwin/x86-specific command-line option
    translation.  */
@@ -138,6 +107,11 @@ Boston, MA 02111-1307, USA.  */
 
 #define LPREFIX "L"
 
+/* These are used by -fbranch-probabilities */
+#define HOT_TEXT_SECTION_NAME "__TEXT,__text,regular,pure_instructions"
+#define UNLIKELY_EXECUTED_TEXT_SECTION_NAME \
+                              "__TEXT,__unlikely,regular,pure_instructions"
+
 /* Assembler pseudos to introduce constants of various size.  */
 
 #define ASM_BYTE_OP "\t.byte\t"
@@ -180,6 +154,16 @@ Boston, MA 02111-1307, USA.  */
 #define MASK_ALIGN_MAC68K	0x20000000
 #define TARGET_ALIGN_MAC68K	(target_flags & MASK_ALIGN_MAC68K)
 
+#define REGISTER_TARGET_PRAGMAS DARWIN_REGISTER_TARGET_PRAGMAS
+
+#define ROUND_TYPE_ALIGN(TYPE, COMPUTED, SPECIFIED) \
+  (((TREE_CODE (TYPE) == RECORD_TYPE \
+     || TREE_CODE (TYPE) == UNION_TYPE \
+     || TREE_CODE (TYPE) == QUAL_UNION_TYPE) \
+    && TARGET_ALIGN_MAC68K \
+    && MAX (COMPUTED, SPECIFIED) == 8) ? 16 \
+    : MAX (COMPUTED, SPECIFIED))
+
 #undef SUBTARGET_SWITCHES
 #define SUBTARGET_SWITCHES						\
   {"align-mac68k",      MASK_ALIGN_MAC68K,				\
@@ -199,9 +183,9 @@ Boston, MA 02111-1307, USA.  */
     do {								\
       if (MACHOPIC_INDIRECT)						\
 	{								\
-	  const char *name = machopic_stub_name ("*mcount");		\
+	  const char *name = machopic_mcount_stub_name ();		\
 	  fprintf (FILE, "\tcall %s\n", name+1);  /*  skip '&'  */	\
-	  machopic_validate_stub_or_non_lazy_ptr (name, /*stub:*/1);	\
+	  machopic_validate_stub_or_non_lazy_ptr (name);		\
 	}								\
       else fprintf (FILE, "\tcall mcount\n");				\
     } while (0)

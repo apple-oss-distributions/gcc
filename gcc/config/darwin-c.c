@@ -30,10 +30,15 @@ Boston, MA 02111-1307, USA.  */
 #include "c-incpath.h"
 #include "toplev.h"
 #include "tm_p.h"
+#include "cppdefault.h"
+#include "prefix.h"
+/* APPLE LOCAL include options.h */
+#include "options.h"
 
 /* Pragmas.  */
 
 #define BAD(msgid) do { warning (msgid); return; } while (0)
+/* APPLE LOCAL Macintosh alignment 2002-1-22 --ff */
 #define BAD2(msgid, arg) do { warning (msgid, arg); return; } while (0)
 
 static bool using_frameworks = false;
@@ -137,6 +142,20 @@ darwin_pragma_ignore (cpp_reader *pfile ATTRIBUTE_UNUSED)
   /* Do nothing.  */
 }
 
+/* APPLE LOCAL begin pragma fenv */
+/* #pragma GCC fenv
+   This is kept in <fenv.h>.  The point is to allow trapping
+   math to default to off.  According to C99, any program
+   that requires trapping math must include <fenv.h>, so
+   we enable trapping math when that gets included.  */
+
+void
+darwin_pragma_fenv (cpp_reader *pfile ATTRIBUTE_UNUSED)
+{
+  flag_trapping_math = 1;
+}
+/* APPLE LOCAL end pragma fenv */
+
 /* #pragma options align={mac68k|power|reset} */
 
 void
@@ -161,7 +180,11 @@ darwin_pragma_options (cpp_reader *pfile ATTRIBUTE_UNUSED)
   arg = IDENTIFIER_POINTER (t);
 /* APPLE LOCAL begin Macintosh alignment 2002-1-22 --ff */
   if (!strcmp (arg, "mac68k"))
-    push_field_alignment (0, 1, 0);
+    {
+      if (POINTER_SIZE == 64)
+	warning ("mac68k alignment pragma is deprecated for 64-bit Darwin");
+      push_field_alignment (0, 1, 0);
+    }
   else if (!strcmp (arg, "native"))	/* equivalent to power on PowerPC */
     push_field_alignment (0, 0, 0);
   else if (!strcmp (arg, "natural"))
@@ -435,7 +458,7 @@ find_subframework_file (const char *fname, const char *pname)
   bufptr = strstr (pname, dot_framework);
 
   /* If the parent header is not of any framework, then this header
-     can not be part of any subframework.  */
+     cannot be part of any subframework.  */
   if (!bufptr)
     return 0;
 
@@ -533,16 +556,60 @@ static const char *framework_defaults [] =
   {
     "/System/Library/Frameworks",
     "/Library/Frameworks",
-    "/Local/Library/Frameworks",
   };
+
+/* Register the GNU objective-C runtime include path if STDINC.  */
+
+void
+darwin_register_objc_includes (const char *sysroot, const char *iprefix,
+			       int stdinc)
+{
+  const char *fname;
+  size_t len;
+  /* We do not do anything if we do not want the standard includes. */
+  if (!stdinc)
+    return;
+  
+  fname = GCC_INCLUDE_DIR "-gnu-runtime";
+  
+  /* Register the GNU OBJC runtime include path if we are compiling  OBJC
+    with GNU-runtime.  */
+
+  if (c_dialect_objc () && !flag_next_runtime)
+    {
+      char *str;
+      /* See if our directory starts with the standard prefix.
+	 "Translate" them, i.e. replace /usr/local/lib/gcc... with
+	 IPREFIX and search them first.  */
+      if (iprefix && (len = cpp_GCC_INCLUDE_DIR_len) != 0 && !sysroot
+	  && !strncmp (fname, cpp_GCC_INCLUDE_DIR, len))
+	{
+	  str = concat (iprefix, fname + len, NULL);
+          /* FIXME: wrap the headers for C++awareness.  */
+	  add_path (str, SYSTEM, /*c++aware=*/false, false);
+	}
+      
+      /* Should this directory start with the sysroot?  */
+      if (sysroot)
+	str = concat (sysroot, fname, NULL);
+      else
+	str = update_path (fname, "");
+      
+      add_path (str, SYSTEM, /*c++aware=*/false, false);
+    }
+}
 
 
 /* Register all the system framework paths if STDINC is true and setup
    the missing_header callback for subframework searching if any
    frameworks had been registered.  */
 
+/* APPLE LOCAL begin SDK 3886137 */ 
+/* Patch is waiting FSF review. Use sysroot value. */ 
+
 void
-darwin_register_frameworks (int stdinc)
+darwin_register_frameworks (const char *sysroot,
+			    const char *iprefix ATTRIBUTE_UNUSED, int stdinc)
 {
   if (stdinc)
     {
@@ -551,14 +618,20 @@ darwin_register_frameworks (int stdinc)
       /* Setup default search path for frameworks.  */
       for (i=0; i<sizeof (framework_defaults)/sizeof(const char *); ++i)
 	{
+	  char *str;
+	  if (sysroot)
+	    str = concat (sysroot, xstrdup (framework_defaults[i]), NULL);
+	  else
+	    str = xstrdup (framework_defaults[i]);
 	  /* System Framework headers are cxx aware.  */
-	  add_system_framework_path (xstrdup (framework_defaults[i]));
+	  add_system_framework_path (str);
 	}
     }
 
   if (using_frameworks)
     cpp_get_callbacks (parse_in)->missing_header = find_subframework_header;
 }
+/* APPLE LOCAL end SDK 3886137 */ 
 
 /* Search for HEADER in context dependent way.  The return value is
    the malloced name of a header to try and open, if any, or NULL
@@ -566,7 +639,7 @@ darwin_register_frameworks (int stdinc)
    fails to find a header.  We search each file in the include stack,
    using FUNC, starting from the most deeply nested include and
    finishing with the main input file.  We stop searching when FUNC
-   returns non-zero.  */
+   returns nonzero.  */
 
 static const char*
 find_subframework_header (cpp_reader *pfile, const char *header, cpp_dir **dirp)
@@ -593,8 +666,6 @@ find_subframework_header (cpp_reader *pfile, const char *header, cpp_dir **dirp)
 
   return 0;
 }
-
-struct target_c_incpath_s target_c_incpath = C_INCPATH_INIT;
 
 /* APPLE LOCAL begin CALL_ON_LOAD/CALL_ON_UNLOAD pragmas  20020202 --turly  */
 extern void mod_init_section (void), mod_term_section (void);
@@ -626,60 +697,13 @@ static void directive_with_named_function (const char *pragma_name,
 void
 darwin_pragma_call_on_load (cpp_reader *pfile ATTRIBUTE_UNUSED)
 {
+  warning("Pragma CALL_ON_LOAD is deprecated; use constructor attribute instead");
   directive_with_named_function ("CALL_ON_LOAD", mod_init_section);
 }
 void
 darwin_pragma_call_on_unload (cpp_reader *pfile ATTRIBUTE_UNUSED)
 {
+  warning("Pragma CALL_ON_UNLOAD is deprecated; use destructor attribute instead");
   directive_with_named_function ("CALL_ON_UNLOAD", mod_term_section);
 }
 /* APPLE LOCAL end CALL_ON_LOAD/CALL_ON_UNLOAD pragmas  20020202 --turly  */
-
-/* APPLE LOCAL begin CALL_ON_MODULE_BIND deprecated 2002-4-10 --ff */
-void
-darwin_pragma_call_on_module_bind (cpp_reader *pfile ATTRIBUTE_UNUSED)
-{
-  warning ("#pragma CALL_ON_MODULE_BIND is no longer supported, ignoring.  "
-  	   "Use CALL_ON_LOAD instead.");
-}
-/* APPLE LOCAL end CALL_ON_MODULE_BIND deprecated 2002-4-10 --ff */
-
-/* APPLE LOCAL begin temporary pragmas 2001-07-05 --sts */
-/* These need to live only long enough to get their uses flushed out
-   of the system.  */
-void
-darwin_pragma_cc_no_mach_text_sections (cpp_reader *pfile ATTRIBUTE_UNUSED)
-{
-  warning ("#pragma CC_NO_MACH_TEXT_SECTIONS is no longer supported, ignoring");
-}
-
-void
-darwin_pragma_cc_opt_off (cpp_reader *pfile ATTRIBUTE_UNUSED)
-{
-  warning ("#pragma CC_OPT_OFF is no longer supported, ignoring");
-}
-
-void
-darwin_pragma_cc_opt_on (cpp_reader *pfile ATTRIBUTE_UNUSED)
-{
-  warning ("#pragma CC_OPT_ON is no longer supported, ignoring");
-}
-
-void
-darwin_pragma_cc_opt_restore (cpp_reader *pfile ATTRIBUTE_UNUSED)
-{
-  warning ("#pragma CC_OPT_RESTORE is no longer supported, ignoring");
-}
-
-void
-darwin_pragma_cc_writable_strings (cpp_reader *pfile ATTRIBUTE_UNUSED)
-{
-  warning ("#pragma CC_WRITABLE_STRINGS is no longer supported, ignoring");
-}
-
-void
-darwin_pragma_cc_non_writable_strings (cpp_reader *pfile ATTRIBUTE_UNUSED)
-{
-  warning ("#pragma CC_NON_WRITABLE_STRINGS is no longer supported, ignoring");
-}
-/* APPLE LOCAL end temporary pragmas 2001-07-05 --sts */

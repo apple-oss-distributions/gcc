@@ -20,11 +20,18 @@
    the Free Software Foundation, 59 Temple Place - Suite 330, Boston,
    MA 02111-1307, USA.  */
 
+/* This file is compiled twice: once for the generator programs
+   once for the compiler.  */
+#ifdef GENERATOR_FILE
+#include "bconfig.h"
+#else
 #include "config.h"
-#include "errors.h"
+#endif
+
 #include "system.h"
 #include "coretypes.h"
 #include "tm.h"
+#include "errors.h"
 #include "varray.h"
 #include "ggc.h"
 #include "hashtab.h"
@@ -110,8 +117,7 @@ static const struct {
   { sizeof (struct basic_block_def *), 1 },
   { sizeof (struct elt_list *), 1 },
   { sizeof (struct edge_def *), 1 },
-  { sizeof (struct dependence_node_def *), 0 },
-  { sizeof (tree *), 1 }
+  { sizeof (tree *), 1 },
 };
 
 /* Allocate a virtual array with NUM_ELEMENT elements, each of which is

@@ -302,15 +302,14 @@ public abstract class NumberFormat extends Format implements Cloneable
     return list;
   }
 
-  private static final NumberFormat computeInstance (Locale loc,
-						     String resource,
-						     String def)
+  private static NumberFormat computeInstance(Locale loc, String resource,
+                                              String def)
   {
     ResourceBundle res;
     try
       {
 	res = ResourceBundle.getBundle("gnu.java.locale.LocaleInformation",
-				       loc);
+		loc, ClassLoader.getSystemClassLoader());
       }
     catch (MissingResourceException x)
       {

@@ -1,12 +1,16 @@
 /* { dg-do compile { target powerpc*-*-* } } */
-/* { dg-options "-faltivec" } */
+/* { dg-xfail-if "" { "powerpc-ibm-aix*" } { "-maltivec" } { "" } } */
+/* { dg-options "-maltivec" } */
 /* Author: Ziemowit Laski  <zlaski@apple.com>  */
 
 /* This test case exercises intrinsic/argument combinations that,
    while not in the Motorola AltiVec PIM, have nevertheless crept
    into the AltiVec vernacular over the years.  */
 
-void foo() {
+#include <altivec.h>
+
+void foo (void)
+{
   vector bool int boolVec1 = (vector bool int) vec_splat_u32(3);
   vector bool short boolVec2 = (vector bool short) vec_splat_u16(3);
   vector bool char boolVec3 = (vector bool char) vec_splat_u8(3);

@@ -4,13 +4,15 @@
 ## __STDC_VERSION__ is set such that libc includes make them available.
 AM_CFLAGS = -std=gnu99
 
-lib_LTLIBRARIES = libgfortran.la libgfortranbegin.la
+toolexeclib_LTLIBRARIES = libgfortran.la libgfortranbegin.la
+
+libgfortran_la_LDFLAGS = -version-info `grep -v '^\#' $(srcdir)/libtool-version` -lm
 
 ## This should really go in the compiler lib dir, not the system lib dir.
 libgfortranbegin_la_SOURCES = fmain.c
 libgfortranbegin_la_LDFLAGS = -static
 
-INCLUDES = -I$(srcdir)/io
+AM_CPPFLAGS = -I$(srcdir)/io
 
 libgfortranincludedir = $(includedir)/gforio
 
@@ -36,24 +38,38 @@ io/io.h
 gfor_helper_src= \
 intrinsics/associated.c \
 intrinsics/abort.c \
+intrinsics/args.c \
+intrinsics/bessel.c \
+intrinsics/c99_functions.c \
 intrinsics/cpu_time.c \
 intrinsics/cshift0.c \
+intrinsics/date_and_time.c \
+intrinsics/env.c \
+intrinsics/erf.c \
 intrinsics/eoshift0.c \
 intrinsics/eoshift2.c \
+intrinsics/etime.c \
+intrinsics/getcwd.c \
+intrinsics/getXid.c \
 intrinsics/ishftc.c \
+intrinsics/mvbits.c \
 intrinsics/pack_generic.c \
 intrinsics/size.c \
 intrinsics/spread_generic.c \
 intrinsics/string_intrinsics.c \
+intrinsics/system.c \
+intrinsics/rand.c \
 intrinsics/random.c \
 intrinsics/reshape_generic.c \
 intrinsics/reshape_packed.c \
-intrinsics/selected_kind.f90 \
+intrinsics/selected_int_kind.f90 \
+intrinsics/selected_real_kind.f90 \
 intrinsics/system_clock.c \
 intrinsics/transpose_generic.c \
 intrinsics/unpack_generic.c \
 runtime/in_pack_generic.c \
-runtime/in_unpack_generic.c
+runtime/in_unpack_generic.c \
+runtime/normalize.c
 
 gfor_src= \
 runtime/environ.c \
@@ -252,7 +268,8 @@ gfor_built_src= $(i_all_c) $(i_any_c) $(i_count_c) $(i_maxloc0_c) \
     $(i_matmul_c) $(i_matmull_c) $(i_transpose_c) $(i_shape_c) $(i_eoshift1_c) \
     $(i_eoshift3_c) $(i_cshift1_c) $(i_reshape_c) $(in_pack_c) $(in_unpack_c) \
     $(i_exponent_c) $(i_fraction_c) $(i_nearest_c) $(i_set_exponent_c) \
-    $(i_pow_c)
+    $(i_pow_c) \
+    selected_int_kind.inc selected_real_kind.inc
 
 # We only use these if libm doesn't contain complex math functions.
 
@@ -370,6 +387,12 @@ libgfortran_la_DEPENDENCIES = @MATH_OBJ@
 I_M4_DEPS=m4/iparm.m4
 I_M4_DEPS0=$(I_M4_DEPS) m4/iforeach.m4
 I_M4_DEPS1=$(I_M4_DEPS) m4/ifunction.m4
+
+selected_int_kind.inc: $(srcdir)/mk-sik-inc.sh
+	$(SHELL) $(srcdir)/mk-sik-inc.sh '$(F77COMPILE)' > $@
+
+selected_real_kind.inc: $(srcdir)/mk-srk-inc.sh
+	$(SHELL) $(srcdir)/mk-srk-inc.sh '$(F77COMPILE)' > $@
 
 ## A 'normal' build shouldn't need to regenerate these
 ## so we only include them in maintainer mode

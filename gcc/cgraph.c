@@ -61,7 +61,7 @@ The callgraph:
       The function inlining information is decided in advance and maintained
       in the callgraph as so called inline plan.
       For each inlined call, the callee's node is cloned to represent the
-      new function copy produced by inlininer.
+      new function copy produced by inliner.
       Each inlined call gets a unique corresponding clone node of the callee
       and the data structure is updated while inlining is performed, so
       the clones are eliminated and their callee edges redirected to the
@@ -95,6 +95,8 @@ The varpool data structure:
 #include "varray.h"
 #include "output.h"
 #include "intl.h"
+/* APPLE LOCAL begin Selective inlining of functions that use Altivec 3837835 */
+#include "function.h"
 
 /* Hash table used to convert declarations into nodes.  */
 static GTY((param_is (struct cgraph_node))) htab_t cgraph_hash;
@@ -170,8 +172,7 @@ cgraph_node (tree decl)
 {
   struct cgraph_node key, *node, **slot;
 
-  if (TREE_CODE (decl) != FUNCTION_DECL)
-    abort ();
+  gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
 
   if (!cgraph_hash)
     cgraph_hash = htab_create_ggc (10, hash_node, eq_node, NULL);
@@ -223,12 +224,10 @@ cgraph_create_edge (struct cgraph_node *caller, struct cgraph_node *callee,
   struct cgraph_edge *e;
 
   for (e = caller->callees; e; e = e->next_callee)
-    if (e->call_expr == call_expr)
-      abort ();
+    gcc_assert (e->call_expr != call_expr);
 #endif
 
-  if (TREE_CODE (call_expr) != CALL_EXPR)
-    abort ();
+  gcc_assert (TREE_CODE (call_expr) == CALL_EXPR);
 
   if (!DECL_SAVED_TREE (callee->decl))
     edge->inline_failed = N_("function body not available");
@@ -262,14 +261,12 @@ cgraph_remove_edge (struct cgraph_edge *e)
   for (edge = &e->callee->callers; *edge && *edge != e;
        edge = &((*edge)->next_caller))
     continue;
-  if (!*edge)
-    abort ();
+  gcc_assert (*edge);
   *edge = (*edge)->next_caller;
   for (edge2 = &e->caller->callees; *edge2 && *edge2 != e;
        edge2 = &(*edge2)->next_callee)
     continue;
-  if (!*edge2)
-    abort ();
+  gcc_assert (*edge2);
   *edge2 = (*edge2)->next_callee;
 }
 
@@ -284,8 +281,7 @@ cgraph_redirect_edge_callee (struct cgraph_edge *e, struct cgraph_node *n)
   for (edge = &e->callee->callers; *edge && *edge != e;
        edge = &((*edge)->next_caller))
     continue;
-  if (!*edge)
-    abort ();
+  gcc_assert (*edge);
   *edge = (*edge)->next_caller;
   e->callee = n;
   e->next_caller = n->callers;
@@ -328,7 +324,7 @@ cgraph_remove_node (struct cgraph_node *node)
       else
 	{
           htab_clear_slot (cgraph_hash, slot);
-	  if (!dump_enabled_p (TDI_all))
+	  if (!dump_enabled_p (TDI_tree_all))
 	    {
               DECL_SAVED_TREE (node->decl) = NULL;
 	      DECL_STRUCT_FUNCTION (node->decl) = NULL;
@@ -356,10 +352,11 @@ cgraph_remove_node (struct cgraph_node *node)
 	    || (!n->global.inlined_to
 		&& !TREE_ASM_WRITTEN (n->decl) && !DECL_EXTERNAL (n->decl)))
 	  break;
-      if (!n && !dump_enabled_p (TDI_all))
+      if (!n && !dump_enabled_p (TDI_tree_all))
 	{
 	  DECL_SAVED_TREE (node->decl) = NULL;
 	  DECL_STRUCT_FUNCTION (node->decl) = NULL;
+          DECL_INITIAL (node->decl) = error_mark_node;
 	}
     }
   cgraph_n_nodes--;
@@ -412,8 +409,8 @@ struct cgraph_local_info *
 cgraph_local_info (tree decl)
 {
   struct cgraph_node *node;
-  if (TREE_CODE (decl) != FUNCTION_DECL)
-    abort ();
+  
+  gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
   node = cgraph_node (decl);
   return &node->local;
 }
@@ -424,8 +421,8 @@ struct cgraph_global_info *
 cgraph_global_info (tree decl)
 {
   struct cgraph_node *node;
-  if (TREE_CODE (decl) != FUNCTION_DECL || !cgraph_global_info_ready)
-    abort ();
+  
+  gcc_assert (TREE_CODE (decl) == FUNCTION_DECL && cgraph_global_info_ready);
   node = cgraph_node (decl);
   return &node->global;
 }
@@ -436,8 +433,8 @@ struct cgraph_rtl_info *
 cgraph_rtl_info (tree decl)
 {
   struct cgraph_node *node;
-  if (TREE_CODE (decl) != FUNCTION_DECL)
-    abort ();
+  
+  gcc_assert (TREE_CODE (decl) == FUNCTION_DECL);
   node = cgraph_node (decl);
   if (decl != current_function_decl
       && !TREE_ASM_WRITTEN (node->decl))
@@ -476,7 +473,6 @@ dump_cgraph_node (FILE *f, struct cgraph_node *node)
     fprintf (f, " tree");
   if (node->output)
     fprintf (f, " output");
-
   if (node->local.local)
     fprintf (f, " local");
   if (node->local.disregard_inline_limits)
@@ -485,6 +481,10 @@ dump_cgraph_node (FILE *f, struct cgraph_node *node)
     fprintf (f, " inlinable");
   if (TREE_ASM_WRITTEN (node->decl))
     fprintf (f, " asm_written");
+  /* APPLE LOCAL begin Selective inlining of functions that use Altivec 3837835 */
+  if (DECL_STRUCT_FUNCTION (node->decl) && DECL_STRUCT_FUNCTION (node->decl)->uses_vector)
+    fprintf (f, " uses_vector");
+  /* APPLE LOCAL end Selective inlining of functions that use Altivec 3837835 */
 
   fprintf (f, "\n  called by: ");
   for (edge = node->callers; edge; edge = edge->next_caller)
@@ -542,8 +542,7 @@ cgraph_varpool_node (tree decl)
 {
   struct cgraph_varpool_node key, *node, **slot;
 
-  if (!DECL_P (decl) || TREE_CODE (decl) == FUNCTION_DECL)
-    abort ();
+  gcc_assert (DECL_P (decl) && TREE_CODE (decl) != FUNCTION_DECL);
 
   if (!cgraph_varpool_hash)
     cgraph_varpool_hash = htab_create_ggc (10, hash_varpool_node,
@@ -692,5 +691,18 @@ cgraph_clone_node (struct cgraph_node *n)
   n->next_clone = new;
 
   return new;
+}
+
+/* NODE is no longer nested function; update cgraph accordingly.  */
+void
+cgraph_unnest_node (struct cgraph_node *node)
+{
+  struct cgraph_node **node2 = &node->origin->nested;
+  gcc_assert (node->origin);
+
+  while (*node2 != node)
+    node2 = &(*node2)->next_nested;
+  *node2 = node->next_nested;
+  node->origin = NULL;
 }
 #include "gt-cgraph.h"

@@ -24,6 +24,12 @@ Foundation, 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  */
 #include "cpplib.h"
 #include "internal.h"
 
+/* APPLE LOCAL begin CW asm blocks */
+/* A hack that would be better done with a callback or some such.  */
+extern enum cw_asm_states { cw_asm_none, cw_asm_decls, cw_asm_asm } cw_asm_state;
+extern int cw_asm_in_operands;
+/* APPLE LOCAL end CW asm blocks */
+
 enum spell_type
 {
   SPELL_OPERATOR = 0,
@@ -41,8 +47,8 @@ struct token_spelling
 static const unsigned char *const digraph_spellings[] =
 { U"%:", U"%:%:", U"<:", U":>", U"<%", U"%>" };
 
-#define OP(e, s) { SPELL_OPERATOR, U s           },
-#define TK(e, s) { s,              U #e },
+#define OP(e, s) { SPELL_OPERATOR, U s  },
+#define TK(e, s) { SPELL_ ## s,    U #e },
 static const struct token_spelling token_spellings[N_TTYPES] = { TTYPE_TABLE };
 #undef OP
 #undef TK
@@ -130,7 +136,7 @@ _cpp_clean_line (cpp_reader *pfile)
 	      /* DOS line ending? */
 	      if (c == '\r' && s[1] == '\n')
 		s++;
-
+ 
 	      if (s == buffer->rlimit)
 		goto done;
 
@@ -470,22 +476,55 @@ static cpp_hashnode *
 lex_identifier (cpp_reader *pfile, const uchar *base)
 {
   cpp_hashnode *result;
-  const uchar *cur;
+  const uchar *cur, *limit;
+  unsigned int len;
+  unsigned int hash = HT_HASHSTEP (0, *base);
 
-  do
+
+  /* APPLE LOCAL CW asm blocks */
+  while (1) {
+
+  cur = pfile->buffer->cur;
+  for (;;)
     {
-      cur = pfile->buffer->cur;
-
       /* N.B. ISIDNUM does not include $.  */
       while (ISIDNUM (*cur))
-	cur++;
+	{
+	  hash = HT_HASHSTEP (hash, *cur);
+	  cur++;
+	}
 
       pfile->buffer->cur = cur;
+      if (!forms_identifier_p (pfile, false))
+	break;
+
+      limit = pfile->buffer->cur;
+      while (cur < limit)
+	{
+	  hash = HT_HASHSTEP (hash, *cur);
+	  cur++;
+	}
     }
-  while (forms_identifier_p (pfile, false));
+  len = cur - base;
+  hash = HT_HASHFINISH (hash, len);
+
+  /* APPLE LOCAL begin CW asm blocks */
+  /* Allow [.+-] in CW asm opcodes (PowerPC specific).  Do this here
+     so we don't have to figure out "bl- 45" vs "bl -45".  */
+  if (cw_asm_state < cw_asm_decls
+      || cw_asm_in_operands
+      || !(*pfile->buffer->cur == '.'
+	   || *pfile->buffer->cur == '+'
+	   || *pfile->buffer->cur == '-'))
+    break;
+  /* Pick up the non-alpha char and go around again.  */
+  pfile->buffer->cur++;
+  }
+  /* APPLE LOCAL end CW asm blocks */
+
 
   result = (cpp_hashnode *)
-    ht_lookup (pfile->hash_table, base, cur - base, HT_ALLOC);
+    ht_lookup_with_hash (pfile->hash_table, base, len, hash, HT_ALLOC);
 
   /* Rarely, identifiers require diagnostics when lexed.  */
   if (__builtin_expect ((result->flags & NODE_DIAGNOSTIC)
@@ -648,7 +687,7 @@ save_comment (cpp_reader *pfile, cpp_token *token, const unsigned char *from,
 void
 _cpp_init_tokenrun (tokenrun *run, unsigned int count)
 {
-  run->base = xnewvec (cpp_token, count);
+  run->base = XNEWVEC (cpp_token, count);
   run->limit = run->base + count;
   run->next = NULL;
 }
@@ -659,7 +698,7 @@ next_tokenrun (tokenrun *run)
 {
   if (run->next == NULL)
     {
-      run->next = xnew (tokenrun);
+      run->next = XNEW (tokenrun);
       run->next->prev = run;
       _cpp_init_tokenrun (run->next, 250);
     }
@@ -788,7 +827,21 @@ _cpp_lex_token (cpp_reader *pfile)
 		 handles the directive as normal.  */
 	      && pfile->state.parsing_args != 1
 	      && _cpp_handle_directive (pfile, result->flags & PREV_WHITE))
-	    continue;
+	    {
+	      if (pfile->directive_result.type == CPP_PADDING)
+		continue;
+	      else
+		{
+		  result = &pfile->directive_result;
+
+		  /* APPLE LOCAL begin CW asm blocks C++ */
+		  /* We put this back on the result.  */
+		  result->flags |= BOL;
+		  /* APPLE LOCAL end CW asm blocks C++ */
+		  break;
+		}
+	    }
+
 	  if (pfile->cb.line_change && !pfile->state.skipping)
 	    pfile->cb.line_change (pfile, result, pfile->state.parsing_args);
 	}
@@ -849,9 +902,14 @@ _cpp_get_fresh_line (cpp_reader *pfile)
 	{
 	  /* Only warn once.  */
 	  buffer->next_line = buffer->rlimit;
-	  cpp_error_with_line (pfile, CPP_DL_PEDWARN, pfile->line_table->highest_line,
-			       CPP_BUF_COLUMN (buffer, buffer->cur),
-			       "no newline at end of file");
+	  /* APPLE LOCAL begin suppress no newline warning.  */
+	  if ( CPP_OPTION (pfile, warn_newline_at_eof))
+	    {
+	      cpp_error_with_line (pfile, CPP_DL_PEDWARN, pfile->line_table->highest_line,
+				   CPP_BUF_COLUMN (buffer, buffer->cur),
+				   "no newline at end of file");
+	    }
+	  /* APPLE LOCAL end suppress no newline warning.  */
 	}
 
       return_at_eof = buffer->return_at_eof;
@@ -869,6 +927,9 @@ _cpp_get_fresh_line (cpp_reader *pfile)
 	buffer->cur++, result->type = THEN_TYPE;	\
     }							\
   while (0)
+
+/* APPLE LOCAL CW asm blocks */
+static int cw_asm_label_follows;
 
 /* Lex a token into pfile->cur_token, which is also incremented, to
    get diagnostics pointing to the correct location.
@@ -946,6 +1007,12 @@ _cpp_lex_direct (cpp_reader *pfile)
 
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
+      /* APPLE LOCAL begin CW asm blocks */
+      /* An '@' in assembly code makes a following digit string into
+	 an identifier.  */
+      if (cw_asm_label_follows)
+	goto start_ident;
+      /* APPLE LOCAL end CW asm blocks */
       result->type = CPP_NUMBER;
       lex_number (pfile, &result->val.str);
       break;
@@ -959,6 +1026,8 @@ _cpp_lex_direct (cpp_reader *pfile)
 	}
       /* Fall through.  */
 
+      /* APPLE LOCAL CW asm blocks */
+    start_ident:
     case '_':
     case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
     case 'g': case 'h': case 'i': case 'j': case 'k': case 'l':
@@ -979,6 +1048,10 @@ _cpp_lex_direct (cpp_reader *pfile)
 	  result->flags |= NAMED_OP;
 	  result->type = result->val.node->directive_index;
 	}
+      /* APPLE LOCAL begin CW asm blocks */
+      /* Got an identifier, reset the CW asm label hack flag.  */
+      cw_asm_label_follows = 0;
+      /* APPLE LOCAL end CW asm blocks */
       break;
 
     case '\'':
@@ -1191,10 +1264,24 @@ _cpp_lex_direct (cpp_reader *pfile)
     case ']': result->type = CPP_CLOSE_SQUARE; break;
     case '{': result->type = CPP_OPEN_BRACE; break;
     case '}': result->type = CPP_CLOSE_BRACE; break;
-    case ';': result->type = CPP_SEMICOLON; break;
-
-      /* @ is a punctuator in Objective-C.  */
-    case '@': result->type = CPP_ATSIGN; break;
+      /* APPLE LOCAL begin CW asm blocks */
+    case ';':
+      /* ';' separates instructions in CW asm, so flag that we're no
+	 longer seeing operands.  */
+      if (cw_asm_state >= cw_asm_decls)
+	cw_asm_in_operands = 0;
+      result->type = CPP_SEMICOLON;
+      break;
+    case '@':
+      /* In CW asm, @ can indicate a label, which may consist of
+	 either letters or digits, so set a hack flag for this.  (We
+	 still want to return the @ as a separate token so that the
+	 parser can distinguish labels from opcodes.)  */
+      if (cw_asm_state >= cw_asm_decls)
+	cw_asm_label_follows = 1;
+      result->type = CPP_ATSIGN;
+      break;
+      /* APPLE LOCAL end CW asm blocks */
 
     case '$':
     case '\\':
@@ -1613,4 +1700,28 @@ _cpp_aligned_alloc (cpp_reader *pfile, size_t len)
 
   buff->cur = result + len;
   return result;
+}
+
+/* Say which field of TOK is in use.  */
+
+enum cpp_token_fld_kind
+cpp_token_val_index (cpp_token *tok)
+{
+  switch (TOKEN_SPELL (tok))
+    {
+    case SPELL_IDENT:
+      return CPP_TOKEN_FLD_NODE;
+    case SPELL_LITERAL:
+      return CPP_TOKEN_FLD_STR;
+    case SPELL_NONE:
+      if (tok->type == CPP_MACRO_ARG)
+	return CPP_TOKEN_FLD_ARG_NO;
+      else if (tok->type == CPP_PADDING)
+	return CPP_TOKEN_FLD_SOURCE;
+      else if (tok->type == CPP_PRAGMA)
+	return CPP_TOKEN_FLD_STR;
+      /* else fall through */
+    default:
+      return CPP_TOKEN_FLD_NONE;
+    }
 }

@@ -111,6 +111,7 @@ int   __gl_num_interrupt_states     = 0;
 int   __gl_unreserve_all_interrupts = 0;
 int   __gl_exception_tracebacks     = 0;
 int   __gl_zero_cost_exceptions     = 0;
+int   __gl_detect_blocking          = 0;
 
 /* Indication of whether synchronous signal handler has already been
    installed by a previous call to adainit */
@@ -173,7 +174,8 @@ __gnat_set_globals (int main_priority,
                     int num_interrupt_states,
                     int unreserve_all_interrupts,
                     int exception_tracebacks,
-                    int zero_cost_exceptions)
+                    int zero_cost_exceptions,
+                    int detect_blocking)
 {
   static int already_called = 0;
 
@@ -236,6 +238,7 @@ __gnat_set_globals (int main_priority,
   __gl_task_dispatching_policy  = task_dispatching_policy;
   __gl_unreserve_all_interrupts = unreserve_all_interrupts;
   __gl_exception_tracebacks     = exception_tracebacks;
+  __gl_detect_blocking          = detect_blocking;
 
   /* ??? __gl_zero_cost_exceptions is new in 3.15 and is referenced from
      a-except.adb, which is also part of the compiler sources. Since the
@@ -1812,27 +1815,34 @@ __gnat_initialize (void)
   /* On targets where we might be using the ZCX scheme, we need to register
      the frame tables.
 
-     For application "modules", the crtstuff objects linked in (crtbegin/endS)
-     are tailored to provide this service a-la C++ constructor fashion,
-     typically triggered by the dynamic loader. This is achieved by way of a
-     special variable declaration in the crt object, the name of which has
-     been deduced by analyzing the output of the "munching" step documented
-     for C++.  The de-registration call is handled symetrically, a-la C++
-     destructor fashion and typically triggered by the dynamic unloader. With
-     this scheme, a mixed Ada/C++ application has to be linked and loaded as
-     separate modules for each language, which is not unreasonable anyway.
+     For applications loaded as a set of "modules", the crtstuff objects
+     linked in (crtbegin/endS) are tailored to provide this service a-la C++
+     static constructor fashion, typically triggered by the VxWorks loader.
+     This is achieved by way of a special variable declaration in the crt
+     object, the name of which has been deduced by analyzing the output of the
+     "munching" step documented for C++.  The de-registration call is handled
+     symetrically, a-la C++ destructor fashion and typically triggered by the
+     dynamic unloader. Note that since the tables shall be registered against
+     a common datastructure, libgcc should be one of the modules (vs beeing
+     partially linked against all the others at build time) and shall be
+     loaded first.
 
-     For applications statically linked with the kernel, the module scheme
-     above would lead to duplicated symbols because the VxWorks kernel build
-     "munches" by default. To prevent those conflicts, we link against
-     crtbegin/end objects that don't include the special variable and directly
-     call the appropriate function here. We'll never unload that, so there is
-     no de-registration to worry about.
+     For applications linked with the kernel, the scheme above would lead to
+     duplicated symbols because the VxWorks kernel build "munches" by default.
+     To prevent those conflicts, we link against crtbegin/end objects that
+     don't include the special variable and directly call the appropriate
+     function here. We'll never unload that, so there is no de-registration to
+     worry about.
+
+     For whole applications loaded as a single module, we may use one scheme
+     or the other, except for the mixed Ada/C++ case in which the first scheme
+     would fail for the same reason as in the linked-with-kernel situation.
 
      We can differentiate by looking at the __module_has_ctors value provided
-     by each class of crt objects. As of today, selecting the crt set intended
-     for applications to be statically linked with the kernel is triggered by
-     adding "-static" to the gcc *link* command line options.
+     by each class of crt objects. As of today, selecting the crt set with the
+     static ctors/dtors capabilities (first scheme above) is triggered by
+     adding "-static" to the gcc *link* command line options. Without this,
+     the other set of crt objects is fetched.
 
      This is a first approach, tightly synchronized with a number of GCC
      configuration and crtstuff changes. We need to ensure that those changes
@@ -1840,11 +1850,19 @@ __gnat_initialize (void)
 
 #if DWARF2_UNWIND_INFO && defined (_ARCH_PPC)
  {
-   extern const int __module_has_ctors;
-   extern void __do_global_ctors ();
+   /* The scheme described above is only useful for the actual ZCX case, and
+      we don't want any reference to the crt provided symbols otherwise.  We
+      may not link with any of the crt objects in the non-ZCX case, e.g. from
+      documented procedures instructing the use of -nostdlib, and references
+      to the ctors symbols here would just remain unsatisfied.
 
-   if (! __module_has_ctors)
-     __do_global_ctors ();
+      We have no way to avoid those references in the right conditions in this
+      C module, because we have nothing like a IN_ZCX_RTS macro.  This aspect
+      is then deferred to an Ada routine, which can do that based on a test
+      against a constant System flag value.  */
+
+   extern void __gnat_vxw_setup_for_eh (void);
+   __gnat_vxw_setup_for_eh ();
  }
 #endif
 }

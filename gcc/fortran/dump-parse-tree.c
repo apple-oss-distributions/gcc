@@ -351,7 +351,7 @@ gfc_show_expr (gfc_expr * p)
 	case BT_INTEGER:
 	  mpz_out_str (stdout, 10, p->value.integer);
 
-	  if (p->ts.kind != gfc_default_integer_kind ())
+	  if (p->ts.kind != gfc_default_integer_kind)
 	    gfc_status ("_%d", p->ts.kind);
 	  break;
 
@@ -363,8 +363,8 @@ gfc_show_expr (gfc_expr * p)
 	  break;
 
 	case BT_REAL:
-	  mpf_out_str (stdout, 10, 0, p->value.real);
-	  if (p->ts.kind != gfc_default_real_kind ())
+	  mpfr_out_str (stdout, 10, 0, p->value.real, GFC_RND_MODE);
+	  if (p->ts.kind != gfc_default_real_kind)
 	    gfc_status ("_%d", p->ts.kind);
 	  break;
 
@@ -388,14 +388,14 @@ gfc_show_expr (gfc_expr * p)
 	case BT_COMPLEX:
 	  gfc_status ("(complex ");
 
-	  mpf_out_str (stdout, 10, 0, p->value.complex.r);
-	  if (p->ts.kind != gfc_default_complex_kind ())
+	  mpfr_out_str (stdout, 10, 0, p->value.complex.r, GFC_RND_MODE);
+	  if (p->ts.kind != gfc_default_complex_kind)
 	    gfc_status ("_%d", p->ts.kind);
 
 	  gfc_status (" ");
 
-	  mpf_out_str (stdout, 10, 0, p->value.complex.i);
-	  if (p->ts.kind != gfc_default_complex_kind ())
+	  mpfr_out_str (stdout, 10, 0, p->value.complex.i, GFC_RND_MODE);
+	  if (p->ts.kind != gfc_default_complex_kind)
 	    gfc_status ("_%d", p->ts.kind);
 
 	  gfc_status (")");
@@ -544,8 +544,6 @@ gfc_show_attr (symbol_attribute * attr)
     gfc_status (" TARGET");
   if (attr->dummy)
     gfc_status (" DUMMY");
-  if (attr->common)
-    gfc_status (" COMMON");
   if (attr->result)
     gfc_status (" RESULT");
   if (attr->entry)
@@ -559,8 +557,6 @@ gfc_show_attr (symbol_attribute * attr)
     gfc_status (" IN-NAMELIST");
   if (attr->in_common)
     gfc_status (" IN-COMMON");
-  if (attr->saved_common)
-    gfc_status (" SAVED-COMMON");
 
   if (attr->function)
     gfc_status (" FUNCTION");
@@ -616,7 +612,6 @@ gfc_show_symbol (gfc_symbol * sym)
 {
   gfc_formal_arglist *formal;
   gfc_interface *intr;
-  gfc_symbol *s;
 
   if (sym == NULL)
     return;
@@ -647,14 +642,6 @@ gfc_show_symbol (gfc_symbol * sym)
       gfc_status ("Generic interfaces:");
       for (intr = sym->generic; intr; intr = intr->next)
 	gfc_status (" %s", intr->sym->name);
-    }
-
-  if (sym->common_head)
-    {
-      show_indent ();
-      gfc_status ("Common members:");
-      for (s = sym->common_head; s; s = s->common_next)
-	gfc_status (" %s", s->name);
     }
 
   if (sym->result)
@@ -731,6 +718,27 @@ gfc_traverse_user_op (gfc_namespace * ns, void (*func) (gfc_user_op *))
 }
 
 
+/* Function to display a common block.  */
+
+static void
+show_common (gfc_symtree * st)
+{
+  gfc_symbol *s;
+
+  show_indent ();
+  gfc_status ("common: /%s/ ", st->name);
+
+  s = st->n.common->head;
+  while (s)
+    {
+      gfc_status ("%s", s->name);
+      s = s->common_next;
+      if (s)
+	gfc_status (", ");
+    }
+  gfc_status_char ('\n');
+}    
+
 /* Worker function to display the symbol tree.  */
 
 static void
@@ -792,12 +800,17 @@ gfc_show_code_node (int level, gfc_code * c)
       gfc_status ("CONTINUE");
       break;
 
+    case EXEC_ENTRY:
+      gfc_status ("ENTRY %s", c->ext.entry->sym->name);
+      break;
+
     case EXEC_ASSIGN:
       gfc_status ("ASSIGN ");
       gfc_show_expr (c->expr);
       gfc_status_char (' ');
       gfc_show_expr (c->expr2);
       break;
+
     case EXEC_LABEL_ASSIGN:
       gfc_status ("LABEL ASSIGN ");
       gfc_show_expr (c->expr);
@@ -1445,7 +1458,9 @@ gfc_show_namespace (gfc_namespace * ns)
 	}
 
       gfc_current_ns = ns;
-      gfc_traverse_symtree (ns, show_symtree);
+      gfc_traverse_symtree (ns->common_root, show_common);
+
+      gfc_traverse_symtree (ns->sym_root, show_symtree);
 
       for (op = GFC_INTRINSIC_BEGIN; op != GFC_INTRINSIC_END; op++)
 	{

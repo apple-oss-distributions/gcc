@@ -38,8 +38,9 @@ exception statement from your version. */
 
 package java.nio;
 
-import java.io.IOException;
 import gnu.gcj.RawData;
+
+import java.io.IOException;
 
 final class MappedByteBufferImpl extends MappedByteBuffer
 {
@@ -68,9 +69,9 @@ final class MappedByteBufferImpl extends MappedByteBuffer
   
   public byte get ()
   {
+    checkForUnderflow();
+
     int pos = position();
-    if (pos >= limit())
-      throw new BufferUnderflowException();
     byte result = DirectByteBufferImpl.getImpl(address, pos);
     position (pos + 1);
     return result;
@@ -78,9 +79,10 @@ final class MappedByteBufferImpl extends MappedByteBuffer
 
   public ByteBuffer put (byte value)
   {
+    checkIfReadOnly();
+    checkForOverflow();
+
     int pos = position();
-    if (pos >= limit())
-      throw new BufferUnderflowException();
     DirectByteBufferImpl.putImpl(address, pos, value);
     position(pos + 1);
     return this;
@@ -88,17 +90,15 @@ final class MappedByteBufferImpl extends MappedByteBuffer
 
   public byte get (int index)
   {
-    if (index >= limit())
-      throw new BufferUnderflowException();
+    checkIndex(index);
+
     return DirectByteBufferImpl.getImpl(address, index);
   }
 
   public ByteBuffer get (byte[] dst, int offset, int length)
   {
-    if (offset < 0 || length < 0 || offset + length > dst.length)
-      throw new IndexOutOfBoundsException ();
-    if (length > remaining())
-      throw new BufferUnderflowException();
+    checkArraySize(dst.length, offset, length);
+    checkForUnderflow(length);
 
     int index = position();
     DirectByteBufferImpl.getImpl(address, index, dst, offset, length);
@@ -109,8 +109,9 @@ final class MappedByteBufferImpl extends MappedByteBuffer
 
   public ByteBuffer put (int index, byte value)
   {
-    if (index >= limit())
-      throw new BufferUnderflowException();
+    checkIfReadOnly();
+    checkIndex(index);
+
     DirectByteBufferImpl.putImpl(address, index, value);
     return this;
   }

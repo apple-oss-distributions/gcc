@@ -400,6 +400,8 @@ print_type (file, annotation, node, indent)
     fputs (" const", file);
   if (TYPE_RESTRICT (node))
     fputs (" restrict", file);
+  if (TYPE_UNSIGNED (node))
+    fputs (" uns", file);
     
   if (TYPE_LANG_FLAG_0 (node)
       || TYPE_LANG_FLAG_1 (node)
@@ -625,10 +627,6 @@ print_decl (file, annotation, node, indent)
 #endif
       if (DECL_WEAK (node))
         fputs (" weak", file);
-      /* APPLE LOCAL begin weak_import (Radar 2809704) --ilr */
-      if (DECL_WEAK_IMPORT (node))
-	fputs (" weak_import", file);
-      /* APPLE LOCAL end weak_import --ilr */
       
       if (DECL_LANG_FLAG_0 (node)
           || DECL_LANG_FLAG_1 (node)
@@ -1086,8 +1084,6 @@ print_tree_flags (file, node)
     fputs (" volatile", file);
   if (TREE_READONLY (node))
     fputs (" readonly", file);
-  if (TREE_UNSIGNED (node))
-    fputs (" uns", file);
   if (TREE_ASM_WRITTEN (node))
     fputs (" asm-written", file);
   if (TREE_USED (node))
@@ -1106,10 +1102,10 @@ print_tree_flags (file, node)
     fputs (" bounded", file);
   if (TREE_DEPRECATED (node))
     fputs (" deprecated", file);
-  /* APPLE LOCAL begin unavailable (Radar 2809697) --ilr */
+  /* APPLE LOCAL begin "unavailable" attribute (radar 2809697) */
   if (TREE_UNAVAILABLE (node))
     fputs (" unavailable", file);
-  /* APPLE LOCAL end unavailable --ilr */
+  /* APPLE LOCAL end "unavailable" attribute (radar 2809697) */
  
   if (TREE_LANG_FLAG_0 (node)
       || TREE_LANG_FLAG_1 (node)
@@ -1326,7 +1322,7 @@ print_INTEGER_TYPE (file, annotation, node, indent)
 {
   if (TYPE_IS_SIZETYPE (node))
     fputs (" sizetype", file);
-  if (TREE_UNSIGNED (node))
+  if (TYPE_UNSIGNED (node))
     fputs (" uns", file);
     
   print_type (file, annotation, node, indent);
@@ -1369,7 +1365,7 @@ print_ENUMERAL_TYPE (file, annotation, node, indent)
      tree node;
      int indent;
 {
-  if (TREE_UNSIGNED (node))
+  if (TYPE_UNSIGNED (node))
     fputs (" uns", file);
     
   print_type (file, annotation, node, indent);
@@ -1670,7 +1666,7 @@ print_VECTOR_CST (file, annotation, node, indent)
       if (TREE_CODE (type) == INTEGER_TYPE
 	  && (size == 1 || size == 2 || size == 4))
 	{
-	  fmt = (char *) (TREE_UNSIGNED (type) ? "%u%s" : "%d%s");
+	  fmt = (char *) (TYPE_UNSIGNED (type) ? "%u%s" : "%d%s");
 	  if (TREE_CODE (TREE_VALUE (t1)) == INTEGER_CST)
 	    {
 	      vec_value.ul[0] = CST_VALUE (TREE_VALUE (t1), ok);
@@ -2034,7 +2030,7 @@ print_FIELD_DECL (file, annotation, node, indent)
     fputs (" virt", file);
   if (DECL_PACKED (node))
     fputs (" packed", file);
-  if (TREE_UNSIGNED (node))
+  if (DECL_UNSIGNED (node))
     fputs (" uns", file);
   if (DECL_BIT_FIELD (node))
     fputs (" bitfield", file);

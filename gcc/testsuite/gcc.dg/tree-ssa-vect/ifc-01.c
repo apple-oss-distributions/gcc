@@ -1,4 +1,4 @@
-/* APPLE LOCAL file  */
+/* APPLE LOCAL file AV */
 /* { dg-do run { target powerpc*-*-* i?86-*-* } } */
 /* { dg-options "-O2 -ftree-vectorize -fdump-tree-vect-stats -maltivec" { target powerpc*-*-* } } */
 /* { dg-options "-O2 -ftree-vectorize -fdump-tree-vect-stats -msse" { target i?86-*-* } } */
@@ -6,6 +6,8 @@
 #include <stdarg.h>
 #include <signal.h>
 
+extern void abort (void);
+extern void exit (int);
 #define N 16
 #define MAX 42
  
@@ -49,4 +51,5 @@ int main (void)
 } 
 
 
-/* { dg-final { scan-tree-dump-times "vectorized 1 loops" 1 "vect" } } */
+/* { dg-final { scan-tree-dump-times "Applying if-conversion" 1 "vect" { xfail *-*-* } } } */
+/* { dg-final { scan-tree-dump-times "vectorized 1 loops" 1 "vect" { xfail *-*-* } } } */

@@ -197,9 +197,9 @@ get_variable_decl (tree exp)
 static void
 final_assign_error (tree name)
 {
-  static const char format[]
-    = "Can't reassign a value to the final variable `%s'";
-  parse_error_context (wfl, format, IDENTIFIER_POINTER (name));
+  parse_error_context (wfl,
+                       "Can't reassign a value to the final variable %qs",
+                       IDENTIFIER_POINTER (name));
 }
 
 static void
@@ -210,7 +210,8 @@ check_final_reassigned (tree decl, words before)
      assigned must be reported as errors */
   if (DECL_FINAL (decl) && index != -2
       && (index < loop_current_locals /* I.e. -1, or outside current loop. */
-	  || ! UNASSIGNED_P (before, index)))
+          || (DECL_LOCAL_FINAL_IUD (decl) ? ASSIGNED_P (before, index)
+              : ! UNASSIGNED_P (before, index))))
     {
       final_assign_error (DECL_NAME (decl));
     }
@@ -337,27 +338,6 @@ check_bool_init (tree exp, words before, words when_false, words when_true)
     case TRUTH_NOT_EXPR:
       check_bool_init (TREE_OPERAND (exp, 0), before, when_true, when_false);
       return;
-    case MODIFY_EXPR:
-      {
-	tree tmp = TREE_OPERAND (exp, 0);
-	if ((tmp = get_variable_decl (tmp)) != NULL_TREE)
-	  {
-	    int index;
-	    check_bool_init (TREE_OPERAND (exp, 1), before,
-			     when_false, when_true);
-	    check_final_reassigned (tmp, before);
-	    index = DECL_BIT_INDEX (tmp);
-	    if (index >= 0)
-	      {
-		SET_ASSIGNED (when_false, index);
-		SET_ASSIGNED (when_true, index);
-		CLEAR_UNASSIGNED (when_false, index);
-		CLEAR_UNASSIGNED (when_true, index);
-	      }
-	    break;
-	  }
-      }
-      goto do_default;
 
     case BIT_AND_EXPR:
     case BIT_IOR_EXPR:
@@ -390,8 +370,8 @@ check_bool_init (tree exp, words before, words when_false, words when_true)
 	  COPY (when_true, before);
 	}
       break;
+
     default:
-    do_default:
       check_init (exp, before);
       COPY (when_false, before);
       COPY (when_true, before);
@@ -486,7 +466,7 @@ check_init (tree exp, words before)
 	      && index >= 0 && ! ASSIGNED_P (before, index))
 	    {
 	      parse_error_context 
-		(wfl, "Variable `%s' may not have been initialized",
+		(wfl, "Variable %qs may not have been initialized",
 		 IDENTIFIER_POINTER (DECL_NAME (exp)));
 	      /* Suppress further errors. */
 	      DECL_BIT_INDEX (exp) = -2;
@@ -502,7 +482,7 @@ check_init (tree exp, words before)
 	  if (index >= 0 && ! ASSIGNED_P (before, index))
 	    {
 	      parse_error_context 
-		(wfl, "variable `%s' may not have been initialized",
+		(wfl, "variable %qs may not have been initialized",
 		 IDENTIFIER_POINTER (DECL_NAME (tmp)));
 	      /* Suppress further errors. */
 	      DECL_BIT_INDEX (tmp) = -2;
@@ -531,6 +511,7 @@ check_init (tree exp, words before)
 	     definitely assigned when once we checked the whole
 	     function. */
 	  if (! STATIC_CLASS_INIT_OPT_P () /* FIXME */
+	      && ! DECL_FINAL (tmp)
 	      && index >= start_current_locals
 	      && index == num_current_locals - 1)
 	    {
@@ -846,6 +827,12 @@ check_init (tree exp, words before)
     case FLOOR_MOD_EXPR:
     case ROUND_MOD_EXPR:
     case EXACT_DIV_EXPR:
+    case UNLT_EXPR:
+    case UNLE_EXPR:
+    case UNGT_EXPR:
+    case UNGE_EXPR:
+    case UNEQ_EXPR:
+    case LTGT_EXPR:
     binop:
       check_init (TREE_OPERAND (exp, 0), before);
       /* Avoid needless recursion, especially for COMPOUND_EXPR. */
@@ -892,8 +879,12 @@ check_init (tree exp, words before)
 	if (IS_EMPTY_STMT (body))
 	  break;
 	wfl = exp;
+#ifdef USE_MAPPED_LOCATION
+	input_location = EXPR_LOCATION (exp);
+#else
 	input_filename = EXPR_WFL_FILENAME (exp);
 	input_line = EXPR_WFL_LINENO (exp);
+#endif
 	check_init (body, before);
 	input_location = saved_location;
 	wfl = saved_wfl;
@@ -974,7 +965,7 @@ check_for_initialization (tree body, tree mdecl)
 	      if (index >= 0 && ! ASSIGNED_P (before, index))
 		{
 		  if (! is_finit_method)
-		    error ("%Jfinal field `%D' may not have been initialized",
+		    error ("%Jfinal field %qD may not have been initialized",
                            decl, decl);
 		}
 	      else if (is_finit_method)

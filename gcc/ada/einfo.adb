@@ -419,10 +419,9 @@ package body Einfo is
 
    --    Has_Contiguous_Rep             Flag181
    --    Has_Xref_Entry                 Flag182
+   --    Must_Be_On_Byte_Boundary       Flag183
 
-   --  Remaining flags are currently unused and available
-
-   --    (unused)                       Flag183
+   --   Note: there are no unused flags currently!
 
    --------------------------------
    -- Attribute Access Functions --
@@ -1753,6 +1752,12 @@ package body Einfo is
       pragma Assert (Is_Modular_Integer_Type (Id));
       return Uint17 (Base_Type (Id));
    end Modulus;
+
+   function Must_Be_On_Byte_Boundary (Id : E) return B is
+   begin
+      pragma Assert (Is_Type (Id));
+      return Flag183 (Id);
+   end Must_Be_On_Byte_Boundary;
 
    function Needs_Debug_Info (Id : E) return B is
    begin
@@ -3712,6 +3717,12 @@ package body Einfo is
       Set_Uint17 (Id, V);
    end Set_Modulus;
 
+   procedure Set_Must_Be_On_Byte_Boundary (Id : E; V : B := True) is
+   begin
+      pragma Assert (Is_Type (Id));
+      Set_Flag183 (Id, V);
+   end Set_Must_Be_On_Byte_Boundary;
+
    procedure Set_Needs_Debug_Info (Id : E; V : B := True) is
    begin
       Set_Flag147 (Id, V);
@@ -4667,6 +4678,15 @@ package body Einfo is
       S  : Entity_Id;
 
    begin
+      --  The following test is an error defense against some syntax
+      --  errors that can leave scopes very messed up.
+
+      if Id = Standard_Standard then
+         return Id;
+      end if;
+
+      --  Normal case, search enclosing scopes
+
       S := Scope (Id);
       while S /= Standard_Standard
         and then not Is_Dynamic_Scope (S)
@@ -6249,6 +6269,7 @@ package body Einfo is
       W ("Kill_Tag_Checks",               Flag34  (Id));
       W ("Machine_Radix_10",              Flag84  (Id));
       W ("Materialize_Entity",            Flag168 (Id));
+      W ("Must_Be_On_Byte_Boundary",      Flag183 (Id));
       W ("Needs_Debug_Info",              Flag147 (Id));
       W ("Needs_No_Actuals",              Flag22  (Id));
       W ("Never_Set_In_Source",           Flag115 (Id));

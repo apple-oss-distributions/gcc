@@ -29,11 +29,17 @@
 // the GNU General Public License.
 
 #include "new"
+#include <cstdlib>
 
-// We can't rely on having stdlib.h if we're freestanding.
-extern "C" void free (void *);
+#if _GLIBCXX_HOSTED
+using std::free;
+#else
+// A freestanding C runtime may not provide "free" -- but there is no
+// other reasonable way to implement "operator delete".
+extern "C" void free(void *);
+#endif
 
-void
+__attribute__((weak)) void
 operator delete (void *ptr) throw ()
 {
   if (ptr)

@@ -1,4 +1,4 @@
-/* Target definitions for Darwin 7.0 and above (Mac OS X) systems.
+/* Target definitions for Darwin 7.x (Mac OS X) systems.
    Copyright (C) 2004
    Free Software Foundation, Inc.
 
@@ -22,7 +22,8 @@ Boston, MA 02111-1307, USA.  */
 /* Darwin 7.0 and above have C99 functions.   */
 #define TARGET_C99_FUNCTIONS 1
 
-/* But for some reason they are located in libmx so have it
-   be included when asked for and automatically when linking
-   with gfortran and g++.   */
-#define MATH_LIBRARY "-lmx"
+/* Machine dependent libraries, include libmx when compiling on Darwin 7.0
+   and above.  */
+
+#undef	LIB_SPEC
+#define LIB_SPEC "%{!static:-lSystem -lmx}"
