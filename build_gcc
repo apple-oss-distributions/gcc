@@ -3,6 +3,16 @@
 ##
 ##  implementation of the "build" target of top level gcc makefile
 ##
+## MANUAL BUILDS -- to build gcc "by hand", as it were:
+##
+##  cd <this directory>
+##  rm -rf dst obj
+##  export SRCROOT=`pwd`          # or setenv, or whatever
+##  export OBJROOT=$SRCROOT/obj	  # or whereever
+##  export DSTROOT=$SRCROOT/dst
+##  gnumake RC_OS=macos RC_ARCHS=ppc BOOTSTRAP=  TARGETS=ppc \
+##	SRCROOT=$SRCROOT OBJROOT=$OBJROOT DSTROOT=$DSTROOT
+##  ... everything is in the DSTROOT directory
 ######################################################################
 
 MKDIRS=mkdirs

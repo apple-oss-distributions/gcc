@@ -135,6 +135,22 @@ tree build_encode_expr				PROTO((tree));
 #define PROTOCOL_DEFINED(CLASS) TREE_USED (CLASS)
 #define TYPE_PROTOCOL_LIST(TYPE) ((TYPE)->type.context)
 
+/* Type checking macros.  */
+
+extern tree super_type, selector_type, id_type, objc_class_type;
+#define IS_ID(TYPE) \
+  (id_type && TYPE_MAIN_VARIANT (TYPE) == TYPE_MAIN_VARIANT (id_type))
+#define IS_PROTOCOL_QUALIFIED_ID(TYPE) \
+  (IS_ID (TYPE) && TYPE_PROTOCOL_LIST (TYPE))
+#define IS_SUPER(TYPE) \
+  (super_type && TYPE_MAIN_VARIANT (TYPE) == TYPE_MAIN_VARIANT (super_type))
+
+/* Set by `continue_class' and checked by `is_public'.  */
+
+#define TREE_STATIC_TEMPLATE(record_type) (TREE_PUBLIC (record_type))
+#define TYPED_OBJECT(type) \
+       (TREE_CODE (type) == RECORD_TYPE && TREE_STATIC_TEMPLATE (type))
+
 /* Define the Objective-C or Objective-C++ language-specific tree codes.  */
 
 /* this requires tree.h and if C++ also cp-tree.h to be included already. */

@@ -601,12 +601,6 @@ static char* TAG_MSGSENDSUPER_STRET;
 static char* TAG_EXECCLASS;
 static char* TAG_ATOM;
 
-/* Set by `continue_class' and checked by `is_public'.  */
-
-#define TREE_STATIC_TEMPLATE(record_type) (TREE_PUBLIC (record_type))
-#define TYPED_OBJECT(type) \
-       (TREE_CODE (type) == RECORD_TYPE && TREE_STATIC_TEMPLATE (type))
-
 /* Some commonly used instances of "identifier_node".  */
 
 static tree self_id, ucmd_id;
@@ -617,7 +611,6 @@ static tree umsg_stret_decl, umsg_super_stret_decl;
 static tree objc_get_class_decl, objc_get_meta_class_decl;
 static tree objc_get_orig_class_decl;
 
-static tree super_type, selector_type, id_type, objc_class_type;
 static tree instance_type, protocol_type;
 #ifdef OBJCPLUS
 static tree objc_module_type;
@@ -3215,6 +3208,12 @@ objc_copy_list (list, head)
    copy all fields.  Otherwise don't copy leaf ivars since we rely on
    them being side-effected exactly once by finish_struct.  */
 
+/* zlaski 2001-Nov-06: It turns out that not copying leaf ivars causes
+   bitfields in the base class to be sometimes treated as integers (which
+   changes the layout of the class).  While this is a bug, it CANNOT BE
+   FIXED, since that would break binary compatibility.  See Radars
+   2788414 and 2787108 for more info.  */
+   
 static tree
 build_ivar_chain (interface, copy)
      tree interface;
@@ -6386,30 +6385,6 @@ build_message_expr (mess, modern_flag)
   return retval;
 }
 
-static int
-is_protocol_contained_in_protocols PROTO((tree, tree));
-
-is_protocol_contained_in_protocol (protocol1, protocol2)
-tree protocol1;
-tree protocol2;
-{
-    if (protocol1 == protocol2)
-       return 1;
-    return is_protocol_contained_in_protocols(protocol1, PROTOCOL_LIST(protocol2));
-}
-	
-static int
-is_protocol_contained_in_protocols (protocol, protocols)
-tree protocol;
-tree protocols;
-{
-    while (protocols) {
-       if (is_protocol_contained_in_protocol(protocol, TREE_VALUE(protocols))) return 1;
-       protocols = TREE_CHAIN (protocols);
-    }
-    return 0;
-}
-
 /* Build a tree expression to send OBJECT the operation SELECTOR,
    looking up the method on object LOOKUP_OBJECT (often same as OBJECT),
    assuming the method has prototype METHOD_PROTOTYPE.
@@ -6447,9 +6422,9 @@ build_objc_method_call (super_flag, method_prototype, lookup_object, object,
 	     whatever this operation returns.  */
 	  tree arglist = NULL_TREE;
 	  tree retval, savarg, savret;
+	  tree ret_type = groktypename (TREE_TYPE (method_prototype));
 
 #ifdef STRUCT_VALUE
-	  tree ret_type = groktypename (TREE_TYPE (method_prototype));
 	  /* If we are returning a struct in memory, and the address
 	     of that memory location is passed as a hidden first argument,
 	     then change which messenger entry point this expr will call.  */
@@ -6471,8 +6446,7 @@ build_objc_method_call (super_flag, method_prototype, lookup_object, object,
 	  TYPE_ARG_TYPES (TREE_TYPE (sender)) = arglist;
 
 	  /* Install this method's return type.  */
-	  TREE_TYPE (TREE_TYPE (sender))
-	    = groktypename (TREE_TYPE (method_prototype));
+	  TREE_TYPE (TREE_TYPE (sender)) = ret_type;
 
 	  /* Call SENDER with all the parameters.  This will do type
 	     checking using the arg types for this method.  */
