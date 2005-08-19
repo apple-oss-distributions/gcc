@@ -1,3 +1,8 @@
+2005-08-18  Geoffrey Keating  <geoffk@apple.com>
+
+	Radar 4220152
+	* build_gcc: Remove dylibs in /usr/lib.
+
 2005-04-13  Geoff Keating  <dalej@apple.com>
 
 	Radar 4071716

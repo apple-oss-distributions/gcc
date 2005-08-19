@@ -1,3 +1,23 @@
+2005-05-26  Ziemowit Laski  <zlaski@apple.com>
+
+	* objc.dg/selector-4.m: Bring over from mainline.
+
+2005-05-26  Ziemowit Laski  <zlaski@apple.com>
+
+	* obj-c++.dg/selector-1.mm: Adjust APPLE LOCAL marker.
+	* obj-c++.dg/selector-4.mm: Bring over from mainline.
+
+2005-05-25  Ziemowit Laski  <zlaski@apple.com>
+
+	* obj-c++.dg/selector-2.mm: New.
+	* obj-c++.dg/selector-3.mm: New.
+	* objc.dg/selector-3.m: New.
+
+2005-05-25  Ziemowit Laski  <zlaski@apple.com>
+
+	* objc.dg/selector-2.m: Remove "-fgnu-runtime"; be flexible
+	about where warning appears.
+
 2005-05-16  Ziemowit Laski  <zlaski@apple.com>
 
 	Radar 4087344
