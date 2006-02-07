@@ -1,3 +1,66 @@
+2005-12-06  Dale Johannesen  <dalej@apple.com>
+
+	* config/i386/sse.md (sse_movhlps):  Reverse operands for
+	2nd and 3rd alternatives.
+
+2005-11-17  Dale Johannesen  <dalej@apple.com>
+
+	Radar 4321079
+	* global.c (remove_invalidated_death_notes):  New.
+	* reload1.c (reload):  Call it.
+
+2005-11-15  Dale Johannesen  <dalej@apple.com>
+
+	* expmed.c (store_bit_field):  Add offset unconditionally for
+	memory targets.
+	(extract_bit_field):  Don't force extzv or extv operand into
+	a register if field is too big.
+
+2005-11-15  Dale Johannesen  <dalej@apple.com>
+
+	* cfghooks.c (split_block):  Copy loop_father.
+	* cfgloopmanip.c (create_loops_notes):  Create preheaders.
+
+2005-11-10  Dale Johannesen  <dalej@apple.com>
+
+	Radar 4321079
+	* local-alloc.c (block_alloc):  Disable local RA for vectors.
+	* global.c (pseudo_preferences):  New.
+	(TEST_PSEUDO_PREF):  New.
+	(SET_PSEUDO_PREF):  New.
+	(CLEAR_PSEUDO_PREF):  New.
+	(global_alloc):  Allocate, free pseudo_preferences.  Mark pseudo-
+	preferenced regs as nonconflicting when each is assigned to just once.
+	(expand_preferences):  Apply transitive property to pseudo_preferences.
+	(find_reg):  Propagate pseudo_preferences when a pseudo is assigned a
+	register.
+	(mirror_conflicts):  Make pseudo_preferences symmetrical, like conflicts.
+	(set_preference):  Look under SUBREG for vector-vector copies.  Treat
+	these as creating a preference.
+	(find_tied_stack_pseudo):  New.
+	(dump_conflicts):  Dump pseudo_preferences and copy preferences.
+	* reload1.c (from_global):  New.
+	(reload):  Save it.
+	(alter_reg):  Use it.  Ask GRA for a stack slot already used by a
+	pseudo-preferenced register, before creating a new one.
+
+2005-11-10  Dale Johannesen  <dalej@apple.com>
+
+	Radar 4321079
+	* cfgloopmanip.c:  Include option.h.
+	(straighten_blocks):  New.
+	(create_loop_notes): Call it.  Look for and straighten
+	a specific 2-block loop pattern.
+	* Makefile.in (cfgloopmanip.o):  Add options.h dependency.
+
+2005-11-01  Stuart Hastings  <stuart@apple.com>
+
+	* gcc/config/darwin.h (fix-and-continue): Added APPLE LOCAL for comma.
+
+2005-11-01  Stuart Hastings  <stuart@apple.com>
+
+	* gcc/config/i386/i386.h (Unused): Fix gratuitous APPLE LOCAL change.
+
 2005-10-28  Stuart Hastings  <stuart@apple.com>
 
 	Radar 4164563
