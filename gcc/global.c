@@ -271,7 +271,7 @@ static int local_reg_n_refs[FIRST_PSEUDO_REGISTER];
    Now it is computed as
    SUM (REG_FREQ(i)/REG_LIVE_LENGTH(i)) over all uses. */
 
-static double local_reg_weight[FIRST_PSEUDO_REGISTER];
+static HOST_WIDE_INT local_reg_weight[FIRST_PSEUDO_REGISTER];
 #else
 /* Frequency of uses of given hard reg.  */
 static int local_reg_freq[FIRST_PSEUDO_REGISTER];
@@ -431,8 +431,13 @@ global_alloc (FILE *file)
 	SET_HARD_REG_BIT (no_global_alloc_regs, HARD_FRAME_POINTER_REGNUM);
     }
   else if (need_fp)
-    error ("%s cannot be used in asm here",
-	   reg_names[HARD_FRAME_POINTER_REGNUM]);
+    /* APPLE LOCAL begin CW asm blocks 4443946 */
+    {
+      if (!flag_iasm_blocks)
+	error ("%s cannot be used in asm here",
+	       reg_names[HARD_FRAME_POINTER_REGNUM]);
+    }
+    /* APPLE LOCAL end CW asm blocks 4443946 */
   else
     regs_ever_live[HARD_FRAME_POINTER_REGNUM] = 1;
 #endif
@@ -567,8 +572,8 @@ global_alloc (FILE *file)
 	    /* APPLE LOCAL begin rewrite weight computation */
 #ifdef REWRITE_WEIGHT_COMPUTATION
 	    if ( REG_LIVE_LENGTH (i) > 0 )
-	      local_reg_weight[j] += (double)REG_FREQ (i) 
-				    / (double) REG_LIVE_LENGTH (i);
+	      local_reg_weight[j] += (REG_FREQ (i) * 100)
+				      / REG_LIVE_LENGTH (i);
 #else
 	    local_reg_freq[j] += REG_FREQ (i);
 	    local_reg_live_length[j] += REG_LIVE_LENGTH (i);
@@ -1014,21 +1019,49 @@ expand_preferences (void)
 	    && ! CONFLICTP (reg_allocno[REGNO (SET_DEST (set))],
 			    reg_allocno[REGNO (XEXP (link, 0))]))
 	  {
-            /* APPLE LOCAL 4321079 */
+	    /* APPLE LOCAL begin 4271691 */
+	    /* APPLE LOCAL 4321079 */
 	    int j;
 	    int a1 = reg_allocno[REGNO (SET_DEST (set))];
 	    int a2 = reg_allocno[REGNO (XEXP (link, 0))];
 
 	    if (XEXP (link, 0) == SET_SRC (set))
 	      {
-                /* APPLE LOCAL 4321079 */
-		int ialloc_prod = a1 * allocno_row_words;
 		IOR_HARD_REG_SET (allocno[a1].hard_reg_copy_preferences,
 				  allocno[a2].hard_reg_copy_preferences);
 		IOR_HARD_REG_SET (allocno[a2].hard_reg_copy_preferences,
 				  allocno[a1].hard_reg_copy_preferences);
-                /* APPLE LOCAL begin 4321079 */
-		ialloc_prod = a1 * allocno_row_words;
+	      }
+	    /* APPLE LOCAL begin 4385068 */
+	    /* We can establish a new pseudo preference as well; this tends
+	       to cut down on the number of reg-reg copies.  Since two
+	       inputs that both die conflict with each other, we shouldn't
+	       tie both.  Experimentally, neither picking the first nor the second
+	       seems to be a winner, so we tie neither. 
+	       On ppc, this whole idea seems to be a loser; introducing extra
+	       dependencies for scheduling loses more than eliminating reg-reg
+	       copies gains.  We make some attempt to abstract this by looking
+	       at flag_schedule_insns; if this is off, we conclude good scheduling
+	       is relatively unimportant.
+	       The limitation to vectors is not necessary for correctness. */
+	    if (!flag_schedule_insns
+		&& REG_NOTES (insn) == link && XEXP (link, 1) == 0
+		&& VECTOR_MODE_P (GET_MODE (SET_DEST (set)))
+		&& VECTOR_MODE_P (GET_MODE (XEXP (link, 0))))
+	      {
+		SET_PSEUDO_PREF (a1, a2);
+		SET_PSEUDO_PREF (a2, a1);
+	      }
+	    /* For vectors, propagate association even for things that
+	       aren't reg-reg copies.  See caveats above.  */
+	    if (XEXP (link, 0) == SET_SRC (set)
+		|| (!flag_schedule_insns
+		    && REG_NOTES (insn) == link && XEXP (link, 1) == 0
+		    && VECTOR_MODE_P (GET_MODE (SET_DEST (set)))
+		    && VECTOR_MODE_P (GET_MODE (XEXP (link, 0)))))
+	    /* APPLE LOCAL end 4385068 */
+	      {
+		/* APPLE LOCAL begin 4321079 */
 		for (j = allocno_row_words - 1; j >= 0; j--)
 		  {
 		    pseudo_preferences[a1 * allocno_row_words + j] 
@@ -1036,8 +1069,9 @@ expand_preferences (void)
 		    pseudo_preferences[a2 * allocno_row_words + j] 
 		      |= pseudo_preferences[a1 * allocno_row_words + j];
 		  }
-                /* APPLE LOCAL end 4321079 */
+		/* APPLE LOCAL end 4321079 */
 	      }
+	    /* APPLE LOCAL end 4271691 */
 
 	    IOR_HARD_REG_SET (allocno[a1].hard_reg_preferences,
 			      allocno[a2].hard_reg_preferences);
@@ -1387,11 +1421,11 @@ find_reg (int num, HARD_REG_SET losers, int alt_regs_p, int accept_call_clobbere
 	    {
 	      /* APPLE LOCAL begin rewrite weight computation */
 #ifdef REWRITE_WEIGHT_COMPUTATION
-	      /* We explicitly evaluate the divide result into a temporary
-		 variable so as to avoid excess precision problems that occur
-		 on an i386-unknown-sysv4.2 (unixware) host.  */
-	      double tmp = ((double) allocno[num].freq
-			    / allocno[num].live_length);
+	      /* The multiplier of 100 is used to help get a couple
+		 of places of difference to mitigate the problem of
+		 having to use integers in the weight calculation.  */
+	      HOST_WIDE_INT tmp = (allocno[num].freq * 100)
+				  / allocno[num].live_length;
 #else
 	    /* APPLE LOCAL end rewrite weight computation */
 	      /* We explicitly evaluate the divide results into temporary
@@ -1799,6 +1833,7 @@ mark_reg_live_nc (int regno, enum machine_mode mode)
 
 /* Try to set a preference for an allocno to a hard register.
    We are passed DEST and SRC which are the operands of a SET.  It is known
+APPLE LOCAL 4321079 mainline
    that DEST is a register.  If SRC or the first operand of SRC is a register,
    try to set a preference.  If one of the two is a hard register and the other
    is a pseudo-register, mark the preference.
@@ -1942,10 +1977,8 @@ set_preference (rtx dest, rtx src)
       src_regno += offset;
       SET_PSEUDO_PREF (reg_allocno[dest_regno], reg_allocno[src_regno]);
     }
-  /* APPLE LOCAL end 4321079 */
 }
 
-/* APPLE LOCAL begin 4321079 */
 /* Callback for reload.  We are going to assign pseudo R a stack slot;
    see if a reg tied to it already has one that we can reuse. */
 rtx find_tied_stack_pseudo (int);
@@ -1961,8 +1994,11 @@ find_tied_stack_pseudo (int r)
       if (!CONFLICTP(i, j) 
 	  && reg_renumber[allocno[j].reg] < 0
 	  && reg_equiv_memory_loc[allocno[j].reg] != 0
+	  /* APPLE LOCAL begin 4405429 */
 	  && PSEUDO_REGNO_BYTES (allocno[j].reg)
-	      == PSEUDO_REGNO_BYTES (allocno[i].reg))
+	      == PSEUDO_REGNO_BYTES (allocno[i].reg)
+	  && strict_memory_address_p (VOIDmode, reg_equiv_memory_loc[allocno[j].reg]))
+	  /* APPLE LOCAL end 4405429 */
 	return copy_rtx (reg_equiv_memory_loc[allocno[j].reg]);
     });
   return 0;
@@ -1996,7 +2032,7 @@ void remove_invalidated_death_notes (rtx first)
 		  continue;
 		regno = REGNO (r);
 		orig_regno = ORIGINAL_REGNO (r);
-		if (orig_regno < FIRST_PSEUDO_REGISTER || regno >= FIRST_PSEUDO_REGISTER)
+	        if (orig_regno < FIRST_PSEUDO_REGISTER || regno >= FIRST_PSEUDO_REGISTER)
 		  continue;
 		if (regno == orig_regno)
 		  continue;
