@@ -1,3 +1,21 @@
+2006-08-04  Mike Stump  <mrs@apple.com>
+
+	Radar 4669052
+	* Makefile.in (LIBGCC_DEPS): Don't depend on LANGUAGES.
+	(c-parse.y): Ensure that we don't rebuild.
+
+2006-07-17  Eric Christopher  <echristo@apple.com>
+
+	Radar 4633168
+	Radar 4630878
+	* config/t-slibgcc-darwin (stmp-lipo): Remove.
+	Rewrite libgcc_s.1.dylib dependencies.
+ 
+2006-07-05  Hui-May Chang  <hm.chang@apple.com>
+
+	* doc/extend.texi: Fixed the unmatched APPLE LOCAL marker introduced by
+	the previous checkin for radar 4395773.
+
 2006-06-26  Hui-May Chang  <hm.chang@apple.com>
 
 	Radar 4395773
