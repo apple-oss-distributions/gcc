@@ -1,4 +1,4 @@
-/* APPLE LOCAL begin radar 4614623, 4700281 */
+/* APPLE LOCAL begin radar 4614623 */
 /* { dg-do run { target i?86-*-* } } */
 /* { dg-skip-if "" { *-*-darwin* } { "-m64" } { "" } } */
 /* { dg-options "-O -mmmx -fomit-frame-pointer -march=pentium-m" } */
@@ -41,4 +41,4 @@ int main ()
   foo (2, 2, a, b, c, d, e);
   return 0;
 }
-/* APPLE LOCAL end radar 4614623, 4700281 */
+/* APPLE LOCAL end radar 4614623 */

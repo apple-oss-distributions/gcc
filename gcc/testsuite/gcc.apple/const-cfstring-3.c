@@ -1,5 +1,5 @@
 /* APPLE LOCAL file constant CFStrings */
-/* Test whether the __builtin__CFStringMakeConstantString 
+/* Test whether the __builtin__CFStringMakeConstantString
    "function" generates compile-time objects with the correct layout. */
 /* Developed by Ziemowit Laski <zlaski@apple.com>.  */
 

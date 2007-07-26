@@ -11,7 +11,7 @@ void foo() {
   asm {
     movzx   eax, BYTE PTR source
     movzx   eax, BYTE PTR color
-    mov     ax, WORD PTR source 
+    mov     ax, WORD PTR source
     mov     ax, WORD PTR color
   }
 }

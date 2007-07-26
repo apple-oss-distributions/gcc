@@ -38,6 +38,8 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 #include "opts.h"
 #include "options.h"
 #include "mkdeps.h"
+/* APPLE LOCAL iframework for 4.3 4094959 */
+#include "tm_p.h"
 
 #ifndef DOLLARS_IN_IDENTIFIERS
 # define DOLLARS_IN_IDENTIFIERS true
@@ -264,7 +266,16 @@ c_common_handle_option (size_t scode, const char *arg, int value)
     {
     default:
       if (cl_options[code].flags & (CL_C | CL_CXX | CL_ObjC | CL_ObjCXX))
-	break;
+	/* APPLE LOCAL begin iframework for 4.3 4094959 */
+	{
+#ifdef TARGET_HANDLE_C_OPTION
+	  if ((option->flags & CL_TARGET))
+	    if (! TARGET_HANDLE_C_OPTION (scode, arg, value))
+	      result = 0;
+#endif
+	  break;
+	}
+      /* APPLE LOCAL end iframework for 4.3 4094959 */
       result = 0;
       break;
 
@@ -772,9 +783,8 @@ c_common_handle_option (size_t scode, const char *arg, int value)
       break;
 
     /* APPLE LOCAL begin mainline */
-    case OPT_fobjc_call_cxx_cdtors:
-      flag_objc_call_cxx_cdtors = value;
-      break;
+    /* APPLE LOCAL radar 4949034 */
+    /* code removed */
     /* APPLE LOCAL end mainline */
 
     case OPT_fobjc_exceptions:
@@ -956,6 +966,12 @@ c_common_handle_option (size_t scode, const char *arg, int value)
     case OPT_print_objc_runtime_info:
       print_struct_values = 1;
       break;
+
+    /* APPLE LOCAL begin radar 5082000 */
+    case OPT_print_objc_ivar_layout:
+      print_objc_ivar_layout = 1;
+      break;
+    /* APPLE LOCAL end radar 5082000 */
 
 /* APPLE LOCAL begin mainline 4.1 2005-06-17 3988498 */
     case OPT_print_pch_checksum:

@@ -1,3 +1,4 @@
+/* APPLE LOCAL file radar 5245946 */
 /* Method encoding tests for stand-alone @protocol declarations.  */
 /* Contributed by Ziemowit Laski <zlaski@apple.com>.  */
 /* { dg-do run } */
@@ -34,8 +35,12 @@ typedef struct _XXRect { XXPoint origin; XXSize size; struct _XXRect *next; } XX
 + (ProtoBool **)getBool:(ObjCBool **)b;
 @end
 
-Protocol *proto = @protocol(Proto);
+/* APPLE LOCAL radar 4894756 */
+/* code removed */
 struct objc_method_description *meth;
+#   if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
+struct objc_method_description meth_object;
+#endif
 unsigned totsize, offs0, offs1, offs2, offs3, offs4, offs5, offs6, offs7;
 
 static void scan_initial(const char *pattern) {
@@ -47,8 +52,16 @@ static void scan_initial(const char *pattern) {
 
 int main(void) {
   const char *string;
+  /* APPLE LOCAL radar 4894756 */
+  Protocol *proto = @protocol(Proto);
 
+#   if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
+  meth_object = protocol_getMethodDescription (proto, 
+		  @selector(char:float:double:unsigned:short:long:), YES, YES);
+  meth = &meth_object;
+#else
   meth = [proto descriptionForInstanceMethod: @selector(char:float:double:unsigned:short:long:)];
+#endif
   if (sizeof (long) == 8)
     string = "v%u@%u:%uc%uf%ud%uI%us%uq%u";
   else
@@ -57,15 +70,33 @@ int main(void) {
   CHECK_IF(offs3 == offs2 + sizeof(int) && offs4 == offs3 + sizeof(float));
   CHECK_IF(offs5 == offs4 + sizeof(double) && offs6 == offs5 + sizeof(unsigned));
   CHECK_IF(offs7 == offs6 + sizeof(int) && totsize == offs7 + sizeof(long));
+#   if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
+  meth_object = protocol_getMethodDescription (proto,
+		  @selector(setRect:withBool:withInt:), YES, YES);
+  meth = &meth_object;
+#else
   meth = [proto descriptionForInstanceMethod: @selector(setRect:withBool:withInt:)];
+#endif
   scan_initial("^v%u@%u:%u{_XXRect={?=ff(__XXAngle=II)}{?=dd}^{_XXRect}}%uB%ui%u");
   CHECK_IF(offs3 == offs2 + sizeof(XXRect) && offs4 == offs3 + sizeof(int));
   CHECK_IF(totsize == offs4 + sizeof(int));
+#   if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
+  meth_object = protocol_getMethodDescription (proto,
+		  @selector(getEnum:enum:bool:), YES, NO);
+  meth = &meth_object; 
+#else
   meth = [proto descriptionForClassMethod: @selector(getEnum:enum:bool:)];
+#endif
   scan_initial("^i%u@%u:%u^{?=ff(__XXAngle=II)}%ui%uc%u");
   CHECK_IF(offs3 == offs2 + sizeof(XXPoint *) && offs4 == offs3 + sizeof(enum Enum));
   CHECK_IF(totsize == offs4 + sizeof(int));  /* 'ObjCBool' is really 'char' */
+#   if (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_5)
+  meth_object = protocol_getMethodDescription (proto,
+		  @selector(getBool:), YES, NO);
+  meth = &meth_object;
+#else
   meth = [proto descriptionForClassMethod: @selector(getBool:)];         
+#endif
   scan_initial("^^B%u@%u:%u^*%u");
   CHECK_IF(totsize == offs2 + sizeof(ObjCBool **));
   return 0;

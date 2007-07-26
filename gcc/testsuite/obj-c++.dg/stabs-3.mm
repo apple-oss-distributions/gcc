@@ -4,9 +4,10 @@
 /* Contributed by Ziemowit Laski <zlaski@apple.com> */
 
 /* { dg-do compile { target *-*-darwin* } } */
-/* { dg-options "-gfull" } */
+/* { dg-options "-gstabs+ -gfull" } */
 
-#include <objc/Object.h>
+/* APPLE LOCAL radar 4894756 */
+#include "../objc/execute/Object2.h"
 
 @interface Base: Object {
   int a;

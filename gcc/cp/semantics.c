@@ -685,7 +685,8 @@ finish_while_stmt (tree while_stmt)
 tree
 begin_do_stmt (void)
 {
-  tree r = build_stmt (DO_STMT, NULL_TREE, NULL_TREE);
+  /* APPLE LOCAL radar 4445586 */
+  tree r = build_stmt (DO_STMT, NULL_TREE, NULL_TREE, NULL_TREE);
   add_stmt (r);
   DO_BODY (r) = push_stmt_list ();
   return r;
@@ -1167,7 +1168,7 @@ finish_asm_stmt (int volatile_p, tree string, tree output_operands,
 	     otherwise we'll get an error.  Gross, but ...  */
 	  STRIP_NOPS (operand);
 
-	  /* APPLE LOCAL non-lvalue assign */
+	  /* APPLE LOCAL non lvalue assign */
 	  if (!lvalue_or_else (&operand, lv_asm))
 	    operand = error_mark_node;
 

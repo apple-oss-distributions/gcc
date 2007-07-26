@@ -4,7 +4,7 @@
 /* { dg-options "-O -march=pentium4" } */
 extern double foo(double);
 
-typedef union {
+typedef union { 
   int int_val;
   double real_val;
 } Val_type;

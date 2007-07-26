@@ -105,7 +105,7 @@ Row:
 	punpcklwd	mm0, mm3
 	paddd		mm1, mm0
 	punpcklwd	mm2, mm3
-	
+
 	punpckhwd	mm5, mm3
 	paddd		mm1, mm2
 	punpckhwd	mm7, mm3
@@ -130,7 +130,7 @@ Row:
 	pslld		mm2, 3
 	movd		r0sq, mm4
 	paddd		mm2, mm0
-	
+
 	movd		mm1, r0sum
 	movq		mm5, mm6
 	paddw		mm5, mm1
@@ -165,12 +165,12 @@ Col:
 	pmullw		mm7, mm7
 	movq		[ebx][M_m0], mm6
 	psllq		mm6, 48
-	
+
 	movq		[ebx][M_m8], mm4
 	paddw		mm6, mm0
 	movq		[ebx][M_m16], mm2
 	punpckhwd	mm6, mm3
-	
+
 	pmaddwd		mm6, mm6
 	movq		mm4, mm1
 	punpcklwd	mm1, mm3
@@ -180,7 +180,7 @@ Col:
 	punpcklwd	mm0, mm3
 	paddd		mm1, mm0
 	punpcklwd	mm2, mm3
-	
+
 	punpckhwd	mm5, mm3
 	paddd		mm1, mm2
 	punpckhwd	mm7, mm3
@@ -210,7 +210,7 @@ Col:
 	movq		mm3, mm2
 	paddd		mm6, mm7
 	paddd		mm2, mm2
-	movq		mm7, mm5				
+	movq		mm7, mm5
 	pslld		mm7, 1
 	paddd		mm5, mm7
 	pslld		mm7, 1
@@ -224,7 +224,7 @@ Col:
 	movq		mm7, packedw0x80
 	paddd		mm5, mm6
 	psrld		mm5, 16
-	movq		mm3, mm0				
+	movq		mm3, mm0
 	pslld		mm3, 1
 	paddd		mm0, mm3
 	pslld		mm3, 1
@@ -264,7 +264,7 @@ sqroot:
 	packuswb	mm2, mm2
 	movq		mm6, [ebx][M_m0]
 	pxor		mm3, mm3
-	
+
 	movd		[edi], mm2
 	movq		mm0, mm1
 	movd		mm2, r0sq
@@ -285,7 +285,7 @@ sqroot:
 	pslld		mm2, 3
 	movd		mm1, r0sum
 	paddd		mm2, mm0
-	
+
 	movd		r0sq, mm4
 	movq		mm5, mm6
 	paddw		mm5, mm1
@@ -323,12 +323,12 @@ sqroot:
 	pmullw		mm7, mm7
 	movq		[ebx][M_m0], mm6
 	psllq		mm6, 48
-	
+
 	movq		[ebx][M_m8], mm4
 	paddw		mm6, mm0
 	movq		[ebx][M_m16], mm2
 	punpckhwd	mm6, mm3
-	
+
 	pmaddwd		mm6, mm6
 	movq		mm4, mm1
 	punpcklwd	mm1, mm3
@@ -338,7 +338,7 @@ sqroot:
 	punpcklwd	mm0, mm3
 	paddd		mm1, mm0
 	punpcklwd	mm2, mm3
-	
+
 	punpckhwd	mm5, mm3
 	paddd		mm1, mm2
 	punpckhwd	mm7, mm3
@@ -368,7 +368,7 @@ sqroot:
 	movq		mm3, mm2
 	paddd		mm6, mm7
 	paddd		mm2, mm2
-	movq		mm7, mm5				
+	movq		mm7, mm5
 	pslld		mm7, 1
 	paddd		mm5, mm7
 	pslld		mm7, 1
@@ -382,7 +382,7 @@ sqroot:
 	movq		mm7, packedw0x80
 	paddd		mm5, mm6
 	psrld		mm5, 16
-	movq		mm3, mm0				
+	movq		mm3, mm0
 	pslld		mm3, 1
 	paddd		mm0, mm3
 	pslld		mm3, 1
@@ -422,7 +422,7 @@ sqrootExtras:
 	packuswb	mm2, mm2
 	movq		mm6, [ebx][M_m0]
 	pxor		mm3, mm3
-	
+
 	movd		ebx, mm2
 	mov		ecx, extras
 StoreExtras:

@@ -3,6 +3,8 @@
 
 /* { dg-do run { target *-*-darwin* } } */
 /* { dg-options "-fnext-runtime -fobjc-gc" } */
+/* { dg-options "-fnext-runtime -fobjc-gc -mmacosx-version-min=10.3" { target powerpc*-*-darwin* } } */
+/* { dg-skip-if "" { *-*-darwin* } { "-m64" } { "" } } */
 
 #include <objc/objc.h>
 #include <stdio.h>
@@ -23,7 +25,7 @@ id objc_assign_global(id value, __weak id *dest) {
 }
 
 id objc_assign_ivar(id value, id dest, unsigned int offset) {
-  __weak id *slot = (id*) ((char *)dest + offset);
+  id *slot = (id*) ((char *)dest + offset);
 
   ++IvarAssigns;
   return (*slot = value);
