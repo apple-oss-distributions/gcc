@@ -2075,7 +2075,7 @@ build_ptrmemfunc_access_expr (tree ptrmem, tree member_name)
      type.  */
   ptrmem_type = TREE_TYPE (ptrmem);
   /* APPLE LOCAL KEXT 2.95-ptmf-compatibility --turly */
-  if (!TARGET_KEXTABI)
+  if (TARGET_KEXTABI != 1)
   gcc_assert (TYPE_PTRMEMFUNC_P (ptrmem_type));
   member = lookup_member (ptrmem_type, member_name, /*protect=*/0,
 			  /*want_type=*/false);
@@ -2396,7 +2396,7 @@ get_member_function_from_ptrfunc (tree *instance_ptrptr, tree function)
       delta = build_ptrmemfunc_access_expr (function, delta_identifier);
       
       /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
-      if (TARGET_KEXTABI)
+      if (TARGET_KEXTABI == 1)
 	{
 	  idx = build_ptrmemfunc_access_expr (function, index_identifier);
 	  idx = save_expr (default_conversion (idx));
@@ -2426,7 +2426,7 @@ get_member_function_from_ptrfunc (tree *instance_ptrptr, tree function)
         }
       /* DELTA2 is the amount by which to adjust the `this' pointer
 	 to find the vtbl.  */
-      if (TARGET_KEXTABI)
+      if (TARGET_KEXTABI == 1)
 	{
 	  delta2 = build_ptrmemfunc_access_expr (function,
 						 pfn_or_delta2_identifier);
@@ -2456,7 +2456,7 @@ get_member_function_from_ptrfunc (tree *instance_ptrptr, tree function)
       /* APPLE LOCAL end mainline */
 
       /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
-      if (TARGET_KEXTABI)
+      if (TARGET_KEXTABI == 1)
 	/* Next extract the vtable pointer from the object.  */
 	vtbl = build (PLUS_EXPR,build_pointer_type (vtbl_ptr_type_node),
 		      instance_ptr, cp_convert (ptrdiff_type_node, delta2));
@@ -2470,7 +2470,7 @@ get_member_function_from_ptrfunc (tree *instance_ptrptr, tree function)
       *instance_ptrptr = instance_ptr;
 
       /* APPLE LOCAL KEXT 2.95-ptmf-compatibility --turly */
-      if (!TARGET_KEXTABI)
+      if (TARGET_KEXTABI != 1)
       /* Next extract the vtable pointer from the object.  */
       vtbl = build1 (NOP_EXPR, build_pointer_type (vtbl_ptr_type_node),
 		     instance_ptr);
@@ -2478,7 +2478,7 @@ get_member_function_from_ptrfunc (tree *instance_ptrptr, tree function)
 
       /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
       /* 2.95-style indices are off by one.  */
-      if (TARGET_KEXTABI)
+      if (TARGET_KEXTABI == 1)
 	{
 	  idx = cp_build_binary_op (MINUS_EXPR, idx, integer_one_node);
 	  idx = cp_build_binary_op (LSHIFT_EXPR, idx, integer_two_node);
@@ -3167,7 +3167,7 @@ build_binary_op (enum tree_code code, tree orig_op0, tree orig_op1,
 	  /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
 	  /* Shouldn't we use INDEX here rather than PFN?  This seems to
 	     work fine, though...  */
-	  if (TARGET_KEXTABI)
+	  if (TARGET_KEXTABI == 1)
 	    op0 = build_ptrmemfunc_access_expr (op0, index_identifier);
 	  else
 	  /* APPLE LOCAL end KEXT 2.95-ptmf-compatibility --turly */
@@ -5863,7 +5863,7 @@ build_ptrmemfunc1 (tree type, tree delta, tree pfn)
   tree pfn_field;
 
   /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
-  if (TARGET_KEXTABI)
+  if (TARGET_KEXTABI == 1)
     {
       /* Ooo-err, Missus.  Cons up a 2.95-style ptmf struct given
 	 gcc3-style inputs!  Recall:
@@ -6173,7 +6173,7 @@ tree
 pfn_from_ptrmemfunc (tree t)
 {
   /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
-  if (TARGET_KEXTABI)
+  if (TARGET_KEXTABI == 1)
     {
       if (TREE_CODE (t) == PTRMEM_CST)
 	{ 

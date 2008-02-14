@@ -1,3 +1,283 @@
+2008-02-05  Josh Conner  <jconner@apple.com>
+
+	Radar 5726269
+	* config/arm/darwin.h (SUBTARGET_OVERRIDE_OPTIONS): Don't set
+	flag_objc_abi or flag_objc_legacy_dispatch here.
+	(OBJC_TARGET_FLAG_OBJC_ABI): New macro.
+
+2008-01-29  Josh Conner  <jconner@apple.com>
+
+	Radar 5683689
+	* config/darwin.h (LINK_SPEC): Replace -iphone_version_min with
+	-aspen_version_min.
+	* config/arm/darwin.h (DARWIN_LD_MINVERSION_SPEC): Likewise.
+
+2008-01-29  Josh Conner  <jconner@apple.com>
+
+	Radar 5713583
+	* config/darwin.h (REAL_LIBGCC_SPEC): When -maspen-version-min
+	is seen, also pass -lgcc.
+
+2008-01-29  Josh Conner  <jconner@apple.com>
+
+	Radar 5683689
+	* config/darwin-c.c (iphone_version_as_macro): Rename to...
+	(aspen_version_as_macro): ...this.  Rename
+	-miphone-version-min to -maspen-version-min.  Rename
+	darwin_iphone_version_min to darwin_aspen_version_min.
+	Rename __ENVIRONMENT_IPHONE_VERSION_MIN_REQUIRED__ to
+	__ENVIRONMENT_ASPEN_VERSION_MIN_REQUIRED__.
+	(darwin_cpp_builtins): Likewise.
+	* config/i386/darwin.h (CC1_SPEC,
+	SUBTARGET_OVERRIDE_OPTIONS): Likewise.
+	* config/rs6000/darwin.h (SUBTARGET_OVERRIDE_OPTIONS,
+	C_COMMON_OVERRIDE_OPTIONS, CC1_SPEC, HAVE_OFFS_MSGSEND_FAST,
+	TARGET_C99_FUNCTIONS): Likewise.
+	* config/darwin.c: Likewise.
+	* config/darwin-driver.c: Likewise.  Also, change
+	IPHONE_DEPLOYMENT_TARGET to ASPEN_DEPLOYMENT_TARGET.
+	* config/darwin.h (darwin_iphone_version_min,
+	darwin_aspen_version_min, enum darwin_version_type,
+	SUBTARGET_OPTIONS, SUBSUBTARGET_OVERRIDE_OPTIONS,
+	LINK_SPEC, REAL_LIBGCC_SPEC, DARWIN_DYLIB1_SPEC,
+	DARWIN_CRT1_SPEC, OBJC_FLAG_OBJC_ABI):
+	Likewise.  Also, Rename DARWIN_VERSION_IPHONE to
+	DARWIN_VERSION_ASPEN.
+	* config/arm/darwin.h (CC1_SPEC, DARWIN_CC1_MINVERSION_SPEC,
+	DARWIN_DEFAULT_VERSION_TYPE, SUBTARGET_OVERRIDE_OPTIONS):
+	Likewise.
+
+2008-01-29  Josh Conner  <jconner@apple.com> 
+	Radar 5482675
+	* arm.md (define_expand "call"): Test for longcall before
+	calling machopic_indirect_call_target.
+	(define_expand "call_value"): Likewise.
+
+2008-01-23  Josh Conner  <jconner@apple.com>
+
+	Radar 5660282
+	* config/darwin.h (OBJC_FLAG_OBJC_ABI): Warn and ignore
+	flag_objc_gc and flag_objc_gc_only if darwin_iphone_version_min
+	is set.
+
+2008-01-21  Josh Conner  <jconner@apple.com>
+
+	Radar 5688767
+	* config/arm/arm.md (addsi3_compare0): Change predicate on
+	operand 1 to arm_general_register_operand.
+
+2008-01-16  Josh Conner  <jconner@apple.com>
+
+	Radar 5683689
+	* config/darwin.h (darwin_iphone_version_min): New extern.
+	(enum darwin_version_type): New type.
+	(SUBTARGET_OPTIONS): Add darwin_iphone_version_min.
+	(SUBSUBTARGET_OVERRIDE_OPTIONS): Err if both
+	darwin_macosx_version_min and darwin_iphone_version_min are
+	set.
+	(LINK_SPEC): Use darwin_ld_minversion as default.  Pass
+	-iphone_version_min to linker, if -miphone-version-min was
+	given.
+	* config/darwin.c (darwin_macosx_version_min): Initialize to
+	NULL.
+	(darwin_iphone_version_min): New variable.
+	(REAL_LIBGCC_SPEC): Use -lgcc_s.10.5 if -miphone-version-min
+	was seen.
+	(DARWIN_EXTRA_SPECS): Add darwin_cc1_minversion and
+	darwin_ld_minversion.
+	(DARWIN_DYLIB1_SPEC): Use dylib1.10.5.o if -miphone-version-min
+	was given.
+	(DARWIN_CRT1_SPEC): Use crt1.10.5.o if -miphone-version-min was
+	given.
+	(OBJC_FLAG_ZEROCOST_EXCEPTIONS): Verify that
+	darwin_macosx_version_min is set before using it.
+	(OBJC_WARN_OBJC2_FEATURES): Only perform this check if
+	darwin_macosx_version_min is set.
+	(GCC_DRIVER_HOST_INITIALIZATION): Add new parameter to
+	darwin_default_min_version call.
+	* config/darwin-c.c (version_as_macro): Renamed to...
+	(macosx_version_as_macro): ...this.
+	(iphone_version_as_macro): New function.
+	(darwin_cpp_builtins): Define 
+	__ENVIRONMENT_IPHONE_VERSION_MIN_REQUIRED__, as needed.
+	* config/darwin-driver.c (darwin_default_min_version): Add new
+	parameter, vers_type, and logic to handle it.  Change size of
+	new_flag.  Don't use default if any of the *-version-min options
+	were given.  Check for IPHONE_DEPLOYMENT_TARGET environment
+	variable.
+	* config/i386/darwin.h (CC1_SPEC): Use darwin_cc1_minversion
+	if -miphone-version-min and -mmacosx-version-min not seen.
+	(DARWIN_CC1_MINVERSION_SPEC): New define.
+	(DARWIN_LD_MINVERSION_SPEC): New define.
+	(DARWIN_DEFAULT_VERSION_TYPE): New define.
+	(SUBTARGET_OVERRIDE_OPTIONS): Set darwin_macosx_version_min,
+	if needed.
+	* config/rs6000/darwin.h (SUBTARGET_OVERRIDE_OPTIONS): Set
+	darwin_macosx_version_min, if needed.  Set
+	darwin_constant_cfstrings, but not altivec target_flags, if
+	darwin_iphone_version_min is set.
+	(C_COMMON_OVERRIDE_OPTIONS): Don't clear
+	flag_use_cxa_get_exception_ptr if darwin_iphone_version_min
+	is set.
+	(CC1_SPEC): Use darwin_cc1_minversion if -miphone-version-min
+	and -mmacosx-version-min not seen.
+	(DARWIN_CRT2_SPEC): Verify that -mmacosx-version-min is set
+	before using it.
+	(DARWIN_CC1_MINVERSION_SPEC): New define.
+	(DARWIN_LD_MINVERSION_SPEC): New define.
+	(DARWIN_DEFAULT_VERSION_TYPE): New define.
+	(HAVE_OFFS_MSGSEND_FAST): Set if darwin_iphone_version_min is
+	set.
+	(TARGET_C99_FUNCTIONS): Likewise.
+	* config/arm/darwin.h (CC1_SPEC): Use darwin_cc1_minversion if
+	-miphone-version-min and -mmacosx-version-min not seen.
+	(DARWIN_MINVERSION_SPEC): Change to "1.2".
+	(DARWIN_CC1_MINVERSION_SPEC): New define.
+	(DARWIN_LD_MINVERSION_SPEC): New define.
+	(DARWIN_DEFAULT_VERSION_TYPE): New define.
+	(SUBTARGET_OVERRIDE_OPTIONS): Set darwin_iphone_version_min,
+	if needed.
+
+2008-01-10  Josh Conner  <jconner@apple.com>
+
+	Radar 5680184
+	* c.opt (fobjc-legacy-dispatch): New option.
+	* config/darwin.h (OBJC_FLAG_OBJC_ABI): Specify a default
+	for flag_objc_legacy_dispatch.
+	* config/arm/darwin.h (SUBTARGET_OVERRIDE_OPTIONS):
+	Specify a default for flag_objc_abi and
+	flag_objc_legacy_dispatch.
+
+2008-01-09  Josh Conner  <jconner@apple.com>
+
+	Radar 5256615
+	* doc/invoke.texi: Document -Xarch_* option.
+
+2007-12-06  Jim Grosbach  <grosbach@apple.com>
+
+	Radar 5625989
+	* dwarf2out.c (tree_add_const_value_attribute): Treat init
+	as unsigned when calling host_integerp and tree_low_cst.
+
+2007-12-06  Josh Conner  <jconner@apple.com>
+
+	Radar 5625981
+	* t-slibgcc-darwin (SHLIB_LINK): Add -dead-strip to linker
+	invocation.
+
+2007-12-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5625975
+	* config/darwin.c (machopic_indirection): Add 'emitted'
+	field...
+	(machopic_indirection_named): ...set it...
+	(machopic_output_indirection): ...set it and use it.
+	(indirection_uses_changed): New variable...
+	(machopic_validate_stub_or_non_lazy_ptr): ...set it...
+	(machopic_finish): ...use it to determine whether to
+	invoke htab_traverse_noresize again.
+
+2007-12-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5625941
+	* ginclude/float.h (FLT_ROUNDS): Define to __builtin_flt_rounds.
+	* builtins.c (expand_builtin_flt_rounds): New function...
+	(expand_builtin): ...call it.
+	* builtin-types.def (BT_FN_INT): Define.
+	* builtins.def (BUILT_IN_FLT_ROUNDS): Define.
+	* config/arm/t-darwin (LIB1ASMFUNCS): Add _flt_rounds.
+	* config/arm/arm.c (arm_expand_flt_rounds): New function.
+	* config/arm/lib1funcs.asm (flt_rounds): New function.
+	* config/arm/arm-protos.h (arm_expand_flt_rounds): New
+	prototype.
+	* config/arm/vfp.md (VPFCC_REGNUM): Remove definition.
+	(movsi_vfpcc): New define_insn.
+	* config/arm/arm.md (VFPCC_REGNUM): Define.
+	(UNSPEC_FLT_ROUNDS): Define.
+	(flt_rounds): New define_expand.
+
+2007-12-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5625946
+	* c.opt (iwithsysroot): Add -iwithsysroot.
+	* c-opts.c (c_common_missing_argument): Likewise.
+	(c_common_handle_option): Likewise.
+	* gcc.h (DEFAULT_WORD_SWITCH_TAKES_ARG): Likewise.
+	* doc/invoke.texi: Describe -iwithsysroot option.
+
+2007-12-03  Josh Conner  <jconner@apple.com>
+
+        Radar 5623416
+        * config/arm/t-darwin: Don't use -mmacosx-version-min=10.4 when
+        building libs.
+        * config/arm/darwin.h (DARWIN_MINVERSION_SPEC): Set to 10.5.
+
+2007-12-03  Josh Conner  <jconner@apple.com>
+
+        Radar 5623413
+        * config/arm/arm.c (thumb_load_double_from_address):
+        Remove support for reg <-- *(reg + reg) addressing.
+        * config/arm/arm.md (adjustable_thumb_movdi_insn):
+        Fix cost of reg <-- mem move.
+        (thumb_movdf_insn): Likewise.
+
+2007-12-03  Josh Conner  <jconner@apple.com>
+
+        Radar 5623410
+        * config/arm/arm.c (arm_delegitimize_address): New function.
+        (TARGET_DELEGITIMIZE_ADDRESS): Define.
+
+2007-12-03  Josh Conner  <jconner@apple.com>
+
+        Radar 5623393
+        * config/arm/arm.c (arm_expand_clzdi2): New function.
+        * config/arm/arm-protos.h (arm_expand_clzdi2): New prototype.
+        * config/arm/arm.md (clzdi2): New define_expand.
+
+2007-11-30  Josh Conner  <jconner@apple.com>
+
+	Radar 5623421
+	* config/arm/lib1funcs.asm (L_switch32): Fix FUNC_END macro
+	invocation.
+
+2007-11-15  Eric Christopher  <echristo@apple.com>
+
+	Radar 5315594
+        * c-common.c (iasm_stmt): Replace use of MACHO_DYNAMIC_NO_PIC_P
+        with !flag_pic.
+
+2007-10-01  Jon Ziegler <jonz@apple.com>
+
+	Radar 5490688
+	* doc/invoke.texi: remove reference to gcc_select
+
+2007-09-25  Eric Christopher  <echristo@apple.com>
+
+	Radar 4741496
+	* opts.c (set_flags_from_O): Remove local code for pre at O1.
+
+2007-09-20  Eric Christopher  <echristo@apple.com>
+
+	Radar 5513803
+	* config.gcc: Add arch and tune options to darwin target.
+
+2007-09-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5315386
+	config/arm/arm.c (handle_thumb_pushpop): Check for 'emit'
+	before emitting dwarf info.
+	(handle_thumb_unexpanded_prologue): Likewise.
+
+2007-09-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5342595
+	* config/darwin.h (DARWIN_DSYMUTIL_SPEC): New spec for invoking
+	dsymutil...
+	(LINK_COMMAND_SPEC): ...use it.
+	* config/arm/darwin.h (DARWIN_DSYMUTIL_SPEC): Define.
+	* config/i386/darwin.h (DARWIN_DSYMUTIL_SPEC): Define.
+	* config/rs6000/darwin.h (DARWIN_DSYMUTIL_SPEC): Define.
+
 2007-07-13  Josh Conner  <jconner@apple.com>
 
 	Radar 5332141

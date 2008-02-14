@@ -2545,7 +2545,7 @@ struct lang_decl GTY(())
    before using this macro.  */
 /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
 #define TYPE_PTRMEMFUNC_FN_TYPE(NODE)					\
-  *(TARGET_KEXTABI							\
+  *(TARGET_KEXTABI == 1							\
     ? &(TREE_TYPE (TYPE_FIELDS (TREE_TYPE (TREE_CHAIN (			\
 				 TREE_CHAIN (TYPE_FIELDS (NODE)))))))	\
     : &(TREE_TYPE (TYPE_FIELDS (NODE))))

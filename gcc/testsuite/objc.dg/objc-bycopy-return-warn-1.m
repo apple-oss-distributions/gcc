@@ -1,7 +1,7 @@
 /* APPLE LOCAL file radar 4869979 */
 /* Check that an instance method with 'bycopy' return type issues a warning when the 
    object it is returning does not conform to NSCoding protocol. */
-/* { dg-do compile { target *-*-darwin* } } */
+/* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 
 #include <Cocoa/Cocoa.h>
 @interface MyClass : NSObject

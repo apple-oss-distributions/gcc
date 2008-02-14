@@ -1,6 +1,6 @@
 /* APPLE LOCAL file radar 4805321 */
 /* { dg-options "-mmacosx-version-min=10.5 -fobjc-new-property" } */
-/* { dg-do compile { target *-*-darwin* } } */
+/* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 
 #include <Cocoa/Cocoa.h>
 

@@ -235,6 +235,8 @@ static void arm_init_libfuncs (void);
 static unsigned HOST_WIDE_INT arm_shift_truncation_mask (enum machine_mode);
 /* APPLE LOCAL ARM -mdynamic-no-pic support */
 static bool arm_cannot_force_const_mem (rtx x);
+/* APPLE LOCAL ARM 5602348 */
+static rtx arm_delegitimize_address (rtx);
 
 /* Initialize the GCC target structure.  */
 #if TARGET_DLLIMPORT_DECL_ATTRIBUTES
@@ -421,6 +423,10 @@ static bool darwin_arm_cannot_copy_insn_p (rtx);
 #define TARGET_BUILTIN_SETJMP_FRAME_VALUE arm_builtin_setjmp_frame_value
 /* APPLE LOCAL end ARM reliable backtraces */
 
+/* APPLE LOCAL begin ARM 5602348 */
+#undef TARGET_DELEGITIMIZE_ADDRESS
+#define TARGET_DELEGITIMIZE_ADDRESS arm_delegitimize_address
+/* APPLE LOCAL end ARM 5602348 */
 struct gcc_target targetm = TARGET_INITIALIZER;
 
 /* Obstack for minipool constant handling.  */
@@ -14434,7 +14440,7 @@ handle_thumb_pushpop (FILE *f, int mask, int push, int *cfa_offset, int real_reg
   if (emit)
     fprintf (f, "}\n");
 
-  if (push && pushed_words && dwarf2out_do_frame ())
+  if (emit && push && pushed_words && dwarf2out_do_frame ())
     {
       char *l = dwarf2out_cfi_label ();
       int pushed_mask = real_regs;
@@ -15181,7 +15187,7 @@ handle_thumb_unexpanded_prologue (FILE *f, bool emit)
       /* We don't need to record the stores for unwinding (would it
 	 help the debugger any if we did?), but record the change in
 	 the stack pointer.  */
-      if (dwarf2out_do_frame ())
+      if (emit && dwarf2out_do_frame ())
 	{
 	  char *l = dwarf2out_cfi_label ();
 	  cfa_offset = cfa_offset + current_function_pretend_args_size;
@@ -15224,7 +15230,7 @@ handle_thumb_unexpanded_prologue (FILE *f, bool emit)
 	  (f, "\tsub\t%r, %r, #16\t%@ Create stack backtrace structure\n",
 	   SP_REGNUM, SP_REGNUM);
 
-      if (dwarf2out_do_frame ())
+      if (emit && dwarf2out_do_frame ())
 	{
 	  char *l = dwarf2out_cfi_label ();
 	  cfa_offset = cfa_offset + 16;
@@ -15420,24 +15426,13 @@ thumb_load_double_from_address (rtx *operands)
       /* Catch the case of <address> = <reg> + <reg> */
       if (GET_CODE (offset) == REG)
 	{
-	  int reg_offset = REGNO (offset);
-	  int reg_base   = REGNO (base);
-	  int reg_dest   = REGNO (operands[0]);
-
-	  /* Add the base and offset registers together into the
-             higher destination register.  */
-	  asm_fprintf (asm_out_file, "\tadd\t%r, %r, %r",
-		       reg_dest + 1, reg_base, reg_offset);
-
-	  /* Load the lower destination register from the address in
-             the higher destination register.  */
-	  asm_fprintf (asm_out_file, "\tldr\t%r, [%r, #0]",
-		       reg_dest, reg_dest + 1);
-
-	  /* Load the higher destination register from its own address
-             plus 4.  */
-	  asm_fprintf (asm_out_file, "\tldr\t%r, [%r, #4]",
-		       reg_dest + 1, reg_dest + 1);
+	  /* APPLE LOCAL begin ARM 4790140 compact switch tables */
+	  /* thumb_legitimate_address_p won't allow this form,
+	     and allowing a 3-instruction variant confuses
+	     our instruction length counts, so remove it.
+	     Details in rdar://5435967.  */
+	  gcc_unreachable();
+	  /* APPLE LOCAL end ARM 4790140 compact switch tables */
 	}
       else
 	{
@@ -17232,6 +17227,50 @@ extern HOST_WIDE_INT arm_local_debug_offset (rtx var)
 }
 /* APPLE LOCAL end ARM prefer SP to FP */
 
+/* APPLE LOCAL begin ARM 5512097 clzdi2 */
+/* Expand a CLZ:DI operation.  This relies on the presence of a CLZ:SI
+   instruction, which is only implemented in ARMv5 and above.  Returns
+   a boolean indicating success.  */
+bool
+arm_expand_clzdi2 (rtx input_op, rtx output_op)
+{
+  rtx output_loreg, output_hireg, input_loreg, input_hireg;
+  rtx clzlo_label, alldone_label;
+
+  if (! TARGET_ARM || ! arm_arch5)
+    return false;
+
+  output_loreg = gen_lowpart (SImode, output_op);
+  output_hireg = gen_highpart (SImode, output_op);
+  input_loreg = gen_lowpart (SImode, input_op);
+  input_hireg = gen_highpart (SImode, input_op);
+  clzlo_label = gen_label_rtx ();
+  alldone_label = gen_label_rtx ();
+
+  /* Check if upper word is zero */
+  do_compare_rtx_and_jump (input_hireg, const0_rtx, EQ, 1,
+			   SImode, NULL_RTX, NULL_RTX, clzlo_label);
+
+  /* If high word is not zero, calculate clz(highword).  */
+  emit_insn (gen_clzsi2 (output_loreg, input_hireg));
+  emit_jump_insn (gen_jump (alldone_label));
+  /* This barrier is necessary for control-flow analysis to recognize
+     that control cannot fall through into the next instruction.  */
+  emit_barrier ();
+
+  /* If high word is zero, calculate clz(lowword) + 32.  */
+  emit_label (clzlo_label);
+  emit_insn (gen_clzsi2 (output_loreg, input_loreg));
+  emit_insn (gen_addsi3 (output_loreg, output_loreg, GEN_INT (32)));
+
+  /* All done -- zero extend result into upper word of result.  */
+  emit_label (alldone_label);
+  emit_insn (gen_movsi (output_hireg, const0_rtx));
+
+  return true;
+}
+/* APPLE LOCAL end ARM 5512097 clzdi2 */
+
 /* APPLE LOCAL begin ARM 4790140 compact switch tables */
 int arm_label_align (rtx label)
 {
@@ -17250,3 +17289,115 @@ int arm_label_align (rtx label)
 
 #include "gt-arm.h"
 /* APPLE LOCAL end ARM 4790140 compact switch tables */
+
+/* APPLE LOCAL begin ARM 5526308 */
+/* Calculate the value of FLT_ROUNDS into DEST.
+
+   The rounding mode is in bits 23:22 of FPSCR, and has the following
+   settings:
+     00 Round to nearest
+     01 Round to +inf
+     10 Round to -inf
+     11 Round to 0
+
+   FLT_ROUNDS, on the other hand, expects the following:
+     -1 Undefined
+      0 Round to 0
+      1 Round to nearest
+      2 Round to +inf
+      3 Round to -inf
+
+   To perform the conversion, we do:
+     (((FPSCR >> 22) + 1) & 3)
+*/
+void
+arm_expand_flt_rounds (rtx dest)
+{
+  if (TARGET_VFP && TARGET_HARD_FLOAT)
+    {
+      if (TARGET_ARM)
+	{
+	  emit_move_insn (dest, gen_rtx_REG (SImode, VFPCC_REGNUM));
+	  emit_insn (gen_lshrsi3 (dest, dest, GEN_INT (22)));
+	  emit_insn (gen_addsi3 (dest, dest, const1_rtx));
+	  emit_insn (gen_andsi3 (dest, dest, GEN_INT (3)));
+	}
+      else
+	{
+	  /* Thumb has no VFP access - call an ARM library routine.  */
+          emit_library_call_value (
+		gen_rtx_SYMBOL_REF (Pmode, "__flt_rounds"),
+		dest,
+		LCT_NORMAL,
+		SImode,
+		0);
+	}
+    }
+  else
+    {
+      /* No VFP hardware -- default to '1' (Round to nearest).  */
+      emit_insn (gen_movsi (dest, const1_rtx));
+    }
+}
+/* APPLE LOCAL end ARM 5526308 */
+
+/* APPLE LOCAL begin ARM 5602348 */
+/* Convert from a legitimate address back to an illegitimate address.
+   In our case, the only conversion we want to perform is to coerce a
+   SP-based address to a FP-based address (if a FP is present).  This
+   is useful for producing easier-to-unwind debugging information.  */
+static rtx
+arm_delegitimize_address (rtx addr)
+{
+  /* Convert a SP-based reference to a FP-based reference, for the sake
+     of debugging.  */
+  if (cfun
+      && FRAME_POINTER_REQUIRED
+      && GET_CODE (addr) == MEM)
+    {
+      bool convert_to_fp = false;
+      rtx mem_expr = XEXP (addr, 0);
+      int sp_offset;
+
+      /* See if value is at *(SP).  */
+      if (GET_CODE (mem_expr) == REG
+	  && REGNO (mem_expr) == SP_REGNUM)
+	{
+	  convert_to_fp = true;
+	  sp_offset = 0;
+	}
+
+      /* See if value is at *(SP+offset).  */
+      else if (GET_CODE (mem_expr) == PLUS)
+	{
+	  rtx base_expr = XEXP (mem_expr, 0);
+
+	  if (GET_CODE (base_expr) == REG
+	      && REGNO (base_expr) == SP_REGNUM)
+	    {
+	      rtx offset_expr = XEXP (mem_expr, 1);
+
+	      if (GET_CODE (offset_expr) == CONST_INT)
+		{
+		  convert_to_fp = true;
+		  sp_offset = INTVAL (offset_expr);
+		}
+	    }
+	}
+
+      /* Do conversion from SP to FP addressing.  */
+      if (convert_to_fp == true)
+	{
+	  arm_stack_offsets *offsets = arm_get_frame_offsets ();
+	  int adj = offsets->outgoing_args - offsets->frame;
+
+	  return gen_rtx_MEM (GET_MODE (addr),
+			      plus_constant (hard_frame_pointer_rtx,
+					     sp_offset - adj));
+	}
+    }
+
+  return addr;
+}
+/* APPLE LOCAL end ARM 5602348 */
+

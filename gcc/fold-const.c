@@ -2377,6 +2377,13 @@ operand_equal_p (tree arg0, tree arg1, unsigned int flags)
   if (TYPE_UNSIGNED (TREE_TYPE (arg0)) != TYPE_UNSIGNED (TREE_TYPE (arg1)))
     return 0;
 
+  /* APPLE LOCAL begin mainline */
+  /* If both types don't have the same precision, then it is not safe
+     to strip NOPs.  */
+  if (TYPE_PRECISION (TREE_TYPE (arg0)) != TYPE_PRECISION (TREE_TYPE (arg1)))
+    return 0;
+
+  /* APPLE LOCAL end mainline */
   STRIP_NOPS (arg0);
   STRIP_NOPS (arg1);
 

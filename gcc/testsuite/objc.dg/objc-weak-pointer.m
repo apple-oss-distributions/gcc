@@ -1,7 +1,7 @@
 /* APPLE LOCAL file radar 4945770 */
 /* Do not ICE on the trivial program. */
 /* { dg-options "-fobjc-gc" } */
-/* { dg-do compile } */
+/* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 
 #include <objc/Object.h>
 

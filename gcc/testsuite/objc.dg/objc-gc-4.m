@@ -3,7 +3,7 @@
    (where component references get rewritten).  */
 /* Contributed by Ziemowit Laski <zlaski@apple.com>  */
 
-/* { dg-do compile { target *-*-darwin* } } */
+/* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-fobjc-gc" } */
 
 /* APPLE LOCAL radar 4894756 */

@@ -2163,6 +2163,7 @@ start_objects (int method_type, int initp)
 
   /* APPLE LOCAL begin static structors in __StaticInit section */
 #ifdef STATIC_INIT_SECTION
+  /* What should we do for kextabi == 2? */
   if (!TARGET_KEXTABI)
     DECL_SECTION_NAME (current_function_decl) = 
       build_string (strlen (STATIC_INIT_SECTION), STATIC_INIT_SECTION);
@@ -2277,6 +2278,7 @@ start_static_storage_duration_function (unsigned count)
 
   /* APPLE LOCAL begin static structors in __StaticInit section */
 #ifdef STATIC_INIT_SECTION
+  /* What should we do for kextabi == 2? */
   if (!TARGET_KEXTABI)
     DECL_SECTION_NAME (ssdf_decl) = build_string (strlen (STATIC_INIT_SECTION),
 						  STATIC_INIT_SECTION);

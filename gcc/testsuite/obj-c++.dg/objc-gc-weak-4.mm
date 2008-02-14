@@ -1,8 +1,8 @@
 /* APPLE LOCAL file radar 4591756 - radar 5276085 */
 /* A run-time test for insertion of read barriers for __weak objects. */
 /* Test enhanced for radar 5276085 to test weak array of ivars. */
-/* { dg-do run { target *-*-darwin* } } */
-/* { dg-options "-framework Foundation -fobjc-gc" } */
+/* { dg-do run { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-framework Foundation -framework CoreFoundation -fobjc-gc" } */
 
 // Weak Write Barriers
 

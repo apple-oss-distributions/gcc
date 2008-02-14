@@ -1,5 +1,5 @@
 /* APPLE LOCAL file radar 4905666 */
-/* { dg-do compile } */
+/* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-O2 -m64" } */
 inline void bar1 (long long *bm, long long bit)
 {

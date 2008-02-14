@@ -3935,7 +3935,7 @@ clone_function_decl (tree fn, int update_method_vec_p)
 
       /* APPLE LOCAL begin KEXT double destructor */
       /* Don't use the complete dtor.  */
-      if (! TARGET_KEXTABI
+      if (TARGET_KEXTABI != 1
 	  || ! has_apple_kext_compatibility_attr_p (DECL_CONTEXT (fn)))
 	{
 	  clone = build_clone (fn, complete_dtor_identifier);
@@ -7204,7 +7204,7 @@ dfs_accumulate_vtbl_inits (tree binfo,
       /* APPLE LOCAL begin KEXT double destructor */
 #ifdef VPTR_INITIALIZER_ADJUSTMENT
       /* Subtract VPTR_INITIALIZER_ADJUSTMENT from INDEX.  */
-      if (TARGET_KEXTABI && !ctor_vtbl_p && ! BINFO_PRIMARY_P (binfo)
+      if (TARGET_KEXTABI == 1 && !ctor_vtbl_p && ! BINFO_PRIMARY_P (binfo)
 	  && TREE_CODE (index) == INTEGER_CST
 	  && TREE_INT_CST_LOW (index) >= VPTR_INITIALIZER_ADJUSTMENT
 	  && TREE_INT_CST_HIGH (index) == 0)
@@ -7863,6 +7863,9 @@ cp_fold_obj_type_ref (tree ref, tree known_type)
 }
 
 /* APPLE LOCAL begin KEXT double destructor */
+#ifndef TARGET_SUPPORTS_KEXTABI1
+#define TARGET_SUPPORTS_KEXTABI1 0
+#endif
 /* Return whether CLASS or any of its primary ancestors have the
    "apple_kext_compatibility" attribute, in which case the
    non-deleting destructor is not emitted.  Only single
@@ -7870,6 +7873,9 @@ cp_fold_obj_type_ref (tree ref, tree known_type)
 int
 has_apple_kext_compatibility_attr_p (tree class)
 {
+  if (! TARGET_SUPPORTS_KEXTABI1)
+    return 0;
+
   while (class != NULL)
     {
       tree base_binfo;

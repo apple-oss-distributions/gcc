@@ -19,10 +19,9 @@
 ;; Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 ;; 02111-1307, USA.  */
 
-;; Additional register numbers
-(define_constants
-  [(VFPCC_REGNUM 95)]
-)
+;; APPLE LOCAL begin ARM 5526308
+;; Move VFPCC_REGNUM definition into arm.md
+;; APPLE LOCAL end ARM 5526308
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Pipeline description
@@ -667,6 +666,20 @@
   [(set_attr "conds" "set")
    (set_attr "type" "ffarith")]
 )
+
+;; APPLE LOCAL begin ARM 5526308
+
+;; Copy VFPCC into a general register.
+
+(define_insn "*movsi_vfpcc"
+  [(set (match_operand:SI 0 "general_operand" "")
+	(reg VFPCC_REGNUM))]
+  "TARGET_ARM && TARGET_HARD_FLOAT && TARGET_VFP"
+  "fmrx%?\\t%0, fpscr"
+  [(set_attr "predicable" "yes")
+   (set_attr "type" "ffarith")]
+)
+;; APPLE LOCAL end ARM 5526308
 
 (define_insn_and_split "*cmpsf_split_vfp"
   [(set (reg:CCFP CC_REGNUM)

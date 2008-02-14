@@ -520,13 +520,6 @@ int flag_enforce_eh_specs = 1;
 int flag_preprocessed = 0;
 /* APPLE LOCAL end private extern  Radar 2872481 --ilr */
 
-/* APPLE LOCAL begin structor thunks */
-/* Nonzero if we prefer to clone con/de/structors.  Alternative is to
-   gen multiple tiny thunk-esque things that call/jump to a unified
-   con/de/structor.  This is a classic size/speed tradeoff.  */
-int flag_clone_structors = 0;
-/* APPLE LOCAL end structor thunks */
-
 /* Nonzero means to generate thread-safe code for initializing local
    statics.  */
 
@@ -589,6 +582,10 @@ bool iasm_in_decl;
 /* This is true exactly within the interior of an asm block.  It is
    not quite the same as any of the states of iasm_state.  */
 bool inside_iasm_block;
+
+/* This is true if we should kill the registers at the front of the
+   next block.  */
+bool iasm_kill_regs;
 
 /* An additional state variable, true when the next token returned
    should be a BOL, false otherwise.  */
@@ -7192,6 +7189,46 @@ iasm_stmt (tree expr, tree args, int lineno)
 
   if (iasm_buffer == NULL)
     iasm_buffer = xmalloc (4000);
+
+#ifdef TARGET_386
+  if (iasm_kill_regs)
+    {
+      iasm_kill_regs = false;
+      /* One cannot use these registers across inline asm blocks per
+	 MS docs.  We explicitly kill them to ensure that the register
+	 allocator can use them as it sees fit.  We really only have
+	 to kill the registers used in the block, but, until we
+	 understand the entire block perfectly, this is conservatively
+	 correct.  The down side, we can't enregister variables into
+	 any of these registers across an asm block and we use 3 words
+	 more stack space to save ebx/esi/edi.  */
+      clobbers = tree_cons (NULL_TREE,
+			    build_string (3, "eax"),
+			    clobbers);
+      if (!flag_pic)
+	clobbers = tree_cons (NULL_TREE,
+			      build_string (3, "ebx"),
+			      clobbers);
+      clobbers = tree_cons (NULL_TREE,
+			    build_string (3, "ecx"),
+			    clobbers);
+      clobbers = tree_cons (NULL_TREE,
+			    build_string (3, "edx"),
+			    clobbers);
+      clobbers = tree_cons (NULL_TREE,
+			    build_string (3, "esi"),
+			    clobbers);
+      clobbers = tree_cons (NULL_TREE,
+			    build_string (3, "edi"),
+			    clobbers);
+      sprintf(iasm_buffer, "%s top of block", ASM_COMMENT_START);
+      sexpr = build_string (strlen (iasm_buffer), iasm_buffer);
+      stmt = build_stmt (ASM_EXPR, sexpr, NULL_TREE, NULL_TREE, clobbers, NULL_TREE);
+      clobbers = NULL_TREE;
+      ASM_VOLATILE_P (stmt) = 1;
+      (void)add_stmt (stmt);
+    }
+#endif
 
   /* Build .file "file-name" directive. */
   sprintf(iasm_buffer, "%s \"%s\"", ".file", input_filename);

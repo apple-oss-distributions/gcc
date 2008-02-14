@@ -39,6 +39,8 @@
    (LAST_ARM_REGNUM 15)		;
    (FPA_F0_REGNUM   16)		; FIRST_FPA_REGNUM
    (FPA_F7_REGNUM   23)		; LAST_FPA_REGNUM
+   ;; APPLE LOCAL ARM 5526308
+   (VFPCC_REGNUM    95)		; FPSCR
   ]
 )
 ;; 3rd operand to select_dominance_cc_mode
@@ -103,6 +105,8 @@
    (UNSPEC_REV64    26) ; The 64-bit REV operation, expands to 2 32-bit REVs
    (UNSPEC_UXTB16   27) ; The UXTB16 instruction (ARM only)
 			; APPLE LOCAL end ARM REV/UXTB support
+   ; APPLE LOCAL ARM 5526308
+   (UNSPEC_FLT_ROUNDS 28) ; FLT_ROUNDS builtin
   ]
 )
 
@@ -615,10 +619,11 @@
 )
 ;; APPLE LOCAL end ARM peephole
 
+;; APPLE LOCAL begin 5688767
 (define_insn "*addsi3_compare0"
   [(set (reg:CC_NOOV CC_REGNUM)
 	(compare:CC_NOOV
-	 (plus:SI (match_operand:SI 1 "s_register_operand" "r, r")
+	 (plus:SI (match_operand:SI 1 "arm_general_register_operand" "r, r")
 		  (match_operand:SI 2 "arm_add_operand"    "rI,L"))
 	 (const_int 0)))
    (set (match_operand:SI 0 "s_register_operand" "=r,r")
@@ -629,6 +634,7 @@
    sub%?s\\t%0, %1, #%n2"
   [(set_attr "conds" "set")]
 )
+;; APPLE LOCAL end 5688767
 
 (define_insn "*addsi3_compare0_scratch"
   [(set (reg:CC_NOOV CC_REGNUM)
@@ -4472,6 +4478,7 @@
   "
 )
 
+;; APPLE LOCAL begin ARM 4790140 compact switch tables (length)
 ;;; ??? This should have alternatives for constants.
 ;;; ??? This was originally identical to the movdf_insn pattern.
 ;;; ??? The 'i' constraint looks funny, but it should always be replaced by
@@ -4515,10 +4522,11 @@
       return \"mov\\t%H0, %H1\;mov\\t%0, %1\";
     }
   }"
-  [(set_attr "length" "4,4,6,2,2,6,4,4")
+  [(set_attr "length" "4,4,6,2,2,4,4,4")
    (set_attr "type" "*,*,*,load2,store2,load2,store2,*")
    (set_attr "pool_range" "*,*,*,*,*,1020,*,*")]
 )
+;; APPLE LOCAL end ARM 4790140 compact switch tables (length)
 
 (define_expand "movsi"
   [(set (match_operand:SI 0 "general_operand" "")
@@ -5699,6 +5707,7 @@
 )
 ;; APPLE LOCAL end ARM 20060306 merge these from mainline 
 
+;; APPLE LOCAL begin ARM 4790140 compact switch tables (length)
 ;;; ??? This should have alternatives for constants.
 ;;; ??? This was originally identical to the movdi_insn pattern.
 ;;; ??? The 'F' constraint looks funny, but it should always be replaced by
@@ -5734,10 +5743,11 @@
       return \"mov\\t%H0, %H1\;mov\\t%0, %1\";
     }
   "
-  [(set_attr "length" "4,2,2,6,4,4")
+  [(set_attr "length" "4,2,2,4,4,4")
    (set_attr "type" "*,load2,store2,load2,store2,*")
    (set_attr "pool_range" "*,*,*,1020,*,*")]
 )
+;; APPLE LOCAL end ARM 4790140 compact switch tables (length)
 
 (define_expand "movxf"
   [(set (match_operand:XF 0 "general_operand" "")
@@ -11193,6 +11203,21 @@
   "clz%?\\t%0, %1"
   [(set_attr "predicable" "yes")])
 
+;; APPLE LOCAL begin ARM 5512097 clzdi2
+(define_expand "clzdi2"
+  [(set (match_operand:DI 0 "s_register_operand" "")
+	(clz:DI (match_operand:DI 1 "s_register_operand" "")))]
+  "TARGET_ARM && arm_arch5"
+  "
+  {
+    if (arm_expand_clzdi2 (operands[1], operands[0]))
+      DONE;
+    else
+      FAIL;
+  }"
+)
+;; APPLE LOCAL end ARM 5512097 clzdi2
+
 (define_expand "ffssi2"
   [(set (match_operand:SI 0 "s_register_operand" "")
 	(ffs:SI (match_operand:SI 1 "s_register_operand" "")))]
@@ -11370,6 +11395,23 @@
   ""
   "trap")
 ;; APPLE LOCAL end ARM 4639731
+
+;; APPLE LOCAL begin ARM 5526308
+
+;; Expand the builtin FLT_ROUNDS by reading the FPSCR rounding bits.
+
+(define_expand "flt_rounds"
+  [(set (match_operand 0 "general_operand" "")
+	(unspec:SI [(reg VFPCC_REGNUM)] UNSPEC_FLT_ROUNDS))]
+  "TARGET_EITHER"
+  "
+  {
+    arm_expand_flt_rounds (operands[0]);
+    DONE;
+  }
+  "
+)
+;; APPLE LOCAL end ARM 5526308
 
 ;; Load the FPA co-processor patterns
 (include "fpa.md")

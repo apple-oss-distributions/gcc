@@ -1,3 +1,10 @@
+2007-11-29  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5619052
+	* pt.c (value_dependent_expression_p): @encode expression is 
+	value-dependent if the operand is type-dependent.
+	(type_dependent_expression_p): Treat @encode same as 'sizeof'.
+
 2007-07-06  Josh Conner  <jconner@apple.com>
 
 	Radar 5310796

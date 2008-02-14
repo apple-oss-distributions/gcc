@@ -304,6 +304,10 @@ static tree objc_v2_ivar_reference (tree);
 /* APPLE LOCAL radar 5040740 */
 static tree lookup_nested_method (tree, tree);
 
+/* APPLE LOCAL begin radar 5607453 */
+static bool objc_is_object_id (tree);
+static bool objc_is_class_id (tree);
+/* APPLE LOCAL end radar 5607453 */
 /* Hash tables to manage the global pool of method prototypes.  */
 
 hash *nst_method_hash_list = 0;
@@ -709,6 +713,11 @@ generate_struct_by_value_array (void)
 bool
 objc_init (void)
 {
+/* APPLE LOCAL begin ARM 5726269 */
+#ifdef OBJC_TARGET_FLAG_OBJC_ABI
+  OBJC_TARGET_FLAG_OBJC_ABI;
+#endif
+/* APPLE LOCAL end ARM 5726269 */
   /* APPLE LOCAL radar 4862848 */
   OBJC_FLAG_OBJC_ABI;
   /* APPLE LOCAL begin radar 4531086 */
@@ -741,12 +750,18 @@ objc_init (void)
 
   if (flag_next_runtime)
     {
+      /* APPLE LOCAL begin ARM hybrid objc-2.0 */
+      bool use_hybrid_msgSend = (flag_objc_abi == 2
+				 && flag_objc_legacy_dispatch);
       TAG_GETCLASS = "objc_getClass";
       TAG_GETMETACLASS = "objc_getMetaClass";
       TAG_MSGSEND = "objc_msgSend";
-      TAG_MSGSENDSUPER = "objc_msgSendSuper";
+      TAG_MSGSENDSUPER = use_hybrid_msgSend ? "objc_msgSendSuper2"
+					    : "objc_msgSendSuper";
       TAG_MSGSEND_STRET = "objc_msgSend_stret";
-      TAG_MSGSENDSUPER_STRET = "objc_msgSendSuper_stret";
+      TAG_MSGSENDSUPER_STRET = use_hybrid_msgSend ? "objc_msgSendSuper2_stret"
+						  : "objc_msgSendSuper_stret";
+      /* APPLE LOCAL end ARM hybrid objc-2.0 */
       default_constant_string_class_name = "NSConstantString";
       /* APPLE LOCAL begin radar 4810609 */
       if (flag_objc_gc_only)
@@ -1368,7 +1383,11 @@ objc_add_property_variable (tree decl)
 		    ltyp = TREE_TYPE (ltyp);
 		  while (POINTER_TYPE_P (ltyp));
 		  /* APPLE LOCAL radar 5096644 */
-		  if (TYPE_HAS_OBJC_INFO (ltyp) && TREE_CODE (TYPE_OBJC_INTERFACE (ltyp)) != IDENTIFIER_NODE)
+		  /* APPLE LOCAL begin radar 5607453 */
+		  if (TYPE_HAS_OBJC_INFO (ltyp) 
+		      && !objc_is_object_id (ltyp) && !objc_is_class_id (ltyp)
+		      && TREE_CODE (TYPE_OBJC_INTERFACE (ltyp)) != IDENTIFIER_NODE)
+		  /* APPLE LOCAL end radar 5607453 */
 		    {
 		      tree id_NSCopying = get_identifier ("NSCopying");
 		      tree lproto = lookup_protocol (id_NSCopying);
@@ -1964,7 +1983,8 @@ objc_build_setter_call (tree lhs, tree rhs)
 {
   tree expr;
 
-  if (flag_objc_abi == 2)
+  /* APPLE LOCAL ARM hybrid objc-2.0 */
+  if (flag_objc_abi == 2 && !flag_objc_legacy_dispatch)
     return objc_v2_build_setter_call (lhs, rhs);
 
   expr = lhs;
@@ -4439,7 +4459,8 @@ synth_module_prologue (void)
 						 NULL, NULL_TREE);
 
       /* APPLE LOCAL begin ObjC new abi */
-      if (flag_objc_abi == 2)
+      /* APPLE LOCAL ARM hybrid objc-2.0 */
+      if (flag_objc_abi == 2 && !flag_objc_legacy_dispatch)
 	{
           /* APPLE LOCAL radar 4699834 */
  	  /* Removed _rtp suffix from objc_msgSend_fixup_rtp and variants */
@@ -10422,6 +10443,8 @@ ivar_offset_ref (tree class_name, tree field_decl)
   bool global_var;
   tree field_decl_id;
 
+  /* APPLE LOCAL radar 5610134 */
+  gcc_assert (field_decl);
   create_ivar_offset_name (buf, class_name, field_decl);
   field_decl_id = get_identifier (buf);
 
@@ -10444,6 +10467,13 @@ ivar_offset_ref (tree class_name, tree field_decl)
 	 create_hidden_decl (TREE_TYPE (size_zero_node), buf);
   /* APPLE LOCAL end radar 4705298 , 4843145*/
   /* APPLE LOCAL end radar 4441049 */
+
+  /* APPLE LOCAL begin 5694615 */
+  /* Set DECL_INITIAL as early as possible, so that an uninitialized
+     value doesn't get written out during cp_finish_file.  This value
+     should never change anyway.  */
+  DECL_INITIAL (decl) = byte_position (field_decl);
+  /* APPLE LOCAL begin 5694615 */
 
   while (*chain)
     chain = &TREE_CHAIN (*chain);
@@ -12477,6 +12507,8 @@ get_arg_type_list (tree meth, int context, int superflag)
   /* Selector type - will eventually change to `int'.  */
   /* APPLE LOCAL begin ObjC new abi */
   chainon (arglist, build_tree_list (NULL_TREE, flag_objc_abi == 2 
+				     /* APPLE LOCAL ARM hybrid objc-2.0 */
+						&& !flag_objc_legacy_dispatch
 				     ? (superflag 
 					? objc_v2_super_selector_type 
 					: objc_v2_selector_type)
@@ -12994,7 +13026,8 @@ objc_finish_message_expr (tree receiver, tree sel_name, tree method_params)
   /* APPLE LOCAL ObjC new abi */
   /* Code moved down */
   /* APPLE LOCAL begin ObjC new abi */
-  if (flag_objc_abi == 2)
+  /* APPLE LOCAL ARM hybrid objc-2.0 */
+  if (flag_objc_abi == 2 && !flag_objc_legacy_dispatch)
     {
       tree ret_type;
       tree message_func_decl;
@@ -15563,9 +15596,12 @@ objc_synthesize_new_getter (tree class, tree class_method, tree property)
       /* build call to:
 	 id objc_getProperty (self, _cmd, offsetof (class, ivar), isAtomic) */
       tree cmd;
-      tree field_decl = nested_ivar_lookup (class, PROPERTY_IVAR_NAME (property));
-      tree offset = field_decl ? byte_position (field_decl) : integer_zero_node;
+      /* APPLE LOCAL begin radar 5610134 */
       tree func_params, func;
+      tree field_decl = nested_ivar_lookup (class, PROPERTY_IVAR_NAME (property));
+      tree offset = flag_objc_abi <= 1 ? byte_position (field_decl) 
+				       : ivar_offset_ref (CLASS_NAME (class), field_decl);
+      /* APPLE LOCAL end radar 5610134 */
       gcc_assert (self_decl);
       cmd = TREE_CHAIN (self_decl);
       gcc_assert (cmd);
@@ -15678,9 +15714,12 @@ objc_synthesize_new_setter (tree class, tree class_method, tree property)
       /* build call to:
 	 objc_setProperty (self, _cmd, offsetof (class, ivar), arg, [true|false], [true|false]) */
       tree cmd, arg;
-      tree field_decl = nested_ivar_lookup (class, PROPERTY_IVAR_NAME (property));
-      tree offset = field_decl ? byte_position (field_decl) : integer_zero_node;
+      /* APPLE LOCAL begin radar 5610134 */
       tree func_params, func;
+      tree field_decl = nested_ivar_lookup (class, PROPERTY_IVAR_NAME (property));
+      tree offset = flag_objc_abi <= 1 ? byte_position (field_decl)
+				       : ivar_offset_ref (CLASS_NAME (class), field_decl);
+      /* APPLE LOCAL end radar 5610134 */
       tree shouldCopy = (PROPERTY_COPY (property) == boolean_true_node) 
 		          ? boolean_true_node : boolean_false_node; 
       tree isAtomic = IS_ATOMIC (property) ? boolean_true_node : boolean_false_node;
@@ -15737,11 +15776,8 @@ objc_synthesize_new_setter (tree class, tree class_method, tree property)
       else
     	{
           /* Common case */
-          int save_flag_objc_gc = flag_objc_gc;
-          /* For 'weak' property, must generate objc_assign_weak regardless of -fobjc-gc */
-          flag_objc_gc = 1;
+	  /* APPLE LOCAL 5675908 */
           stmt =  build_modify_expr (lhs, NOP_EXPR, rhs);
-          flag_objc_gc = save_flag_objc_gc;
        }
     }
   /* APPLE LOCAL end radar 4947014 - objc atomic property */
@@ -17117,11 +17153,14 @@ start_method_def (tree method)
     should_call_super_dealloc = 0;
   /* APPLE LOCAL end mainline */
   /* APPLE LOCAL begin radar 4757423 */
+  /* APPLE LOCAL begin ARM 5414138 */
   /* If we are defining a "finalize" method in a non-root class, we will need
      to check if a [super finalize] is missing, and warn if it is.  */
   should_call_super_finalize =
-    CLASS_SUPER_NAME (objc_implementation_context)
+    flag_objc_gc
+    && CLASS_SUPER_NAME (objc_implementation_context)
     && !strcmp ("finalize", IDENTIFIER_POINTER (METHOD_SEL_NAME (method)));
+  /* APPLE LOCAL end ARM 5414138 */
   /* APPLE LOCAL end radar 4757423 */
 
   /* Required to implement _msgSuper.  */

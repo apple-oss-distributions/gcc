@@ -1,7 +1,7 @@
 /* APPLE LOCAL file radar 4959107 */
 
 #include <Foundation/Foundation.h>
-/* { dg-options "-fobjc-new-property -mmacosx-version-min=10.5 -framework Foundation" } */
+/* { dg-options "-fobjc-new-property -mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" } */
 /* { dg-do run { target *-*-darwin* } } */
 
 @protocol PropProt

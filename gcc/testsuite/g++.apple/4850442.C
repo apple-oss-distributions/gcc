@@ -1,6 +1,7 @@
 /* APPLE LOCAL file 4850442 */
-/* { dg-do compile { target "*-*-darwin*" } } */
+/* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-m64 -Os -fpermissive" } */
+
 typedef long unsigned int size_t;
 static char token[256], *cursor1;
 size_t strlen (const char *);

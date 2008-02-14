@@ -10618,9 +10618,11 @@ tree_add_const_value_attribute (dw_die_ref var_die, tree decl)
   if (TREE_CODE (init) != INTEGER_CST)
     return;
   
-  if (host_integerp (init, 0))
+  /* APPLE LOCAL begin ARM 5603458 */
+  if (host_integerp (init, 1))
     add_AT_unsigned (var_die, DW_AT_const_value,
-		     tree_low_cst (init, 0));
+		     tree_low_cst (init, 1));
+  /* APPLE LOCAL end ARM 5603458 */
   else
     add_AT_long_long (var_die, DW_AT_const_value,
 		      TREE_INT_CST_HIGH (init),

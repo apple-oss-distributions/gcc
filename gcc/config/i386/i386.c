@@ -3033,7 +3033,8 @@ classify_argument (enum machine_mode mode, tree type,
 		  /* Bitfields are always classified as integer.  Handle them
 		     early, since later code would consider them to be
 		     misaligned integers.  */
-		  if (DECL_BIT_FIELD (field))
+		  /* APPLE LOCAL c++ abi for bit-fields 5679636 */
+		  if (DECL_BIT_FIELD_TYPE (field))
 		    {
 		      for (i = int_bit_position (field) / 8 / 8;
 			   i < (int_bit_position (field)

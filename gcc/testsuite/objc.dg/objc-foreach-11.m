@@ -2,7 +2,7 @@
 /* This tests the new spec. for foreach-statement. On exit from foreach loop
    with no match, value of 'elem' is set to nil! */
 #include <Foundation/Foundation.h>
-/* { dg-options "-mmacosx-version-min=10.5 -framework Foundation -fobjc-exceptions" } */
+/* { dg-options "-mmacosx-version-min=10.5 -framework Foundation -fobjc-exceptions -framework CoreFoundation" } */
 /* { dg-do run { target *-*-darwin* } } */
 
 /* foreach tester */

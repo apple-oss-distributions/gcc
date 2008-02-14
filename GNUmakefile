@@ -40,6 +40,11 @@ install: $(OBJROOT) $(SYMROOT) $(DSTROOT)
 	  $(SRC)/build_gcc "$(RC_ARCHS)" "$(TARGETS)" \
 	    $(SRC) $(PREFIX) $(DSTROOT) $(SYMROOT)
 
+install_libgcc: $(OBJROOT) $(DSTROOT)
+	cd $(OBJROOT) && \
+	  $(SRC)/build_libgcc "$(RC_ARCHS)" "$(TARGETS)" \
+	    $(SRC) $(PREFIX) $(DSTROOT)
+
 # installhdrs does nothing, because the headers aren't useful until
 # the compiler is installed.
 installhdrs:

@@ -33,8 +33,10 @@ extern "C" {
 }
 @end
 
-/* { dg-final { scan-assembler-not "\(bl|call\)\[ \t\]+_objc_msgSend\n" } } */
-/* { dg-final { scan-assembler     "\(bl|call\)\[ \t\]+L_objc_msgSend\\\$stub\n" } } */
-/* { dg-final { scan-assembler-not "\(bl|call\)\[ \t\]+_bogonic\n" } } */
-/* { dg-final { scan-assembler     "\(bl|call\)\[ \t\]+L_bogonic\\\$stub\n" } } */
+/* APPLE LOCAL begin ARM blx == call */
+/* { dg-final { scan-assembler-not "\(bl|blx|call\)\[ \t\]+_objc_msgSend\n" } } */
+/* { dg-final { scan-assembler     "\(bl|blx|call\)\[ \t\]+L_objc_msgSend\\\$stub\n" } } */
+/* { dg-final { scan-assembler-not "\(bl|blx|call\)\[ \t\]+_bogonic\n" } } */
+/* { dg-final { scan-assembler     "\(bl|blx|call\)\[ \t\]+L_bogonic\\\$stub\n" } } */
 /* { dg-final { scan-assembler-not "\\\$non_lazy_ptr" } } */
+/* APPLE LOCAL end ARM blx == call */

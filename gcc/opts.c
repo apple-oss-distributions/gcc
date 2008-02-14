@@ -488,6 +488,8 @@ void set_flags_from_O (unsigned int cmdline)
     {
       if (cmdline)
 	flag_merge_constants = 0;
+      /* APPLE LOCAL ARM structor thunks */
+      flag_clone_structors = 1;
     }
 
   if (optimize >= 1)
@@ -513,13 +515,6 @@ void set_flags_from_O (unsigned int cmdline)
       flag_ivopts = 1;
       flag_tree_vectorize = 0;
       flag_tree_loop_linear = 0;
-      /* APPLE LOCAL begin ARM don't perform pre with -Os */
-      /* Probably a good idea on ppc/x86 */
-#ifdef TARGET_ARM
-      if (!optimize_size)
-#endif
-	  flag_tree_pre = 1;
-      /* APPLE LOCAL end ARM don't perform pre with -Os */
       /* APPLE LOCAL end lno */
       flag_tree_ter = 1;
       flag_tree_live_range_split = 1;

@@ -1,7 +1,7 @@
 /* APPLE LOCAL file ObjC GC */
 /* A run-time test for insertion of write barriers. */
 
-/* { dg-do run { target *-*-darwin* } } */
+/* { dg-do run { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-fnext-runtime -fobjc-gc" } */
 /* { dg-options "-fnext-runtime -fobjc-gc -mmacosx-version-min=10.3" { target powerpc*-*-darwin* } } */
 /* { dg-skip-if "" { powerpc*-*-darwin* } { "-m64" } { "" } } */

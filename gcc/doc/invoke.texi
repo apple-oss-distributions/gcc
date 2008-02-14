@@ -43,8 +43,7 @@ remainder.  @samp{g++} accepts mostly the same options as @samp{gcc}.
 
 @c APPLE LOCAL begin manual
 In Apple's version of GCC, both @samp{cc} and @samp{gcc} are actually
-symbolic links to a compiler named like gcc-@var{version}; which compiler
-is linked to may be changed using the command @samp{gcc_select}.
+symbolic links to a compiler named like gcc-@var{version}.
 Similarly, @samp{c++} and @samp{g++} are links to a compiler named like
 g++-@var{version}.
 
@@ -175,8 +174,10 @@ in the following sections.
 @gccoptlist{-c  -S  -E  -o @var{file}  -combine -pipe  -pass-exit-codes  @gol
 @c APPLE LOCAL -ObjC 2001-08-03 --sts **
 -ObjC (APPLE ONLY) -ObjC++ (APPLE ONLY) @gol
-@c APPLE LOCAL fat builds
+@c APPLE LOCAL begin fat builds
 -arch @var{arch} (APPLE ONLY) @gol
+-Xarch_@var{arch} @var{option} (APPLE ONLY) @gol
+@c APPLE LOCAL end fat builds
 @c APPLE LOCAL ss2
 -fsave-repository=@var{file} @gol
 -x @var{language}  -v  -###  --help  --target-help  --version}
@@ -429,6 +430,8 @@ Objective-C and Objective-C++ Dialects}.
 -include @var{file}  -imacros @var{file} @gol
 -iprefix @var{file}  -iwithprefix @var{dir} @gol
 -iwithprefixbefore @var{dir}  -isystem @var{dir} @gol
+@c APPLE LOCAL ARM iwithsysroot 4917039
+-iwithsysroot (APPLE ONLY) @var{dir} @gol
 -M  -MM  -MF  -MG  -MP  -MQ  -MT  -nostdinc  @gol
 -P  -fworking-directory  -remap @gol
 -trigraphs  -undef  -U@var{macro}  -Wp,@var{option} @gol
@@ -542,8 +545,10 @@ Objective-C and Objective-C++ Dialects}.
 -unexported_symbols_list  -weak_reference_mismatches @gol
 @c APPLE LOCAL begin mainline
 -whatsloaded -F -gused -gfull -mmacosx-version-min=@var{version} @gol
--mkernel -mone-byte-bool}
+-mkernel -mone-byte-bool @gol
 @c APPLE LOCAL end mainline
+@c APPLE LOCAL fat builds
+-Xarch_@var{arch}}
 
 @c APPLE LOCAL prune man page
 @ignore
@@ -1041,6 +1046,12 @@ specified with @option{-arch}.  This option only works if assembler
 and libraries are available for each architecture specified.  (APPLE
 ONLY)
 @opindex arch
+
+@item -Xarch_@var{arch} @var{option}
+Apply @var{option} to the command line for architecture @var{arch}.
+This is useful for specifying an option that should only apply to
+one architecture when building a ``universal'' binary.  (APPLE ONLY)
+@opindex Xarch
 @c APPLE LOCAL end fat builds
 
 @c APPLE LOCAL begin ss2
@@ -6787,6 +6798,14 @@ This is to ensure that GCC's procedure to fix buggy system headers and
 the ordering for the include_next directive are not inadvertently changed.
 If you really need to change the search order for system directories,
 use the @option{-nostdinc} and/or @option{-isystem} options.
+
+@c APPLE LOCAL begin ARM iwithsysroot 4917039
+The option @option{-iwithsysroot} (APPLE ONLY), if specified with an
+absolute path, will prepend the system root directory (if applicable) to
+the path and add it to the beginning of the system search paths.  If
+specified with a relative path, @option{-iwithsysroot} will behave
+identically to @option{-isystem}.
+@c APPLE LOCAL end ARM iwithsysroot 4917039
 
 @item -iquote@var{dir}
 @opindex iquote

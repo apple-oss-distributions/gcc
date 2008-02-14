@@ -1,3 +1,373 @@
+2008-02-14  Josh Conner  <jconner@apple.com>
+
+	Radar 5694615
+	* obj-c++.dg/ivar-offset.mm: New test.
+
+2008-02-05  Josh Conner  <jconner@apple.com>
+
+	Radar 5726269
+	* objc.dg/objc2.c: New test.
+
+2008-01-29  Josh Conner  <jconner@apple.com>
+
+	Radar 5683689
+	* gcc.apple/iphone-minversion-[1-4].c: Rename to...
+	* gcc.apple/aspen-minversion-[1-4].c: ...this.  Also,
+	change all iphone references to aspen.
+	* gcc.apple/iphone-minversion-err-[1-8].c: Rename to...
+	* gcc.apple/aspen-minversion-err-[1-8].c: ...this.
+	Also, change all iphone references to aspen.
+	* gcc.apple/iphone-minversion-default-[12].c: Rename to...
+	* gcc.apple/aspen-minversion-default-[12].c: ... this.
+	Also, change all iphone references to aspen.
+
+2008-01-23  Josh Conner  <jconner@apple.com>
+
+	Radar 5660282
+	* objc.dg/objc-gc-weak-3.m: Only enable for ppc and x86 targets.
+	* objc.dg/objc-gc-3.m: Likewise.
+	* objc.dg/objc-gc-weak-4.m: Likewise.
+	* objc.dg/objc-gc-4.m: Likewise.
+	* objc.dg/objc-gc-5.m: Likewise.
+	* objc.dg/newproperty-atomicretained.m: Likewise.
+	* objc.dg/objc-gc-section-2.m: Likewise.
+	* objc.dg/objc-gc-6.m: Likewise.
+	* objc.dg/objc-weak-pointer.m: Likewise.
+	* objc.dg/objc-gc-assign-ivar-1.m: Likewise.
+	* objc.dg/objc-gc-7.m: Likewise.
+	* objc.dg/newproperty-atomiccopy.m: Likewise.
+	* objc.dg/objc-gc-8.m: Likewise.
+	* objc.dg/newproperty-atomicretained-1.m: Likewise.
+	* objc.dg/objc-gc-weak-1.m: Likewise.
+	* objc.dg/super-finalize-1.m: Likewise.
+	* objc.dg/objc-gc-1.m: Likewise.
+	* objc.dg/objc-gc-9.m: Likewise.
+	* objc.dg/newproperty-atomiccopy-1.m: Likewise.
+	* objc.dg/objc-gc-weak-2.m: Likewise.
+	* objc.dg/super-finalize-2.m: Likewise.
+	* objc.dg/objc-gc-2.m: Likewise.
+	* obj-c++.dg/objc-gc-7.mm: Likewise.
+	* obj-c++.dg/objc-gc-2.mm: Likewise.
+	* obj-c++.dg/objc-gc-10.mm: Likewise.
+	* obj-c++.dg/objc-gc-weak-1.mm: Likewise.
+	* obj-c++.dg/objc-gc-8.mm: Likewise.
+	* obj-c++.dg/objc-gc-3.mm: Likewise.
+	* obj-c++.dg/objc-gc-11.mm: Likewise.
+	* obj-c++.dg/objc-gc-weak-2.mm: Likewise.
+	* obj-c++.dg/objc-gc-9.mm: Likewise.
+	* obj-c++.dg/objc-weak-pointer.mm: Likewise.
+	* obj-c++.dg/no-offsetof-warn.mm: Likewise.
+	* obj-c++.dg/super-finalize-1.mm: Likewise.
+	* obj-c++.dg/objc-gc-weak-3.mm: Likewise.
+	* obj-c++.dg/super-finalize-2.mm: Likewise.
+	* obj-c++.dg/objc-gc-5.mm: Likewise.
+	* obj-c++.dg/objc-gc-assign-ivar-1.mm: Likewise.
+	* obj-c++.dg/objc-gc-section-2.mm: Likewise.
+	* obj-c++.dg/syntax-error-8.mm: Likewise.
+	* obj-c++.dg/objc-gc-weak-4.mm: Likewise.
+	* obj-c++.dg/objc-gc-6.mm: Likewise.
+	* obj-c++.dg/objc-gc-1.mm: Likewise.
+	* obj-c++.dg/objc-gc-weak-5.mm: Likewise.
+
+2008-01-17  Josh Conner  <jconner@apple.com>
+
+	* gcc.apple/iphone-minversion-1.c: Skip if -mmacosx-version-min
+	was specified.
+	* gcc.apple/iphone-minversion-2.c: Likewise.
+	* gcc.apple/iphone-minversion-3.c: Likewise.
+	* gcc.apple/iphone-minversion-4.c: Likewise.
+	* gcc.apple/iphone-minversion-default-1.c: Likewise.
+	* gcc.apple/iphone-minversion-err-2.c: Likewise.
+	* gcc.apple/iphone-minversion-err-3.c: Likewise.
+	* gcc.apple/iphone-minversion-err-4.c: Likewise.
+	* gcc.apple/iphone-minversion-err-5.c: Likewise.
+	* gcc.apple/iphone-minversion-err-6.c: Likewise.
+	* gcc.apple/iphone-minversion-err-7.c: Likewise.
+	* gcc.apple/iphone-minversion-err-8.c: Likewise.
+
+2008-01-16  Josh Conner  <jconner@apple.com>
+
+	Radar 5683689
+	* gcc.apple/iphone-minversion-1.c: New test.
+	* gcc.apple/iphone-minversion-2.c: New test.
+	* gcc.apple/iphone-minversion-3.c: New test.
+	* gcc.apple/iphone-minversion-4.c: New test.
+	* gcc.apple/iphone-minversion-err-1.c: New test.
+	* gcc.apple/iphone-minversion-err-2.c: New test.
+	* gcc.apple/iphone-minversion-err-3.c: New test.
+	* gcc.apple/iphone-minversion-err-4.c: New test.
+	* gcc.apple/iphone-minversion-err-5.c: New test.
+	* gcc.apple/iphone-minversion-err-6.c: New test.
+	* gcc.apple/iphone-minversion-err-7.c: New test.
+	* gcc.apple/iphone-minversion-err-8.c: New test.
+	* gcc.apple/iphone-minversion-default-1.c: New test.
+	* gcc.apple/iphone-minversion-default-2.c: New test.
+
+2008-01-10  Josh Conner  <jconner@apple.com>
+
+	Radar 5675908
+	* objc.dg/objc-gc-assign-ivar-2.m: New file.
+
+2007-12-06  Josh Conner  <jconner@apple.com>
+
+	Radar 5633379
+	* g++.old-deja/g++.abi/align2.C: Add ARM support.
+	* g++.dg/align-test-1.C: Likewise.
+	* g++.dg/pch/debug-1.Hs: Change Carbon.h include to
+	CoreFoundation.h.
+	* gcc/testsuite/gcc.apple/4709156.c: New test.
+	* gcc/testsuite/gcc.apple/4639731.c: New test.
+
+2007-12-05  Josh Conner  <jconner@apple.com>
+
+	* objc.dg/const-cfstring-8.m: Fix APPLE LOCAL marker.
+
+2007-12-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5432522
+	* objc.dg/super-finalize-1.m: Add -fobjc-gc to command-line
+	options.
+	* objc.dg/super-finalize-2.m: Likewise.
+	* obj-c++.dg/super-finalize-1.mm: Likewise.
+	* obj-c++.dg/super-finalize-2.mm: Likewise.
+	* objc.dg/super-finalize-3.m: New test.
+	* obj-c++.dg/super-finalize-3.mm: New test.
+
+2007-12-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5625941
+	* gcc.dg/flt-rounds.c: New.
+
+2007-11-29  Fariborz Jahanian <fjahanian@apple.com>
+
+	Radar 5619052
+	* obj-c++.dg/encode-template.mm: Add
+
+2007-11-29  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5607453
+	* objc.dg/newproperty-protocol-type.m: Add
+	* obj-c++.dg/newproperty-protocol-type.mm: Add
+
+2007-11-28  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5610134
+	* objc.dg/newproperty-retain-3.m: Add
+	* objc.dg/newproperty-retain-4.m: Add
+	* obj-c++.dg/newproperty-retain-3.mm: Add
+	* obj-c++.dg/newproperty-retain-4.mm: Add
+
+2007-08-03  Josh Conner  <jconner@apple.com>
+
+	Radar 5357072
+	* gcc.c-torture/execute/4567449-1.c: New test.
+	* gcc.c-torture/execute/4537821.c: New test.
+	* gcc.target/arm/vfpgcclib-2.c: New test.
+	* gcc.target/arm/const64-2.c: New test.
+	* gcc.target/arm/const64.c: New test.
+	* gcc.target/arm/test-retval-peep.c: New test.
+	* gcc.target/arm/rverse-1.c: New test.
+	* gcc.target/arm/4800979.c: New test.
+	* gcc.target/arm/4567449-1.c: New test.
+	* gcc.target/arm/rverse-2.c: New test.
+	* gcc.target/arm/4956366.c: New test.
+	* gcc.target/arm/rverse-3.c: New test.
+	* gcc.target/arm/rverse-4.c: New test.
+	* gcc.target/arm/rverse-5.c: New test.
+	* gcc.target/arm/rverse-6.c: New test.
+	* gcc.target/arm/ne-assign-1.c: New test.
+	* gcc.target/arm/ne-assign-2.c: New test.
+	* gcc.target/arm/uxtb16-2.c: New test.
+	* gcc.target/arm/arm.exp: New test.
+	* gcc.target/arm/uxtb16-3.c: New test.
+	* gcc.target/arm/uxtb16.c: New test.
+	* gcc.target/arm/uxtb16-4.c: New test.
+	* gcc.target/arm/uxtb16-5.c: New test.
+	* gcc.target/arm/4782404.c: New test.
+	* gcc.target/arm/4753443.c: New test.
+	* gcc.target/arm/vfpgcclib-1.c: New test.
+	* gcc.dg/4587904.c: New test.
+	* g++.dg/warn/Wstrict-aliasing-1.C: New test.
+	* g++.dg/warn/Wstrict-aliasing-3.C: New test.
+	* g++.dg/warn/Wstrict-aliasing-5.C: New test.
+	* g++.dg/warn/Wstrict-aliasing-7.C: New test.
+	* g++.dg/warn/Wstrict-aliasing-2.C: New test.
+	* g++.dg/warn/Wstrict-aliasing-4.C: New test.
+	* g++.dg/warn/Wstrict-aliasing-6.C: New test.
+	* g++.dg/eh/alloca.C: New test.
+
+2007-07-31  Josh Conner  <jconner@apple.com>
+
+	Radar 5357072
+	* gcc.c-torture/execute/builtins/builtins.exp:
+	Add -fbuiltin-strcat and -fbuiltin-strcpy to arm-*-darwin*
+	options.
+	* gcc.c-torture/execute/ieee/mul-subnormal-single-1.x:
+	Add -msoft-float to arm-*-darwin* options.
+	* gcc.c-torture/execute/ieee/20000320-1.x: New file.
+	* gcc.dg/20020415-1.c: Skip if -mdynamic-no-pic is provided on
+	the command-line.
+	* gcc.dg/20030225-1.c: Likewise.
+	* gcc.dg/20030708-1.c: Likewise.
+	* gcc.dg/20030120-1.c: Likewise.
+	* gcc.dg/20050321-2.c: Likewise.
+	* gcc.dg/20001009-1.c: Likewise.
+	* gcc.dg/20021023-1.c: Likewise.
+	* gcc.dg/20021018-1.c: Likewise.
+	* gcc.dg/20021029-1.c: Likewise.
+	* gcc.dg/20030702-1.c: Likewise.
+	* gcc.dg/20010912-1.c: Likewise.
+	* gcc.dg/20020122-4.c: Likewise.
+	* gcc.dg/20030213-1.c: Likewise.
+	* gcc.dg/20020430-1.c: Likewise.
+	* gcc.dg/inline-2.c: Likewise.
+	* gcc.dg/20021116-1.c: Likewise.
+	* gcc.dg/20040311-2.c: Likewise.
+	* g++.old-deja/g++.jason/thunk2.C: Likewise.
+	* g++.old-deja/g++.other/local-alloc1.C: Likewise.
+	* g++.dg/debug/debug3.C: Likewise.
+	* g++.dg/ext/visibility/noPLT.C: Likewise.
+	* g++.dg/opt/vt1.C: Likewise.
+	* g++.dg/opt/crossjump1.C: Likewise.
+	* gcc.dg/builtin-cast.c: Limit to powerpc and x86.
+	* gcc.dg/framework-1.c: Likewise.
+	* gcc.apple/inline-limit-1.c: Likewise.
+	* gcc.apple/asm-block-62.c: Likewise.
+	* gcc.apple/align-test-1.c: Likewise.
+	* gcc.apple/asm-block-63.c: Likewise.
+	* gcc.apple/asm-block-29.c: Likewise.
+	* gcc.apple/align-test-2.c: Likewise.
+	* gcc.apple/align-test-3.c: Likewise.
+	* gcc.apple/align-test-4.c: Likewise.
+	* gcc.apple/asm-block-49.c: Likewise.
+	* gcc.apple/align-test-5c.c: Likewise.
+	* objc.dg/newproperty-typedef-mangle-1.m: Likewise.
+	* objc.dg/const-str-10-64bit.m: Likewise.
+	* objc.dg/objc-bycopy-return-warn-1.m: Likewise.
+	* objc.dg/property-4.m: Likewise.
+	* objc.dg/property-11.m: Likewise.
+	* objc.dg/const-str-9-64bit.m: Likewise.
+	* objc.dg/objc2-bitfield-abi-1.m: Likewise.
+	* objc.dg/objc2-ivar-layout-1.m: Likewise.
+	* objc.dg/symtab-1-64bit.m: Likewise.
+	* objc.dg/objc2-try-catch-neg-1.m: Likewise.
+	* objc.dg/exceptionCodeGenBug.m: Likewise.
+	* objc.dg/objc2-try-catch-1.m: Likewise.
+	* objc.dg/objc2-none-fragile-ivar-use.m: Likewise.
+	* objc.dg/const-str-11-64bit.m: Likewise.
+	* objc.dg/objc-dir-dispatch-64.m: Likewise.
+	* objc.dg/property-bycopy-3.m: Likewise.
+	* objc.dg/const-cfstring-1.m: Likewise.
+	* objc.dg/newproperty-copy-3.m: Likewise.
+	* objc.dg/const-cfstring-4-64bit.m: Likewise.
+	* objc.dg/objc2-ivar-test-2.m: Likewise.
+	* objc.dg/encode-7-64bit.m: Likewise.
+	* objc.dg/objc2-const-str-64bit-1.m: Likewise.
+	* objc.dg/objc2-package-ivar-1.m: Likewise.
+	* objc.dg/property-16.m: Likewise.
+	* objc.dg/next-runtime-1-64bit.m: Likewise.
+	* objc.dg/newproperty-unimplementd-property-1.m: Likewise.
+	* obj-c++.dg/objc-passby-ref-1.mm: Likewise.
+	* obj-c++.dg/objc2-package-ivar-1.mm: Likewise.
+	* obj-c++.dg/objc-bycopy-return-warn-1.mm: Likewise.
+	* obj-c++.dg/const-cfstring-4-64bit.mm: Likewise.
+	* obj-c++.dg/objc2-none-fragile-ivar-use.mm: Likewise.
+	* obj-c++.dg/objc2-ivar-test-2.mm: Likewise.
+	* obj-c++.dg/objc-instantiate-1.mm: Likewise.
+	* obj-c++.dg/method-copyctor-1.mm: Likewise.
+	* obj-c++.dg/cxx-ivars-4.mm: Likewise.
+	* obj-c++.dg/property-11.mm: Likewise.
+	* obj-c++.dg/objc2-try-catch-neg-1.mm: Likewise.
+	* obj-c++.dg/property-4.mm: Likewise.
+	* obj-c++.dg/property-17.mm: Likewise.
+	* obj-c++.dg/objc2-cplus-try-catch-1.mm: Likewise.
+	* obj-c++.dg/const-cfstring-1.mm: Likewise.
+	* obj-c++.dg/objc2-bitfield-abi-1.mm: Likewise.
+	* obj-c++.dg/newproperty-typedef-mangle-1.mm: Likewise.
+	* obj-c++.dg/newproperty-unimplementd-property-1.mm: Likewise.
+	* obj-c++.dg/encode-3-64bit.mm: Likewise.
+	* obj-c++.dg/newproperty-copy-3.mm: Likewise.
+	* g++.apple/asm-block-29.C: Likewise.
+	* g++.apple/asm-block-49.C: Likewise.
+	* g++.apple/4850442.C: Likewise.
+	* g++.apple/4905666.C: Likewise.
+	* gcc.dg/bitfld-4.c: Don't run for arm*-*-darwin*
+	* gcc.dg/arm-mmx-1.c: Likewise.
+	* gcc.dg/trampoline-1.c: Likewise.
+	* gcc.dg/sibcall-3.c: Likewise.
+	* gcc.dg/sibcall-4.c: Likewise.
+	* gcc.dg/bitfld-3.c: Likewise.
+	* g++.dg/abi/bitfield4.C: Likewise.
+	* g++.dg/other/profile1.C: Likewise.
+	* gcc.dg/const-elim-2.c: Add -mno-strings-in-code to arm
+	command-line.
+	* gcc.apple/pubtypes-1.c: Allow @ as assembler comment
+	delimiter.
+	* gcc.apple/pubtypes-2.c: Likewise.
+	* gcc.apple/pubtypes-3.c: Likewise.
+	* gcc.apple/pubtypes-4.c: Likewise.
+	* g++.apple/pubtypes.C: Likewise.
+	* g++.dg/inline-limit-1.C: Add xfail for arm*-apple-darwin*.
+	* lib/target-supports.exp (check_profiling_available): Disable
+	profiling support on arm*-*-darwin*.
+	* objc.dg/newproperty-anon-category-1.m: Add -framework
+	CoreFoundation to the command-line options.
+	* objc.dg/newproperty-weak-attribute-1.m: Likewise.
+	* objc.dg/property-3.m: Likewise.
+	* objc.dg/objc-foreach-9.m: Likewise.
+	* objc.dg/objc-gc-weak-3.m: Likewise.
+	* objc.dg/newproperty-retain-1.m: Likewise.
+	* objc.dg/newproperty-protocol-lookup-1.m: Likewise.
+	* objc.dg/const-cfstring-6.m: Likewise.
+	* objc.dg/objc-foreach-11.m: Likewise.
+	* objc.dg/newproperty-atomicretained.m: Likewise.
+	* objc.dg/property-weak-attribute-1.m: Likewise.
+	* objc.dg/objc-gc-assign-ivar-1.m: Likewise.
+	* objc.dg/objc-foreach-5.m: Likewise.
+	* objc.dg/newproperty-atomiccopy.m: Likewise.
+	* objc.dg/newproperty-redundant-decl-accessor.m: Likewise.
+	* objc.dg/newproperty-atomicretained-1.m: Likewise.
+	* objc.dg/const-cfstring-3.m: Likewise.
+	* objc.dg/newproperty-atomiccopy-1.m: Likewise.
+	* objc.dg/property-2.m: Likewise.
+	* objc.dg/objc-foreach-8.m: Likewise.
+	* objc.dg/objc-foreach-nil-collection-1.m: Likewise.
+	* objc.dg/objc-foreach-elem-collection-elem.m: Likewise.
+	* objc.dg/newproperty-compound-setter-1.m: Likewise.
+	* obj-c++.dg/newproperty-compound-setter-1.mm: Likewise.
+	* obj-c++.dg/property-2.mm: Likewise.
+	* obj-c++.dg/newproperty-weak-attribute-1.mm: Likewise.
+	* obj-c++.dg/objc-foreach-10.mm: Likewise.
+	* obj-c++.dg/property-3.mm: Likewise.
+	* obj-c++.dg/newproperty-protocol-lookup-1.mm: Likewise.
+	* obj-c++.dg/objc-foreach-8.mm: Likewise.
+	* obj-c++.dg/objc-foreach-11.mm: Likewise.
+	* obj-c++.dg/objc-foreach-nil-collection-1.mm: Likewise.
+	* obj-c++.dg/except-1.mm: Likewise.
+	* obj-c++.dg/objc-foreach-9.mm: Likewise.
+	* obj-c++.dg/const-cfstring-6.mm: Likewise.
+	* obj-c++.dg/cfstring-in-functemplate.mm: Likewise.
+	* obj-c++.dg/objc-foreach-4.mm: Likewise.
+	* obj-c++.dg/newproperty-atomicretained.mm: Likewise.
+	* obj-c++.dg/objc-foreach-elem-collection-elem.mm: Likewise.
+	* obj-c++.dg/objc-gc-assign-ivar-1.mm: Likewise.
+	* obj-c++.dg/objc-gc-weak-4.mm: Likewise.
+	* obj-c++.dg/newproperty-atomiccopy.mm: Likewise.
+	* obj-c++.dg/newproperty-retain-1.mm: Likewise.
+	* obj-c++.dg/newproperty-atomicretained-1.mm: Likewise.
+	* obj-c++.dg/newproperty-atomiccopy-1.mm: Likewise.
+	* obj-c++.dg/property-weak-attribute-1.mm: Likewise.
+	* obj-c++.dg/newproperty-redundant-decl-accessor.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-1.mm: Likewise.
+	* obj-c++.dg/const-cfstring-3.mm: Likewise.
+	* objc.dg/stubify-1.m: Accept blx mnemonic as a vaild call insn.
+	* obj-c++.dg/stubify-1.mm: Likewise.
+	* objc/execute/next_mapping.h (test_struct_1, test_struct_2):
+	New variables.
+	(PCC_BITFIELD_TYPE_MATTERS): New macro.
+	(objc_layout_structure_next_member): Add
+	PCC_BITFIELD_TYPE_MATTERS handling.
+
 2007-07-12  Stuart Hastings  <stuart@apple.com>
 
 	Radar 5322531

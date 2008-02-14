@@ -947,12 +947,17 @@ i[34567]86-*-darwin*)
 	tmake_file="${tmake_file} i386/t-darwin"
 	# APPLE LOCAL 4126124
 	need_64bit_hwint=yes
+	# APPLE LOCAL begin apple arch
+	with_arch=${with_arch:-apple}
+	with_cpu=${with_cpu:-generic}
+	# APPLE LOCAL end apple arch
+	# APPLE LOCAL confused diff
 	;;
 # APPLE LOCAL begin mainline
 x86_64-*-darwin*)
 # APPLE LOCAL begin apple arch
-	#with_arch=${with_arch:-apple}
-	#with_cpu=${with_cpu:-generic}
+	with_arch=${with_arch:-apple}
+	with_cpu=${with_cpu:-generic}
 # APPLE LOCAL end apple arch
 	tmake_file="t-darwin ${cpu_type}/t-darwin64 t-slibgcc-darwin"
 	tm_file="${tm_file} ${cpu_type}/darwin64.h"

@@ -1,3 +1,26 @@
+2008-01-17  Josh Conner  <jconner@apple.com>
+
+	* driverdriver.c (do_compile): Move malloc of
+	arch_specific_argv to after call to add_arch_options.
+
+2008-01-09  Josh Conner  <jconner@apple.com>
+
+	Radar 5256615
+	* driverdriver.c (arch_conditional): New global...
+	(initialize): ...initialize it.
+	(filter_args_for_arch): New function...
+	(do_compile): ...use it.
+	(do_compile_separately): Maintain arch_conditional.
+	(main): Set arch_conditional.  Configure and use
+	arch_specific_argc and arch_specific_argv.  Pass args through
+	filter_args_for_arch.
+
+2007-12-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5625921
+	* GNUmakefile: Add install_libgcc target.
+	* build_libgcc: New file.
+
 2007-07-20  Josh Conner  <jconner@apple.com>
 
 	Radar 5341082

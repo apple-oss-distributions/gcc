@@ -1,7 +1,8 @@
 /* APPLE LOCAL file KEXT double destructor --bowdidge */
 /* Radar 3943783  kernel extensions built with gcc-4.0 can't be loaded */
-/* { dg-do compile { target powerpc*-apple-darwin* } } */
+/* { dg-do compile { target powerpc*-*-darwin* } } */
 /* { dg-options "-S -fapple-kext" } */
+/* { dg-skip-if "Not valid on 64-bit" { *-*-darwin* } { "-m64" } { "" } } */
 
 struct Base {
   virtual ~Base();

@@ -64,8 +64,8 @@ Boston, MA 02111-1307, USA.  */
 #define CC1_SPEC "%{!mkernel:%{!static:%{!mdynamic-no-pic:-fPIC}}} \
   "/* APPLE LOCAL ARM ignore -mthumb and -mno-thumb */"\
   %<mthumb %<mno-thumb \
-  "/* APPLE LOCAL mainline 2007-02-20 5005743 */"\
-  %{!mmacosx-version-min=*:-mmacosx-version-min=%(darwin_minversion)} \
+  "/* APPLE LOCAL ARM 5683689 */"\
+  %{!mmacosx-version-min=*: %{!maspen-version-min=*: %(darwin_cc1_minversion)}} \
   "/* APPLE LOCAL ignore -mcpu=G4 -mcpu=G5 */"\
   %<faltivec %<mno-fused-madd %<mlong-branch %<mlongcall %<mcpu=G4 %<mcpu=G5 \
   %{g: %{!fno-eliminate-unused-debug-symbols: -feliminate-unused-debug-symbols }}"
@@ -91,6 +91,22 @@ Boston, MA 02111-1307, USA.  */
     :10.4}"
 
 /* APPLE LOCAL end mainline 2007-03-13 5005743 5040758 */ \
+/* APPLE LOCAL begin ARM 5683689 */
+/* Default cc1 option for specifying minimum version number.  */
+#define DARWIN_CC1_MINVERSION_SPEC "-mmacosx-version-min=%(darwin_minversion)"
+
+/* Default ld option for specifying minimum version number.  */
+#define DARWIN_LD_MINVERSION_SPEC "-macosx_version_min %(darwin_minversion)"
+
+/* Use macosx version numbers by default.  */
+#define DARWIN_DEFAULT_VERSION_TYPE  DARWIN_VERSION_MACOSX
+/* APPLE LOCAL end ARM 5683689 */
+
+/* APPLE LOCAL begin 5342595 */
+#define DARWIN_DSYMUTIL_SPEC \
+  "%{g*:%{!gstabs*:%{!g0: dsymutil %{o*:%*}%{!o:a.out}}}}"
+/* APPLE LOCAL end 5342595 */
+
 #undef SUBTARGET_EXTRA_SPECS
 #define SUBTARGET_EXTRA_SPECS					\
   DARWIN_EXTRA_SPECS						\
@@ -224,6 +240,11 @@ extern int flag_iasm_blocks;
 #undef SUBTARGET_OVERRIDE_OPTIONS
 #define SUBTARGET_OVERRIDE_OPTIONS				\
   do {								\
+    /* APPLE LOCAL begin ARM 5683689 */				\
+    if (!darwin_macosx_version_min				\
+	&& !darwin_aspen_version_min)				\
+      darwin_macosx_version_min = "10.1";			\
+    /* APPLE LOCAL end ARM 5683689 */				\
     /* Handle -mfix-and-continue.  */				\
     if (darwin_fix_and_continue_switch)				\
       {								\
@@ -345,3 +366,6 @@ extern void ix86_darwin_init_expanders (void);
 #undef TARGET_DEEP_BRANCH_PREDICTION
 #define TARGET_DEEP_BRANCH_PREDICTION ((m_PPRO | m_K6 | m_ATHLON_K8 | m_PENT4) & TUNEMASK)
 /* APPLE LOCAL end 4106131 */
+
+/* APPLE LOCAL KEXT */
+#define TARGET_SUPPORTS_KEXTABI1 (! TARGET_64BIT)

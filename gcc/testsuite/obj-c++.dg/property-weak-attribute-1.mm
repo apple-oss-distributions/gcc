@@ -2,7 +2,7 @@
 /* Test that we call objc_assign_weak and objc_read_weak */
 /* { dg-do run { target *-*-darwin* } } */
 /* APPLE LOCAL radar 4899595 */
-/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5 -framework Foundation" } */
+/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" } */
 
 #include <Foundation/Foundation.h>
 

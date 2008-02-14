@@ -1,6 +1,6 @@
 /* APPLE LOCAL file radar 4476365 */
 /* This that pass-by-referencong workd in obj-c++ */
-/* { dg-do run { target *-*-darwin* } } */
+/* { dg-do run { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-framework Cocoa" } */
 #include <Cocoa/Cocoa.h>
 

@@ -1274,9 +1274,33 @@ L10:	cmp	ip, #0
 	add ip, lr, r0
 	bx ip
 
-	FUNC_END switch16
+	FUNC_END switch32
 #endif
 /* APPLE LOCAL end ARM 4790140 compact switch tables */
+
+/* APPLE LOCAL begin ARM 5526308 */
+#ifndef NOT_DARWIN
+#ifdef L_flt_rounds
+
+	FUNC_START flt_rounds
+
+#if __ARM_ARCH__ > 5
+	fmrx	r0, fpscr
+	mov	r0, r0, lsr #22
+	add	r0, r0, #1
+	and	r0, r0, #3
+#else
+	/* If we don't have floating point hardware, default to 1
+	   (round to nearest).  */
+	mov	r0, #1
+#endif
+	RET
+
+	FUNC_END flt_rounds
+
+#endif
+#endif
+/* APPLE LOCAL end ARM 5526308 */
 
 /* ------------------------------------------------------------------------ */
 /* These next two sections are here despite the fact that they contain Thumb 

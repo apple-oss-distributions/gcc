@@ -1,3 +1,50 @@
+2008-02-14  Josh Conner  <jconner@apple.com>
+
+	Radar 5694615
+	* objc-act.c (ivar_offset_ref): Set DECL_INITIAL on ivar offset
+	decl.
+
+2008-02-05  Josh Conner  <jconner@apple.com>
+
+	Radar 5726269
+	* objc-act.c (objc_init): Invoke OBJC_TARGET_FLAG_OBJC_ABI.
+
+2008-01-10  Josh Conner  <jconner@apple.com>
+
+	Radar 5675908
+	* objc-act.c (objc_synthesize_new_setter): Don't force
+	flag_objc_gc to 1 before calling build_modify_expr.
+
+2008-01-10  Josh Conner  <jconner@apple.com>
+
+	Radar 5680184
+	* objc-act.c (objc_init): Add support for
+	flag_objc_legacy_dispatch with objc-2.0.
+	(objc_build_setter_call): Likewise.
+	(synth_module_prologue): Likewise.
+	(get_arg_type_list): Likewise.
+	(objc_finish_message_expr): Likewise.
+
+2007-12-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5432522
+	* objc-act.c (start_method_def): Only warn for a missing
+	[super finalize] call if flag_objc_gc is set.
+
+2007-11-29  Fariborz Jahanian <fjahanian@apple.com>
+
+	Radar 5607453
+	* objc-act.c (objc_add_property_variable): Exclude 'id' and
+	'Class" object types for "NSCopying" protocol warning.
+
+2007-11-28  Fariborz Jahanian <fjahanian@apple.com>
+
+	Radar 5610134
+	* objc-act.c (ivar_offset_ref): assertion added.
+	(objc_synthesize_new_getter): Produce non-fragile offset tree
+	for 64bit ABI.
+	(objc_synthesize_new_setter): Ditto.
+
 2007-07-03  Josh Conner  <jconner@apple.com>
 
 	Radar 5310197

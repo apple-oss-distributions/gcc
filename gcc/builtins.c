@@ -204,6 +204,8 @@ static tree fold_builtin_sprintf_chk (tree, enum built_in_function);
 static tree fold_builtin_printf (tree, tree, bool, enum built_in_function);
 static tree fold_builtin_fprintf (tree, tree, bool, enum built_in_function);
 static bool init_target_chars (void);
+/* APPLE LOCAL ARM 5526308 */
+static rtx expand_builtin_flt_rounds (void);
 
 static unsigned HOST_WIDE_INT target_newline;
 static unsigned HOST_WIDE_INT target_percent;
@@ -5958,6 +5960,11 @@ expand_builtin (tree exp, rtx target, rtx subtarget, enum machine_mode mode,
       return const0_rtx;
     /* APPLE LOCAL end lno */
 
+    /* APPLE LOCAL begin ARM 5526308 */
+    case BUILT_IN_FLT_ROUNDS:
+      return expand_builtin_flt_rounds ();
+    /* APPLE LOCAL end ARM 5526308 */
+
     default:	/* just do library call, if unknown builtin */
       break;
     }
@@ -10559,3 +10566,25 @@ init_target_chars (void)
   return true;
 }
 /* APPLE LOCAL end mainline */
+/* APPLE LOCAL begin ARM 5526308 */
+
+/* Evaluate FLT_ROUNDS, whose value is dependent upon the current
+   rounding mode and which may be changed by a call to fesetround.  */
+
+static rtx
+expand_builtin_flt_rounds (void)
+{
+#ifdef HAVE_flt_rounds
+  if (HAVE_flt_rounds)
+    {
+      rtx target = gen_reg_rtx (TYPE_MODE (integer_type_node));
+      emit_insn (gen_flt_rounds (target));
+      return target;
+    }
+  else
+#endif
+  /* Default: round to nearest.  */
+  return const1_rtx;
+}
+/* APPLE LOCAL end ARM 5526308 */
+

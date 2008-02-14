@@ -41,6 +41,8 @@ extern bool arm_string_in_code_p (rtx);
 extern rtx look_for_bytemanip (tree, rtx);
 /* APPLE LOCAL ARM prefer SP to FP */
 extern HOST_WIDE_INT arm_local_debug_offset (rtx);
+/* APPLE LOCAL ARM 5526308 */
+extern void arm_expand_flt_rounds (rtx);
 extern void arm_override_options (void);
 extern int use_return_insn (int, rtx);
 extern int arm_regno_class (int);
@@ -55,6 +57,8 @@ extern HOST_WIDE_INT arm_compute_initial_elimination_offset (unsigned int,
 							     unsigned int);
 extern HOST_WIDE_INT thumb_compute_initial_elimination_offset (unsigned int,
 							       unsigned int);
+/* APPLE LOCAL ARM 5512097 clzdi2 */
+extern bool arm_expand_clzdi2 (rtx, rtx);
 
 #ifdef TREE_CODE
 extern int arm_return_in_memory (tree);

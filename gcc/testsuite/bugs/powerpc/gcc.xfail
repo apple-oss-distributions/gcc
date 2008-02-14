@@ -175,9 +175,7 @@
 4464421: gcc.dg/vect/vect-96.c scan-tree-dump-times Vectorizing an unaligned access 1
 4464421: gcc.dg/vect/vect-96.c scan-tree-dump-times Alignment of access forced using peeling 1
 4464421: gcc.dg/vect/vect-ifcvt-9.c scan-tree-dump-times vectorized 1 loops 2
-5103114: tmpdir-gcc.dg-struct-layout-1/t003 c_compat_x_tst.o-c_compat_y_tst.o execute
-5103114: tmpdir-gcc.dg-struct-layout-1/t024 c_compat_x_tst.o-c_compat_y_tst.o execute
-5103114: tmpdir-gcc.dg-struct-layout-1/t027 c_compat_x_tst.o-c_compat_y_tst.o execute
+5643423: tmpdir-gcc.dg-struct-layout-1/t027 c_compat_x_tst.o-c_compat_y_tst.o execute
 #
 # the following failures are for x86 only
 3846097: gcc.c-torture/execute/builtins/strcat.c execution,  -fast

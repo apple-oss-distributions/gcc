@@ -2,7 +2,7 @@
 /* Test if constant CFstrings play nice with -fwritable-strings.  */
 /* Author: Ziemowit Laski  */
 
-/* { dg-options "-fconstant-cfstrings -fwritable-strings -framework Foundation" } */
+/* { dg-options "-fconstant-cfstrings -fwritable-strings -framework Foundation -framework CoreFoundation" } */
 /* { dg-do run { target *-*-darwin* } } */
 
 #import <Foundation/Foundation.h>

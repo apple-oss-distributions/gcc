@@ -661,14 +661,6 @@ extern int flag_permissive;
 
 extern int flag_enforce_eh_specs;
 
-/* APPLE LOCAL begin structor thunks */
-/* Nonzero if we prefer to clone con/de/structors.
-   Alternative is to gen multiple tiny thunk-esque things that
-   call/jump to a unified con/de/structor.  This is a classic
-   size/speed tradeoff.  */
-extern int flag_clone_structors;
-/* APPLE LOCAL end structor thunks */
-
 /* APPLE LOCAL begin private extern  Radar 2872481 --ilr */
 /* Nonzero if -fpreprocessed specified.  This is needed by init_reswords()
    so that it can make __private_extern__ have the same rid code as extern

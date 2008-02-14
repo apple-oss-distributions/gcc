@@ -33,7 +33,7 @@
 
 #undef CC1_SPEC
 #define CC1_SPEC "%<faltivec %<mcpu=G4 %<mcpu=G5 \
-%{!mmacosx-version-min=*:-mmacosx-version-min=%(darwin_minversion)} \
+%{!mmacosx-version-min=*: %{!maspen-version-min=*: %(darwin_cc1_minversion)}} \
 %{static: %{Zdynamic: %e conflicting code gen style switches are used}} \
 %{static: %{mdynamic-no-pic: %e conflicting code gen style switches are used}} \
 %{!static:%{!mdynamic-no-pic:-fPIC}} \
@@ -218,7 +218,19 @@
    mcpu=arm1176jzf-s:armv6;			\
    :arm -force_cpusubtype_ALL}"
 
-#define DARWIN_MINVERSION_SPEC "10.4"
+#define DARWIN_MINVERSION_SPEC "1.2"
+
+/* Default cc1 option for specifying minimum version number.  */
+#define DARWIN_CC1_MINVERSION_SPEC "-maspen-version-min=%(darwin_minversion)"
+
+/* Default ld option for specifying minimum version number.  */
+#define DARWIN_LD_MINVERSION_SPEC "-aspen_version_min %(darwin_minversion)"
+
+/* Use Aspen version numbers by default.  */
+#define DARWIN_DEFAULT_VERSION_TYPE DARWIN_VERSION_ASPEN
+
+#define DARWIN_DSYMUTIL_SPEC \
+  "%{gdwarf*: dsymutil %{o*:%*}%{!o:a.out}}"
 
 #undef SUBTARGET_EXTRA_SPECS
 #define SUBTARGET_EXTRA_SPECS			\
@@ -239,6 +251,8 @@
 do {									\
   if (1)								\
   {									\
+    if (!darwin_macosx_version_min && !darwin_aspen_version_min)	\
+      darwin_aspen_version_min = "1.2";					\
     if (MACHO_DYNAMIC_NO_PIC_P)						\
       {									\
         if (flag_pic)							\
@@ -350,4 +364,15 @@ do {									\
 /* Use stabs for now */
 #undef PREFERRED_DEBUGGING_TYPE
 #define PREFERRED_DEBUGGING_TYPE DBX_DEBUG
+
+/* APPLE LOCAL KEXT */
+#define TARGET_SUPPORTS_KEXTABI1 1
+
+#define OBJC_TARGET_FLAG_OBJC_ABI		\
+  do { 						\
+    if (flag_objc_abi == -1)			\
+      flag_objc_abi = 2;			\
+    if (flag_objc_legacy_dispatch == -1)	\
+      flag_objc_legacy_dispatch = 1;		\
+  } while (0)
 

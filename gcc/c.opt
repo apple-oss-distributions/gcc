@@ -590,11 +590,14 @@ fcheck-new
 C++ ObjC++
 Check the return value of new
 
-; APPLE LOCAL begin structor decloning
+; APPLE LOCAL begin ARM structor thunks
+; Nonzero if we prefer to clone con/de/structors.  Alternative is to
+; gen multiple tiny thunk-esque things that call/jump to a unified
+; con/de/structor.  This is a classic size/speed tradeoff.
 fclone-structors
-C++ ObjC++
+C++ ObjC++ Var(flag_clone_structors)
 Factor out certain duplicate code in constructors and destructors
-; APPLE LOCAL end structor decloning
+; APPLE LOCAL end ARM structor thunks
 
 fcond-mismatch
 C ObjC C++ ObjC++
@@ -761,6 +764,12 @@ Allow fast jumps (via comm page) to the message dispatcher
 fobjc-exceptions
 ObjC ObjC++
 Enable Objective-C exception and synchronization syntax
+
+; APPLE LOCAL begin ARM hybrid objc-2.0
+fobjc-legacy-dispatch
+ObjC ObjC++ Var(flag_objc_legacy_dispatch) Init(-1)
+Use Objective-C v1 message dispatching
+; APPLE LOCAL end ARM hybrid objc-2.0
 
 ; APPLE LOCAL begin radar 2848255
 fobjc-zerocost-exceptions
@@ -973,6 +982,12 @@ C ObjC C++ ObjC++ Joined Separate
 iwithprefixbefore
 C ObjC C++ ObjC++ Joined Separate
 -iwithprefixbefore <dir>	Add <dir> to the end of the main include path
+
+; APPLE LOCAL begin ARM iwithsysroot 4917039
+iwithsysroot
+C ObjC C++ ObjC++ Joined Separate
+-iwithsysroot <dir> Add <sysroot>/<dir> to the start of the system include path
+; APPLE LOCAL end ARM iwithsysroot 4917039
 
 lang-asm
 C Undocumented

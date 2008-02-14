@@ -79,13 +79,20 @@
 
 #define SUBTARGET_OVERRIDE_OPTIONS					\
 do {									\
+  /* APPLE LOCAL begin ARM 5683689 */					\
+  if (!darwin_macosx_version_min && !darwin_aspen_version_min)		\
+    darwin_macosx_version_min = "10.1";					\
+  /* APPLE LOCAL end ARM 5683689 */					\
   rs6000_altivec_abi = 1;						\
   rs6000_altivec_vrsave = 1;						\
   /* APPLE LOCAL begin constant cfstrings */				\
   /* This just sets the default, SUBSUBTRAGET_OVERRIDE_OPTIONS will	\
      let the user override it.  */					\
+  /* APPLE LOCAL begin ARM 5683689 */					\
   darwin_constant_cfstrings = 						\
-    strverscmp (darwin_macosx_version_min, "10.2") >= 0;		\
+    darwin_aspen_version_min						\
+    || strverscmp (darwin_macosx_version_min, "10.2") >= 0;		\
+  /* APPLE LOCAL end ARM 5683689 */					\
   /* APPLE LOCAL end constant cfstrings */				\
   if (DEFAULT_ABI == ABI_DARWIN)					\
   {									\
@@ -138,6 +145,8 @@ do {									\
       && !flag_apple_kext						\
 /* APPLE LOCAL begin mainline 2007-02-20 5005743 */			\
 /* APPLE LOCAL end mainline 2007-02-20 5005743 */			\
+      /* APPLE LOCAL ARM 5683689 */					\
+      && darwin_macosx_version_min					\
       && strverscmp (darwin_macosx_version_min, "10.5") >= 0		\
       && ! (target_flags_explicit & MASK_ALTIVEC)			\
       && ! rs6000_select[1].string)					\
@@ -155,8 +164,11 @@ do {									\
 #define C_COMMON_OVERRIDE_OPTIONS do {					\
   /* On powerpc, __cxa_get_exception_ptr is available starting in the	\
      10.4.6 libstdc++.dylib.  */					\
-/* APPLE LOCAL mainline 2007-02-20 5005743 */				\
-  if (strverscmp (darwin_macosx_version_min, "10.4.6") < 0		\
+  /* APPLE LOCAL begin ARM 5683689 */					\
+  if (!darwin_aspen_version_min						\
+      && (!darwin_macosx_version_min					\
+	  || strverscmp (darwin_macosx_version_min, "10.4.6") < 0)	\
+  /* APPLE LOCAL end ARM 5683689 */					\
       && flag_use_cxa_get_exception_ptr == 2)				\
     flag_use_cxa_get_exception_ptr = 0;					\
   if (flag_mkernel)							\
@@ -182,8 +194,8 @@ do {									\
   %<mthumb %<mno-thumb \
   "/* APPLE LOCAL ignore -msse and -msse2 and other x86 options */"\
   %<msse  %<msse2 %<msse3 %<march=pentium4 %<mcpu=pentium4 \
-  "/* APPLE LOCAL mainline 2007-02-20 5005743 */"\
-  %{!mmacosx-version-min=*:-mmacosx-version-min=%(darwin_minversion)} \
+  "/* APPLE LOCAL ARM 5683689 */"\
+  %{!mmacosx-version-min=*: %{!maspen-version-min=*: %(darwin_cc1_minversion)}} \
   %{g: %{!fno-eliminate-unused-debug-symbols: -feliminate-unused-debug-symbols }} \
   %{static: %{Zdynamic: %e conflicting code gen style switches are used}}\
   "/* APPLE LOCAL -fast and PIC code.  */"\
@@ -211,11 +223,12 @@ do {									\
    mcpu=G5:ppc970;				\
    :ppc}}"
 /* APPLE LOCAL end mainline */
-/* APPLE LOCAL begin mainline 2005-11-15 4271575 */
+/* APPLE LOCAL begin ARM 5683689 */
 /* crt2.o is at least partially required for 10.3.x and earlier.  */
-#define DARWIN_CRT2_SPEC \
-  "%{!m64:%:version-compare(!> 10.4 mmacosx-version-min= crt2.o%s)}"
-/* APPLE LOCAL end mainline 2005-11-15 4271575 */
+#define DARWIN_CRT2_SPEC 			\
+  "%{!m64: %{mmacosx-version-min=*:		\
+	%:version-compare(!> 10.4 mmacosx-version-min= crt2.o%s)}}"
+/* APPLE LOCAL end ARM 5683689 */
 /* APPLE LOCAL begin mainline 2007-03-13 5005743 5040758 */ \
 
 /* Determine a minimum version based on compiler options.  */
@@ -228,6 +241,21 @@ do {									\
      :10.1}"
 
 /* APPLE LOCAL end mainline 2007-03-13 5040758 5005743 */
+/* APPLE LOCAL begin ARM 5683689 */
+/* Default cc1 option for specifying minimum version number.  */
+#define DARWIN_CC1_MINVERSION_SPEC "-mmacosx-version-min=%(darwin_minversion)"
+
+/* Default ld option for specifying minimum version number.  */
+#define DARWIN_LD_MINVERSION_SPEC "-macosx_version_min %(darwin_minversion)"
+
+/* Use macosx version numbers by default.  */
+#define DARWIN_DEFAULT_VERSION_TYPE DARWIN_VERSION_MACOSX
+/* APPLE LOCAL end ARM 5683689 */
+
+/* APPLE LOCAL begin 5342595 */
+#define DARWIN_DSYMUTIL_SPEC	\
+  "%{g*:%{!gstabs*:%{!g0: dsymutil %{o*:%*}%{!o:a.out}}}}"
+/* APPLE LOCAL end 5342595 */
 /* APPLE LOCAL begin mainline */
 #undef SUBTARGET_EXTRA_SPECS
 #define SUBTARGET_EXTRA_SPECS			\
@@ -596,8 +624,10 @@ extern const char *darwin_one_byte_bool;
     (flag_next_runtime			\
      && flag_objc_direct_dispatch != 0	\
      && !TARGET_64BIT			\
-/* APPLE LOCAL mainline 2007-02-20 5005743 */ \
-     && (strverscmp (darwin_macosx_version_min, "10.4") >= 0 \
+/* APPLE LOCAL begin ARM 5683689 */				\
+     && (darwin_aspen_version_min		 		\
+	 || strverscmp (darwin_macosx_version_min, "10.4") >= 0	\
+/* APPLE LOCAL end ARM 5683689 */				\
          || flag_objc_direct_dispatch == 1))
 
 /* This is the reserved direct dispatch address for Objective-C.  */
@@ -614,8 +644,10 @@ extern const char *darwin_one_byte_bool;
 #undef TARGET_C99_FUNCTIONS
 #define TARGET_C99_FUNCTIONS					\
   (TARGET_64BIT							\
-/* APPLE LOCAL mainline 2007-02-20 5005743 */ \
+   /* APPLE LOCAL begin ARM 5683689 */				\
+   || darwin_aspen_version_min					\
    || strverscmp (darwin_macosx_version_min, "10.3") >= 0)
+   /* APPLE LOCAL end ARM 5683689 */
 /* APPLE LOCAL end mainline 2005-09-01 3449986 */
 
 /* APPLE LOCAL begin mainline */
@@ -632,3 +664,6 @@ extern const char *darwin_one_byte_bool;
 	  goto DONE;                                             \
     }
 /* APPLE LOCAL end x86_64 */
+
+/* APPLE LOCAL KEXT */
+#define TARGET_SUPPORTS_KEXTABI1 (! TARGET_64BIT)

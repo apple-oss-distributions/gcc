@@ -1,7 +1,7 @@
 /* APPLE LOCAL file radar 5109807 - radar 5217964 */
 /* Test that ivar layout bytestream info is generated as expected in the the test 
    extracted from AppKit */
-/* { dg-do run { target *-*-darwin* } } */
+/* { dg-do run { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-mmacosx-version-min=10.5 -framework Foundation -fobjc-gc" } */
 /* { dg-require-effective-target ilp32 } */
 

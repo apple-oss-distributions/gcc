@@ -1,5 +1,7 @@
 # APPLE LOCAL file ARM darwin target
 LIB1ASMSRC = arm/lib1funcs.asm
+
+# APPLE LOCAL begin ARM 5526308
 LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _bb_init_func \
 	_lshrdi3 _ashrdi3 _ashldi3 \
 	_negdf2 _addsubdf3 _muldivdf3 _cmpdf2 _unorddf2 _fixdfsi _fixunsdfsi \
@@ -12,13 +14,14 @@ LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _bb_init_func \
 	_mulsf3vfp _addsf3vfp _subsf3vfp _divsf3vfp \
 	_eqsf2vfp _nesf2vfp _ltsf2vfp _gtsf2vfp _lesf2vfp _gesf2vfp _unordsf2vfp \
 	_fixsfsivfp _fixunssfsivfp _floatsisfvfp _floatunssisfvfp \
-	_switchu8 _switch8 _switch16 _switch32
+	_switchu8 _switch8 _switch16 _switch32 _flt_rounds
+# APPLE LOCAL end ARM 5526308
 
 MULTILIB_OPTIONS     = march=armv6k
 MULTILIB_DIRNAMES    = v6
 MULTILIB_EXCEPTIONS  = 
 MULTILIB_MATCHES     =
-TARGET_LIBGCC2_CFLAGS = -fno-inline -mmacosx-version-min=10.4
+TARGET_LIBGCC2_CFLAGS = -fno-inline
 
 SHLIB_VERPFX = $(srcdir)/config/arm/darwin-libgcc
 

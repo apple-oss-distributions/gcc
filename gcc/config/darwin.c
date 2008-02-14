@@ -299,6 +299,10 @@ typedef struct machopic_indirection GTY (())
   bool stub_p;
   /* True iff this stub or pointer pointer has been referenced.  */
   bool used;
+  /* APPLE LOCAL begin ARM 5440570 */
+  /* True iff this stub or pointer pointer has been emitted.  */
+  bool emitted;
+  /* APPLE LOCAL end ARM 5440570 */
 } machopic_indirection;
 
 /* A table mapping stub names and non-lazy pointer names to
@@ -306,6 +310,12 @@ typedef struct machopic_indirection GTY (())
 
 static GTY ((param_is (struct machopic_indirection))) htab_t 
   machopic_indirections;
+
+/* APPLE LOCAL begin ARM 5440570 */
+/* Used to identify that usage information has changed while
+   outputting the stubs.  */
+static GTY (()) bool indirection_uses_changed;
+/* APPLE LOCAL end ARM 5440570 */
 
 /* Return a hash value for a SLOT in the indirections hash table.  */
 
@@ -392,6 +402,8 @@ machopic_indirection_name (rtx sym_ref, bool stub_p)
       p->ptr_name = xstrdup (buffer);
       p->stub_p = stub_p;
       p->used = false;
+      /* APPLE LOCAL ARM 5440570 */
+      p->emitted = false;
       *slot = p;
     }
   
@@ -446,6 +458,8 @@ machopic_validate_stub_or_non_lazy_ptr (const char *name)
       tree id;
       
       p->used = true;
+      /* APPLE LOCAL ARM 5440570 */
+      indirection_uses_changed = true;
 
       /* Do what output_addr_const will do when we actually call it.  */
       if (SYMBOL_REF_DECL (p->symbol))
@@ -1025,7 +1039,8 @@ machopic_output_indirection (void **slot, void *data)
   const char *sym_name;
   const char *ptr_name;
   
-  if (!p->used)
+  /* APPLE LOCAL ARM 5440570 */ 
+  if (!p->used || p->emitted)
     return 1;
 
   symbol = p->symbol;
@@ -1090,6 +1105,8 @@ machopic_output_indirection (void **slot, void *data)
       assemble_integer (init, GET_MODE_SIZE (Pmode),
 			GET_MODE_ALIGNMENT (Pmode), 1);
     }
+  /* APPLE LOCAL ARM 5440570 */
+  p->emitted = true;
   
   return 1;
 }
@@ -1098,9 +1115,16 @@ void
 machopic_finish (FILE *asm_out_file)
 {
   if (machopic_indirections)
-    htab_traverse_noresize (machopic_indirections,
-			    machopic_output_indirection,
-			    asm_out_file);
+    /* APPLE LOCAL begin ARM 5440570 */
+    do
+      {
+	indirection_uses_changed = false;
+	htab_traverse_noresize (machopic_indirections,
+				machopic_output_indirection,
+				asm_out_file);
+      }
+    while (indirection_uses_changed == true);
+    /* APPLE LOCAL end ARM 5440570 */
 }
 
 int
@@ -1945,18 +1969,26 @@ darwin_binds_local_p (tree decl)
 
 int darwin_fix_and_continue;
 const char *darwin_fix_and_continue_switch;
-/* APPLE LOCAL mainline 2005-09-01 3449986 */
-/* APPLE LOCAL begin mainline 2007-02-20 5005743 */
-const char *darwin_macosx_version_min = "10.1";
 
-/* APPLE LOCAL end mainline 2007-02-20 5005743 */
+/* APPLE LOCAL begin ARM 5683689 */
+/* Argument supplied to -mmacosx-version-min switch.  */
+const char *darwin_macosx_version_min = NULL;
+
+/* Argument supplied to -maspen-version-min switch.  */
+const char *darwin_aspen_version_min = NULL;
+/* APPLE LOCAL end ARM 5683689 */
+
 /* APPLE LOCAL begin mainline */
 /* True, iff we're generating code for loadable kernel extentions.  */
 
 bool
 darwin_kextabi_p (void) {
-  return flag_apple_kext;
+  return TARGET_KEXTABI == 1;
 }
+
+#ifndef TARGET_SUPPORTS_KEXTABI1
+#define TARGET_SUPPORTS_KEXTABI1 0
+#endif
 
 void
 darwin_override_options (void)
@@ -1983,6 +2015,9 @@ darwin_override_options (void)
       flag_exceptions = 0;
       /* No -fnon-call-exceptions data in kexts.  */
       flag_non_call_exceptions = 0;
+      if (flag_apple_kext &&
+	  ! TARGET_SUPPORTS_KEXTABI1)
+	flag_apple_kext = 2;
     }
 }
 /* APPLE LOCAL end mainline */

@@ -2879,7 +2879,7 @@ initialize_predefined_identifiers (void)
 	IDENTIFIER_CTOR_OR_DTOR_P (*pid->node) = 1;
     }
   /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
-  if (TARGET_KEXTABI)
+  if (TARGET_KEXTABI == 1)
     {
       /* This is snarfed from the 2.95 cp-tree.h.  The mechanism is
 	 completely different from gcc3 (see cp-tree.h, and read the
@@ -3006,7 +3006,7 @@ cxx_init_decl_processing (void)
 #endif
 
   /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
-  if (TARGET_KEXTABI)
+  if (TARGET_KEXTABI == 1)
     delta_type_node = short_integer_type_node;
   else
   /* APPLE LOCAL end KEXT 2.95-ptmf-compatibility --turly */
@@ -6133,7 +6133,7 @@ build_ptrmemfunc_type (tree type)
       = build_ptrmemfunc_type (TYPE_MAIN_VARIANT (type));
 
   /* APPLE LOCAL begin KEXT 2.95-ptmf-compatibility --turly */
-  if (TARGET_KEXTABI)
+  if (TARGET_KEXTABI == 1)
     {
       tree u = make_aggr_type (UNION_TYPE);
       SET_IS_AGGR_TYPE (u, 0);
@@ -11218,7 +11218,7 @@ cxx_maybe_build_cleanup (tree decl)
 			 && CLASSTYPE_VBASECLASSES (type));
       /* APPLE LOCAL begin KEXT double destructor */
       special_function_kind dtor = sfk_complete_destructor;
-      if (TARGET_KEXTABI
+      if (TARGET_KEXTABI == 1
 	  && has_apple_kext_compatibility_attr_p (type))
 	{
 	  /* If we have a trivial operator delete (), we can go ahead and

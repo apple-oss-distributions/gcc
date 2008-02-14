@@ -8215,7 +8215,33 @@ version_compare_spec_function (int argc, const char **argv)
   if (! result)
     return NULL;
 
-  return argv[nargs + 2];
+  /* APPLE LOCAL begin version-compare quoting 5378841 */
+  {
+    /* Escape all spec special characters.  */
+    const char *p = argv[nargs + 2];
+    char *q, *b;
+    while (*p)
+      {
+	if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '%' || *p == '\\')
+	  break;
+	++p;
+      }
+
+    if (*p == 0)
+      return argv[nargs + 2];
+
+    q = b = xmalloc (strlen (p)*2 + 1);
+    p = argv[nargs + 2];
+    while (*p)
+      {
+	if (*p == ' ' || *p == '\t' || *p == '\n' || *p == '%' || *p == '\\')
+	  *q++ = '\\';
+	*q++ = *p++;
+      }
+    *q = *p;
+    return b;
+  }
+  /* APPLE LOCAL end version-compare quoting 5378841 */
 }
 /* APPLE LOCAL end mainline 2005-09-01 3449986 */
 

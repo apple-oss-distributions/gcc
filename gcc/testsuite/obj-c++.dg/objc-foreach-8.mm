@@ -1,5 +1,5 @@
 /* APPLE LOCAL file radar 4631818 */
-/* { dg-options "-mmacosx-version-min=10.5 -framework Foundation" } */
+/* { dg-options "-mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" } */
 /* { dg-do run } */
 #import <Foundation/Foundation.h>
 

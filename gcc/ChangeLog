@@ -1,3 +1,10 @@
+2006-06-23  Richard Guenther  <rguenther@suse.de>
+
+        Radar 5656402
+        PR middle-end/28045
+        * fold-const.c (operand_equal_p): Check if the argument types
+        have the same precision before stripping NOPs.
+	
 2007-05-21  Mike Stump  <mrs@apple.com>
 
 	* config/darwin.h (LINK_COMMAND_SPEC): Add .cxx/.cp for dsymutil

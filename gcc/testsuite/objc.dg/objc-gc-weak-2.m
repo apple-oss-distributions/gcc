@@ -1,7 +1,7 @@
 /* APPLE LOCAL file radar 4426814 */
 /* A run-time test for insertion of read barriers for __weak objects. */
 
-/* { dg-do run { target *-*-darwin* } } */
+/* { dg-do run { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-fnext-runtime -fobjc-gc" } */
 
 #include <objc/objc.h>

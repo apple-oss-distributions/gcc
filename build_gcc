@@ -83,12 +83,7 @@ ARM_CONFIGFLAGS="--with-sysroot=\"$ARM_SYSROOT\""
 # This is the libstdc++ version to use.
 LIBSTDCXX_VERSION=4.0.0
 
-# Sniff to see if we can do ppc64 building.
-DARWIN_VERS=9
-if [ x"`file /usr/lib/crt1.o | grep 'architecture ppc64'`" == x ]; then
-    DARWIN_VERS=7
-fi
-
+DARWIN_VERS=`uname -r | sed 's/\..*//'`
 echo DARWIN_VERS = $DARWIN_VERS
 
 # If the user has CC set in their environment unset it now
@@ -148,8 +143,10 @@ if [ \! -f Makefile ]; then
    --host=$BUILD-apple-darwin$DARWIN_VERS --target=$BUILD-apple-darwin$DARWIN_VERS || exit 1
 fi
 # Unset RC_DEBUG_OPTIONS because it causes the bootstrap to fail.
-RC_DEBUG_OPTIONS= \
-  make $MAKEFLAGS $BOOTSTRAP CFLAGS="$CFLAGS" CXXFLAGS="$CFLAGS" || exit 1
+# Also keep unset for cross compilers so that the cross built libraries are
+# comparable to the native built libraries.
+unset RC_DEBUG_OPTIONS
+make $MAKEFLAGS $BOOTSTRAP CFLAGS="$CFLAGS" CXXFLAGS="$CFLAGS" || exit 1
 make $MAKEFLAGS html CFLAGS="$CFLAGS" CXXFLAGS="$CFLAGS" || exit 1
 make $MAKEFLAGS DESTDIR=$DIR/dst-$BUILD-$BUILD install-gcc install-target \
   CFLAGS="$CFLAGS" CXXFLAGS="$CFLAGS" || exit 1

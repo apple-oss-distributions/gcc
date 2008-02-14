@@ -1,4 +1,4 @@
-/* APPLE LOCAL 5308174 */
+/* APPLE LOCAL file 5308174 */
 /* { dg-options "-fconstant-cfstrings -Os" } */
 /* { dg-do compile { target *-*-darwin* } } */
 

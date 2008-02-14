@@ -1,4 +1,4 @@
-/* APPLE LOCAL file 4697325 */
+/* APPLE LOCAL file 4697325 5683689 */
 /* Additional functions for the GCC driver on Darwin native.
    Copyright (C) 2006 Free Software Foundation, Inc.
    Contributed by Apple Computer Inc.
@@ -37,12 +37,17 @@ Boston, MA 02110-1301, USA.  */
 #define WORD_SWITCH_TAKES_ARG(STR) DEFAULT_WORD_SWITCH_TAKES_ARG (STR)
 #endif
 
-/* When running on a Darwin system and using that system's headers and
-   libraries, default the -mmacosx-version-min flag to be the version
-   of the system on which the compiler is running.  */
+/* This function is used when running on a Darwin system and using that
+   system's headers and libraries.  Unless specified otherwise by
+   command-line options or environment variables, this routine will
+   set the appropriate version specification flag to a default value.
+   The version flag used is based on VERS_TYPE, and is either:
+   DARWIN_VERSION_MACOSX to use -mmacosx-version-min and
+   DARWIN_VERSION_ASPEN to use -maspen-version-min.  */
 
 void
-darwin_default_min_version (int * argc_p, char *** argv_p)
+darwin_default_min_version (int * argc_p, char *** argv_p,
+			    enum darwin_version_type vers_type)
 {
   const int argc = *argc_p;
   char ** const argv = *argv_p;
@@ -57,7 +62,7 @@ darwin_default_min_version (int * argc_p, char *** argv_p)
   int major_vers;
   /* APPLE LOCAL begin radar 5145050 */
   char minor_vers[6];
-  static char new_flag[sizeof ("-mmacosx-version-min=10.0.0") + 6];
+  static char new_flag[sizeof ("-mxxxxxx-version-min=99.99.99") + 6];
   /* APPLE LOCAL end radar 5145050 */
 
   /* If the command-line is empty, just return.  */
@@ -70,14 +75,17 @@ darwin_default_min_version (int * argc_p, char *** argv_p)
 	  ((argv[1][1] == 'b') && (NULL != strchr(argv[1] + 2,'-')))))
     return;
   
-  /* Don't do this if the user specified -mmacosx-version-min= or
-     -mno-macosx-version-min.  */
+  /* Don't do this if the user specified -mmacosx-version-min=,
+     -maspen-version-min=, -mno-macosx-version-min, or
+     -mno-aspen-version-min.  */
   for (i = 1; i < argc; i++)
     if (argv[i][0] == '-')
       {
 	const char * const p = argv[i];
 	if (strncmp (p, "-mno-macosx-version-min", 23) == 0
-	    || strncmp (p, "-mmacosx-version-min", 20) == 0)
+	    || strncmp (p, "-mno-aspen-version-min", 22) == 0
+	    || strncmp (p, "-mmacosx-version-min", 20) == 0
+	    || strncmp (p, "-maspen-version-min", 19) == 0)
 	  return;
 	
 	/* It doesn't count if it's an argument to a different switch.  */
@@ -92,12 +100,36 @@ darwin_default_min_version (int * argc_p, char *** argv_p)
      it as a flag.  */
   {
     const char * macosx_deployment_target;
+    const char * aspen_deployment_target;
+    bool aspen_env_set, macosx_env_set;
+
     macosx_deployment_target = getenv ("MACOSX_DEPLOYMENT_TARGET");
-    if (macosx_deployment_target
-	/* Apparently, an empty string for MACOSX_DEPLOYMENT_TARGET means
-	   "use the default".  Or, possibly "use 10.1".  We choose
-	   to ignore the environment variable, as if it was never set.  */
-	&& macosx_deployment_target[0])
+    aspen_deployment_target = getenv ("ASPEN_DEPLOYMENT_TARGET");
+
+    /* We choose to ignore an environment variable set to an empty
+       string.  */
+    macosx_env_set = macosx_deployment_target
+		     && macosx_deployment_target[0];
+    aspen_env_set = aspen_deployment_target
+		     && aspen_deployment_target[0];
+
+    if (macosx_env_set && aspen_env_set)
+      {
+	error ("warning: MACOSX_DEPLOYMENT_TARGET and "
+	       "ASPEN_DEPLOYMENT_TARGET environment variables both set");
+	if (vers_type == DARWIN_VERSION_ASPEN)
+	  {
+	    error ("warning: Using ASPEN_DEPLOYMENT_TARGET");
+	    macosx_env_set = 0;
+	  }
+	else
+	  {
+	    error ("warning: Using MACOSX_DEPLOYMENT_TARGET");
+	    aspen_env_set = 0;
+	  }
+      }
+
+    if (macosx_env_set)
       {
 	++*argc_p;
 	*argv_p = xmalloc (sizeof (char *) * *argc_p);
@@ -107,8 +139,33 @@ darwin_default_min_version (int * argc_p, char *** argv_p)
 	memcpy (*argv_p + 2, argv + 1, (argc - 1) * sizeof (char *));
 	return;
       }
+
+    if (aspen_env_set)
+      {
+	++*argc_p;
+	*argv_p = xmalloc (sizeof (char *) * *argc_p);
+	(*argv_p)[0] = argv[0];
+	(*argv_p)[1] = concat ("-maspen-version-min=",
+			       aspen_deployment_target, NULL);
+	memcpy (*argv_p + 2, argv + 1, (argc - 1) * sizeof (char *));
+	return;
+      }
+
   }
   /* APPLE LOCAL end deployment target */
+
+  /* For Aspen, if no version number is specified, we default to 1.2.  */
+  if (vers_type == DARWIN_VERSION_ASPEN)
+    {
+      ++*argc_p;
+      *argv_p = xmalloc (sizeof (char *) * *argc_p);
+      (*argv_p)[0] = argv[0];
+      (*argv_p)[1] = xstrdup ("-maspen-version-min=1.2");
+      memcpy (*argv_p + 2, argv + 1, (argc - 1) * sizeof (char *));  
+      return;
+    }
+
+  gcc_assert (vers_type == DARWIN_VERSION_MACOSX);
 
   /* Determine the version of the running OS.  If we can't, warn user,
      and do nothing.  */

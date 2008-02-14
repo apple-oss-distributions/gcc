@@ -1,6 +1,6 @@
 /* APPLE LOCAL file radar 4592503 */
 /* Check that gcc issues warning when __weak attribute is used unwisely. */
-/* { dg-do compile { target *-*-darwin* } } */
+/* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-fobjc-gc" } */
 
 struct S {

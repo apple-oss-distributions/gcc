@@ -5528,6 +5528,14 @@ rs6000_darwin64_record_arg_advance_flush (CUMULATIVE_ARGS *cum,
   endbit = (bitpos + BITS_PER_WORD - 1) & -BITS_PER_WORD;
   intregs = (endbit - startbit) / BITS_PER_WORD;
   cum->words += intregs;
+  /* APPLE LOCAL begin ppc64 abi */
+  /* words should be unsigned. */
+  if ((unsigned)cum->words < (endbit/BITS_PER_WORD))
+    {
+      int pad = (endbit/BITS_PER_WORD) - cum->words;
+      cum->words += pad;
+    }
+  /* APPLE LOCAL end ppc64 abi */
 }
 
 /* The darwin64 ABI calls for us to recurse down through structs,
@@ -16138,6 +16146,7 @@ rs6000_emit_prologue (void)
   /* APPLE LOCAL end callers_lr_already_saved */
   /* APPLE LOCAL special ObjC method use of R12 */
   int objc_method_using_pic = 0;
+  /* APPLE LOCAL 5310717 */
   int stack_pushed = 0;
 
   /* APPLE LOCAL begin CW asm block */
@@ -16208,9 +16217,11 @@ rs6000_emit_prologue (void)
 			|| current_function_calls_eh_return
 			|| cfun->machine->ra_need_lr);
 
+  /* APPLE LOCAL begin 5310717 */
   /* For V.4, update stack before we do any saving and set back pointer.  */
   if (!WORLD_SAVE_P (info)
       && info->push_p
+  /* APPLE LOCAL end 5310717 */
       && (DEFAULT_ABI == ABI_V4
 	  || current_function_calls_eh_return))
     {
@@ -16227,8 +16238,10 @@ rs6000_emit_prologue (void)
 				       )));
       if (frame_reg_rtx != sp_reg_rtx)
 	rs6000_emit_stack_tie ();
+      /* APPLE LOCAL begin 5310717 */
 
       stack_pushed = 1;
+      /* APPLE LOCAL end 5310717 */
     }
 
   /* Handle world saves specially here.  */
@@ -16688,6 +16701,7 @@ rs6000_emit_prologue (void)
   /* Update stack and set back pointer unless this is V.4,
      for which it was done previously.  */
   /* APPLE LOCAL begin mainline */
+  /* APPLE LOCAL begin 5310717 */
   if (!WORLD_SAVE_P (info)
       && info->push_p
       && !stack_pushed)
@@ -16704,6 +16718,7 @@ rs6000_emit_prologue (void)
       if (frame_reg_rtx != sp_reg_rtx)
 	rs6000_emit_stack_tie ();
     }
+  /* APPLE LOCAL end 5310717 */
   /* APPLE LOCAL end mainline */
 
   /* Set frame pointer, if needed.  */
@@ -16717,6 +16732,7 @@ rs6000_emit_prologue (void)
     }
 
   /* APPLE LOCAL begin mainline */
+  /* APPLE LOCAL begin 5310717 */
   /* Save AltiVec registers if needed.  Save here because the red zone does
      not include AltiVec registers.  */
   if (!WORLD_SAVE_P (info) && TARGET_ALTIVEC_ABI && info->altivec_size != 0)
@@ -16791,6 +16807,7 @@ rs6000_emit_prologue (void)
       
       insn = emit_insn (generate_set_vrsave (reg, info, 0));
     }
+  /* APPLE LOCAL end 5310717 */
   /* APPLE LOCAL end mainline */
   
   /* If we are using RS6000_PIC_OFFSET_TABLE_REGNUM, we need to set it up.  */
@@ -17090,10 +17107,12 @@ rs6000_emit_epilogue (int sibcall)
     }
 
   /* APPLE LOCAL begin mainline */
+  /* APPLE LOCAL begin 5310717 */
   /* Set sp_offset based on the stack push from the prologue.  */
   if (info->push_p
       && info->total_size < 32767)
     sp_offset = info->total_size;
+  /* APPLE LOCAL end 5310717 */
 
   /* Restore AltiVec registers if needed.  */
   if (TARGET_ALTIVEC_ABI && info->altivec_size != 0)
@@ -17138,9 +17157,11 @@ rs6000_emit_epilogue (int sibcall)
 
   sp_offset = 0;
 
+  /* APPLE LOCAL begin 5310717 */
   /* If we have a frame pointer, a call to alloca,  or a large stack
      frame, restore the old stack pointer using the backchain.  Otherwise,
      we know what size to update it with.  */
+  /* APPLE LOCAL end 5310717 */
   if (use_backchain_to_restore_sp)
     {
       /* Under V.4, don't reset the stack pointer until after we're done
@@ -20898,10 +20919,10 @@ rs6000_xcoff_file_end (void)
 }
 #endif /* TARGET_XCOFF */
 
+#if TARGET_MACHO
 /* APPLE LOCAL begin mainline remove rs6000_binds_local_p */
 /* APPLE LOCAL end mainline remove rs6000_binds_local_p */
 /* APPLE LOCAL begin pragma reverse_bitfields */
-#if TARGET_MACHO
 /* Pragma reverse_bitfields.  For compatibility with CW.
    This feature is not well defined by CW, and results in
    code that does not work in some cases!  Bug compatibility
