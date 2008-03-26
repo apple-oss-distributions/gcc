@@ -1,6 +1,7 @@
 /* APPLE LOCAL file 4631818 */
 /* Execution check for foreach. */
-/* { dg-options "-mmacosx-version-min=10.5 -framework Foundation -fobjc-exceptions -framework CoreFoundation" } */
+/* { dg-options "-mmacosx-version-min=10.5 -framework Foundation -fobjc-exceptions -framework CoreFoundation" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-framework Foundation -fobjc-exceptions -framework CoreFoundation" { target arm*-*-darwin* } } */
 /* { dg-do run } */
 #include <Foundation/Foundation.h>
 

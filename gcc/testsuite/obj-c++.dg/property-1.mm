@@ -1,7 +1,8 @@
 /* APPLE LOCAL file radar 4436866 */
 /* This program tests use of property provided setter/getter functions. */
 /* APPLE LOCAL radar 4899595 */
-/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5 -lobjc" } */
+/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5 -lobjc" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-fno-objc-new-property -lobjc" { target arm*-*-darwin* } } */
 /* { dg-do run { target *-*-darwin* } } */
 
 #include <objc/objc.h>

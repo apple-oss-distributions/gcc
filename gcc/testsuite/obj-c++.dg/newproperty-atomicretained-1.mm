@@ -2,7 +2,8 @@
 /* Check that 'retain' property does not call objc_setProperty/objc_getProperty
    with gc-only mode. */
 /* { dg-options "-fobjc-gc-only -fobjc-new-property -mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" } */
-/* { dg-do run { target *-*-darwin* } } */
+/* { dg-do run { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-require-effective-target objc_gc } */
 
 #import <Foundation/Foundation.h>
 

@@ -1,9 +1,264 @@
+2008-03-26  Stuart Hastings  <stuart@apple.com>
+
+	Radar 5814283
+	* config/i386/emmintrin.h (_mm_shuffle_pd,
+	  _mm_shufflehi_epi16, _mm_shufflelo_epi16,
+	  _mm_shuffle_epi32): Insert missing parens.
+	* config/i386/tmmintrin.h (_mm_alignr_epi8): Insert missing
+	  parens.
+	* testsuite/gcc.apple/5814283.c: New.
+
+2008-03-25  Josh Conner  <jconner@apple.com>
+
+	Radar 5819018
+	* config/darwin-driver.c (darwin_default_min_version): Don't
+	warn if both MACOSX_DEPLOYMENT_TARGET and
+	IPHONEOS_DEPLOYMENT_TARGET are set.
+
+2008-03-20  Josh Conner  <jconner@apple.com>
+
+	Radar 4826373
+	* config/arm/darwin.h (ASM_OUTPUT_ALIGNED_COMMON): Remove
+	undef.
+
+2008-03-14  Josh Conner  <jconner@apple.com>
+
+	Radar 5777572 - take 2
+	* config/darwin-c.c (iphone_version_as_macro): Rename to...
+	(iphoneos_version_as_macro): ...this.  Rename
+	-miphone-version-min to -miphoneos-version-min.  Rename
+	darwin_iphone_version_min to darwin_iphoneos_version_min.
+	Rename __ENVIRONMENT_IPHONE_VERSION_MIN_REQUIRED__ to
+	__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__.
+	(darwin_cpp_builtins): Likewise.
+	* config/i386/darwin.h (CC1_SPEC,
+	SUBTARGET_OVERRIDE_OPTIONS): Likewise.
+	* config/rs6000/darwin.h (SUBTARGET_OVERRIDE_OPTIONS,
+	C_COMMON_OVERRIDE_OPTIONS, CC1_SPEC, HAVE_OFFS_MSGSEND_FAST,
+	TARGET_C99_FUNCTIONS): Likewise.
+	* config/darwin.c: Likewise.
+	* config/darwin-driver.c: Likewise.  Also, change
+	IPHONE_DEPLOYMENT_TARGET to IPHONEOS_DEPLOYMENT_TARGET.
+	* config/darwin.h (darwin_iphone_version_min,
+	darwin_iphoneos_version_min, enum darwin_version_type,
+	SUBTARGET_OPTIONS, SUBSUBTARGET_OVERRIDE_OPTIONS,
+	LINK_SPEC, REAL_LIBGCC_SPEC, DARWIN_DYLIB1_SPEC,
+	DARWIN_CRT1_SPEC, OBJC_FLAG_OBJC_ABI):
+	Likewise.  Also, Rename DARWIN_VERSION_IPHONE to
+	DARWIN_VERSION_IPHONEOS.
+	* config/arm/darwin.h (CC1_SPEC, DARWIN_CC1_MINVERSION_SPEC,
+	DARWIN_DEFAULT_VERSION_TYPE, SUBTARGET_OVERRIDE_OPTIONS):
+	Likewise.
+
+2008-03-14  Josh Conner  <jconner@apple.com>
+
+	Radar 5619587 (Reverts 5342595)
+	* config/i386/darwin.h (DARWIN_DSYMUTIL_SPEC): Remove
+	definition.
+	* config/rs6000/darwin.h (DARWIN_DSYMUTIL_SPEC): Likewise.
+	* config/arm/darwin.h (DARWIN_DSYMUTIL_SPEC): Likewise.
+	(PREFERRED_DEBUGGING_TYPE): Remove definition.
+	* config/darwin.h (LINK_COMMAND_SPEC): Replace darwin_dsymutil
+	spec invocation with string.
+	(darwin_dsymutil): Remove spec definition.
+
+2008-03-12  Josh Conner  <jconner@apple.com>
+
+	Undo Radar 5730079 and 5785725
+	* config/i386/darwin.h (DARWIN_ALLOWED_VERSION_TYPES): Remove
+	definition.
+	* config/rs6000/darwin.h (CC1_SPEC): Don't err on
+	-miphone-version-min.
+	(DARWIN_ALLOWED_VERSION_TYPES): Remove definition.
+	* config/darwin.h (DARWIN_VERSION_MACOSX): Remove definition.
+	(DARWIN_VERSION_IPHONE): Remove definition.
+	(enum darwin_version_type): New enum.
+	(darwin_default_min_version): Remove allowable_vers_types
+	parameter.
+	* config/arm/darwin.h (CC1_SPEC): Allow -mmacosx-version-min
+	switch.
+	(DARWIN_ALLOWED_VERSION_TYPES): Remove definition.
+	* config/darwin-driver.c (darwin_default_min_version): Remove
+	allowable_vers_types parameter and logic to handle it.  Rename
+	default_vers_type parameter to vers_type.
+
+2008-03-07  Josh Conner  <jconner@apple.com>
+
+	Radar 5777572
+	* config/darwin-c.c (aspen_version_as_macro): Rename to...
+	(iphone_version_as_macro): ...this.  Rename
+	-maspen-version-min to -miphone-version-min.  Rename
+	darwin_aspen_version_min to darwin_iphone_version_min.
+	Rename __ENVIRONMENT_ASPEN_VERSION_MIN_REQUIRED__ to
+	__ENVIRONMENT_IPHONE_VERSION_MIN_REQUIRED__.
+	(darwin_cpp_builtins): Likewise.
+	* config/i386/darwin.h (CC1_SPEC,
+	SUBTARGET_OVERRIDE_OPTIONS): Likewise.
+	* config/rs6000/darwin.h (SUBTARGET_OVERRIDE_OPTIONS,
+	C_COMMON_OVERRIDE_OPTIONS, CC1_SPEC, HAVE_OFFS_MSGSEND_FAST,
+	TARGET_C99_FUNCTIONS): Likewise.
+	* config/darwin.c: Likewise.
+	* config/darwin-driver.c: Likewise.  Also, change
+	ASPEN_DEPLOYMENT_TARGET to IPHONE_DEPLOYMENT_TARGET.
+	* config/darwin.h (darwin_aspen_version_min,
+	darwin_iphone_version_min, enum darwin_version_type,
+	SUBTARGET_OPTIONS, SUBSUBTARGET_OVERRIDE_OPTIONS,
+	LINK_SPEC, REAL_LIBGCC_SPEC, DARWIN_DYLIB1_SPEC,
+	DARWIN_CRT1_SPEC, OBJC_FLAG_OBJC_ABI):
+	Likewise.  Also, Rename DARWIN_VERSION_ASPEN to
+	DARWIN_VERSION_IPHONE.
+	* config/arm/darwin.h (CC1_SPEC, DARWIN_CC1_MINVERSION_SPEC,
+	DARWIN_DEFAULT_VERSION_TYPE, SUBTARGET_OVERRIDE_OPTIONS):
+	Likewise.
+
+2008-03-06  Josh Conner  <jconner@apple.com>
+
+        Radar 5785725
+        * config/arm/darwin.h (CC1_SPEC): Ignore -mmacosx-version-min.
+
+2008-03-06  Stuart Hastings  <stuart@apple.com>
+
+	Radar 5784174
+	Back out patch for 5695218, an issue with x86_64 and profiling.
+	* doc/invoke.texi (-fglobal-alloc-prefer-bytes): Remove.
+	* common.opt (-fglobal-alloc-prefer-bytes): Remove.
+	* global.c (allocno_compare): Remove preference for QI and HI modes.
+	* config/i386/i386.h (PIC_OFFSET_TABLE_REGNUM): Revert.
+	* config/i386/i386.c (ix86_save_reg): Revert.
+	* config/darwin.c (machopic_instantiate_pic_rtx,
+          machopic_uninstantiate_pic_rtx): Remove.
+          (machopic_function_base_name, machopic_function_base_sym,
+          machopic_indirect_data_reference,
+          machopic_legitimize_pic_address) Remove calls to
+          machopic_instantiate_pic_rtx().
+	* config/darwin.h (machopic_instantiate_pic_rtx,
+          machopic_uninstantiate_pic_rtx): Remove.
+
+2008-03-03  Josh Conner  <jconner@apple.com>
+
+	Radar 5757769
+	* config/arm/arm.c (arm_dbx_register_number): New function.
+	* config/arm/arm.h (DBX_REGISTER_NUMBER): New macro.
+	* config/arm/arm-protos.h (arm_dbx_register_number): New proto.
+
+2008-02-26  Caroline Tice  <ctice@apple.com>
+
+	Radar 5743691
+	* dwarf2out.c (DW_ISA_*): New defines.
+	(dwarf_attr_name): Recognize DW_AT_APPLE_isa.
+	(gen_subprogram_die): For ARM, emit DW_AT_APPLE_isa.
+	* dwarf2.h (enum dwarf_attribute): Add DW_AT_APPLE_isa.
+
+2008-02-26  Josh Conner  <jconner@apple.com>
+
+	Radar 5695218
+	* global.c (dump_global_regs): Fix formatting string for
+	printing local_reg_weight.
+
+2008-02-25  Josh Conner  <jconner@apple.com>
+
+	Radar 5730079
+	* config/i386/darwin.h (DARWIN_ALLOWED_VERSION_TYPES): New
+	macro.
+	* config/rs6000/darwin.h (CC1_SPEC): Generate an error for
+	-maspen-version-min.
+	(DARWIN_ALLOWED_VERSION_TYPES): New macro.
+	* config/darwin.h: Change DARWIN_VERSION from enums to bitfield
+	macros.
+	(darwin_default_min_version): Add allowable types parameter.
+	* config/arm/darwin.h (CC1_SPEC): Generate an error for
+	-mmacosx-version-min.
+	(DARWIN_ALLOWED_VERSION_TYPES): New macro.
+	* config/darwin-driver.c (darwin_default_min_version): Add
+	allowable_vers_types parameter and logic to handle it.  Rename
+	vers_type parameter to default_vers_type.
+
+2008-02-21  Stuart Hastings  <stuart@apple.com>
+
+	Radar 5695218
+	* common.opt (-fglobal-alloc-prefer-bytes): New flag.
+	* global.c (allocno_compare): Test the new flag.  Prefer QI
+	and HI over SI when allocating registers; prefer DI to all of
+	these.  (dump_global_regs): Dump RTL for each pseudo, dump
+	symbolic names for hard regs.  (debug_global_regs,
+	debug_hard_regset): New.
+	* doc/invoke.texi (-fglobal-alloc-prefer-bytes): Document it.
+	* stmt.c (expand_asm_operands): Tweak for deferred allocation
+	of pic_offset_table_rtx.
+	* config/i386/i386.h (PIC_OFFSET_TABLE_REGNUM): Rewrite for
+	deferred pic_offset_table_rtx allocation.
+	* config/i386/i386.c (ix86_save_reg): Revise for deferred
+	allocation of pic_offset_table_rtx.
+	(ix86_tieable_integer_mode_p): Convert word to bool result.
+	* config/darwin.c (machopic_instantiate_pic_rtx,
+	machopic_uninstantiate_pic_rtx): New.
+	(machopic_function_base_name, machopic_function_base_sym,
+	machopic_indirect_data_reference,
+	machopic_legitimize_pic_address): Use
+	machopic_instantiate_pic_rtx().
+	* config/darwin.h (machopic_instantiate_pic_rtx,
+	machopic_uninstantiate_pic_rtx): Declare.
+
+2008-02-18  Jim Grosbach <grosbach@apple.com>
+	Radar 5752613 
+	* fold-const.c (fold_inf_compare): equality comparisons to
+	infinity are not equivalent to relatives comparison to DBL_MAX 
+	due to, e.g., different treatment of the "invalid" flag. Remove the 
+	conversions which make those transformations.
+
+2008-02-15  Jim Grosbach <grosbach@apple.com>
+
+	Radar 5482075
+	* config/arm/arm.c: New function const64_ok_for_arm_and to check if a
+	DI mode literal is representable as immediate encodings for
+	the and operator.
+	* config/arm/arm.h: Add 'De' operand constraint for 64 bit and 
+	immediate operands.
+	* config/arm/arm-protos.h: Add prototype for const64_ok_for_arm_and.
+	* config/arm/predicates.md: Add arm_and_immediate64_operand and
+	arm_and64_operand predicates.
+	* config/arm/arm.md: Add peephole for SI mode a = b & (HOST_WIDE_INT)-1
+	to be just a move. Add a splitter for DI mode and to perform the 
+	operation as two SI mode operations. Update the predicate and 
+	constraints for the anddi3 named production to use arm_and64_operand.
+
+2008-02-07  Josh Conner  <jconner@apple.com>
+
+	Radar 5681645
+	Radar 5717692
+	* config.gcc: Move t-slibgcc-darwin from *-*-darwin* into
+	i[34567]86-*-darwin*, powerpc-*-darwin*, and
+	powerpc64-*-darwin*.  Add t-libgcc-aspen to arm*-*-darwin*.
+	* config/i386/darwin.h (DARWIN_ASPEN_LIBGCC_SPEC): New macro.
+	* config/rs6000/darwin.h (DARWIN_ASPEN_LIBGCC_SPEC): New macro.
+	* config/darwin.h (REAL_LIBGCC_SPEC): If -maspen-version-min is
+	seen, use darwin_aspen_libgcc spec.
+	(DARWIN_EXTRA_SPECS): Add darwin_aspen_libgcc.
+	* config/arm/t-darwin (SHLIB_VERPFX): Remove.
+	* config/arm/t-slibgcc-aspen: New file.
+	* config/arm/darwin.h (DARWIN_ASPEN_LIBGCC_SPEC): New macro.
+	* config/arm/libgcc-aspen.ver: New file.
+	* config/arm/darwin-libgcc.10.4.ver: Remove file.
+	* config/arm/darwin-libgcc.10.5.ver: Remove file.
+
+2008-02-05  Josh Conner  <jconner@apple.com>
+
+	Radar 5723857
+	* config/arm/t-darwin: No longer create multilibs.  Add
+	-march=armv6k to the library build options.
+
 2008-02-05  Josh Conner  <jconner@apple.com>
 
 	Radar 5726269
 	* config/arm/darwin.h (SUBTARGET_OVERRIDE_OPTIONS): Don't set
 	flag_objc_abi or flag_objc_legacy_dispatch here.
 	(OBJC_TARGET_FLAG_OBJC_ABI): New macro.
+
+2008-02-01  Josh Conner  <jconner@apple.com>
+
+	Radar 5717579
+	* config/arm/arm.c (arm_encode_section_info): On darwin, invoke
+	arm_encode_call_attribute even if !first.
 
 2008-01-29  Josh Conner  <jconner@apple.com>
 

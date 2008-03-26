@@ -2645,20 +2645,54 @@ dump_global_regs (FILE *file)
   int i, j;
 
   fprintf (file, ";; Register dispositions:\n");
+  /* APPLE LOCAL begin 5695218 */
   for (i = FIRST_PSEUDO_REGISTER, j = 0; i < max_regno; i++)
-    if (reg_renumber[i] >= 0)
-      {
-	fprintf (file, "%d in %d  ", i, reg_renumber[i]);
-	if (++j % 6 == 0)
-	  fprintf (file, "\n");
-      }
+    {
+      if (!REG_P (regno_reg_rtx[i]))
+	fprintf (file, "pseudo %d: ", i);
+      print_inline_rtx (file, regno_reg_rtx[i], 0);
+      if (reg_renumber[i] > -1)
+	fprintf (file, " w=" HOST_WIDE_INT_PRINT_DEC, local_reg_weight[reg_renumber[i]]);
+      fprintf (file, "\n");
+    }
+  /* APPLE LOCAL end 5695218 */
 
   fprintf (file, "\n\n;; Hard regs used: ");
   for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
     if (regs_ever_live[i])
-      fprintf (file, " %d", i);
+      /* APPLE LOCAL 5695218 */
+      fprintf (file, " %d/%s", i, reg_names[i]);
   fprintf (file, "\n\n");
 }
+
+/* APPLE LOCAL begin 5695218 */
+/* Print out the current global register assignments.  Invoked from the debugger.  */
+void debug_global_regs (void);
+void
+debug_global_regs (void)
+{
+  dump_global_regs (stdout);
+}
+void dump_hard_regset (FILE *, HARD_REG_SET);
+void dump_hard_regset (FILE *file, HARD_REG_SET regset)
+{
+  int i;
+  long long unsigned int ulli;
+  for (i = 0; i < FIRST_PSEUDO_REGISTER; i++)
+    {
+      ulli = (1LL << i);
+      if (TEST_HARD_REG_BIT (regset, i) && *reg_names[i])
+	fprintf (file, "  %d=0x%llx/%s", i, ulli, reg_names[i]);
+    }
+  fprintf (file, "\n");
+}
+/* Print out the registers in a hard REGSET.  Invoked from the debugger.  */
+void debug_hard_regset (HARD_REG_SET);
+void debug_hard_regset (HARD_REG_SET regset)
+{
+  dump_hard_regset (stdout, regset);
+}
+/* APPLE LOCAL end 5695218 */
 
 
 

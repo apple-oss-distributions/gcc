@@ -270,6 +270,10 @@ int flag_short_wchar;
 int flag_lvalue_cast_assign = 1;
 /* APPLE LOCAL end lvalue cast */
 
+/* APPLE LOCAL begin mainline rewrite c.opt */
+int flag_gnu89_inline = -1;
+/* APPLE LOCAL end mainline rewrite c.opt */
+
 /* Nonzero means allow Microsoft extensions without warnings or errors.  */
 int flag_ms_extensions;
 

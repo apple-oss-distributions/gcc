@@ -1,3 +1,9 @@
+2008-02-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5712561
+	* semantics.c (note_decl_for_pch): Don't mess with linkage on
+	ARM targets.
+
 2007-11-29  Fariborz Jahanian <fjahanian@apple.com>
 
         Radar 5619052

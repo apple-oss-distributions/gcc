@@ -80,7 +80,7 @@
 #define SUBTARGET_OVERRIDE_OPTIONS					\
 do {									\
   /* APPLE LOCAL begin ARM 5683689 */					\
-  if (!darwin_macosx_version_min && !darwin_aspen_version_min)		\
+  if (!darwin_macosx_version_min && !darwin_iphoneos_version_min)	\
     darwin_macosx_version_min = "10.1";					\
   /* APPLE LOCAL end ARM 5683689 */					\
   rs6000_altivec_abi = 1;						\
@@ -90,7 +90,7 @@ do {									\
      let the user override it.  */					\
   /* APPLE LOCAL begin ARM 5683689 */					\
   darwin_constant_cfstrings = 						\
-    darwin_aspen_version_min						\
+    darwin_iphoneos_version_min						\
     || strverscmp (darwin_macosx_version_min, "10.2") >= 0;		\
   /* APPLE LOCAL end ARM 5683689 */					\
   /* APPLE LOCAL end constant cfstrings */				\
@@ -165,7 +165,7 @@ do {									\
   /* On powerpc, __cxa_get_exception_ptr is available starting in the	\
      10.4.6 libstdc++.dylib.  */					\
   /* APPLE LOCAL begin ARM 5683689 */					\
-  if (!darwin_aspen_version_min						\
+  if (!darwin_iphoneos_version_min					\
       && (!darwin_macosx_version_min					\
 	  || strverscmp (darwin_macosx_version_min, "10.4.6") < 0)	\
   /* APPLE LOCAL end ARM 5683689 */					\
@@ -195,7 +195,7 @@ do {									\
   "/* APPLE LOCAL ignore -msse and -msse2 and other x86 options */"\
   %<msse  %<msse2 %<msse3 %<march=pentium4 %<mcpu=pentium4 \
   "/* APPLE LOCAL ARM 5683689 */"\
-  %{!mmacosx-version-min=*: %{!maspen-version-min=*: %(darwin_cc1_minversion)}} \
+  %{!mmacosx-version-min=*: %{!miphoneos-version-min=*: %(darwin_cc1_minversion)}} \
   %{g: %{!fno-eliminate-unused-debug-symbols: -feliminate-unused-debug-symbols }} \
   %{static: %{Zdynamic: %e conflicting code gen style switches are used}}\
   "/* APPLE LOCAL -fast and PIC code.  */"\
@@ -252,10 +252,9 @@ do {									\
 #define DARWIN_DEFAULT_VERSION_TYPE DARWIN_VERSION_MACOSX
 /* APPLE LOCAL end ARM 5683689 */
 
-/* APPLE LOCAL begin 5342595 */
-#define DARWIN_DSYMUTIL_SPEC	\
-  "%{g*:%{!gstabs*:%{!g0: dsymutil %{o*:%*}%{!o:a.out}}}}"
-/* APPLE LOCAL end 5342595 */
+/* APPLE LOCAL ARM 5681645 */
+#define DARWIN_IPHONEOS_LIBGCC_SPEC "-lgcc_s.10.5 -lgcc"
+
 /* APPLE LOCAL begin mainline */
 #undef SUBTARGET_EXTRA_SPECS
 #define SUBTARGET_EXTRA_SPECS			\
@@ -625,7 +624,7 @@ extern const char *darwin_one_byte_bool;
      && flag_objc_direct_dispatch != 0	\
      && !TARGET_64BIT			\
 /* APPLE LOCAL begin ARM 5683689 */				\
-     && (darwin_aspen_version_min		 		\
+     && (darwin_iphoneos_version_min		 		\
 	 || strverscmp (darwin_macosx_version_min, "10.4") >= 0	\
 /* APPLE LOCAL end ARM 5683689 */				\
          || flag_objc_direct_dispatch == 1))
@@ -645,7 +644,7 @@ extern const char *darwin_one_byte_bool;
 #define TARGET_C99_FUNCTIONS					\
   (TARGET_64BIT							\
    /* APPLE LOCAL begin ARM 5683689 */				\
-   || darwin_aspen_version_min					\
+   || darwin_iphoneos_version_min				\
    || strverscmp (darwin_macosx_version_min, "10.3") >= 0)
    /* APPLE LOCAL end ARM 5683689 */
 /* APPLE LOCAL end mainline 2005-09-01 3449986 */

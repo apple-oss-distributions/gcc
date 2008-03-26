@@ -1,7 +1,7 @@
 /* APPLE LOCAL file radar 5168008 */
 /* Test that a getter name in a property declaration does not conflict with 
    another class name.  Propgram should compile with no error/warning. */
-/* { dg-options "-mmacosx-version-min=10.5" } */
+/* { dg-options "-mmacosx-version-min=10.5" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-do compile { target *-*-darwin* } } */
 
 @interface WorksA {

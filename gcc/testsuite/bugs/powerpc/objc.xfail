@@ -10,46 +10,15 @@
 ### file and make sure the Radar is closed.
 ###
 ###------------------------------------------------------------------
-4943900: objc/execute/string1.m compilation,  -O0 
-4943900: objc/execute/string1.m compilation,  -O1 
-4943900: objc/execute/string1.m compilation,  -O2 
-4943900: objc/execute/string1.m compilation,  -O3 -fomit-frame-pointer 
-4943900: objc/execute/string1.m compilation,  -O3 -g 
-4943900: objc/execute/string1.m compilation,  -Os 
-4943900: objc/execute/string1.m compilation,  -fast 
-4943900: objc/execute/string2.m compilation,  -O0 
-4943900: objc/execute/string2.m compilation,  -O1 
-4943900: objc/execute/string2.m compilation,  -O2 
-4943900: objc/execute/string2.m compilation,  -O3 -fomit-frame-pointer 
-4943900: objc/execute/string2.m compilation,  -O3 -g 
-4943900: objc/execute/string2.m compilation,  -Os 
-4943900: objc/execute/string2.m compilation,  -fast 
-4943900: objc/execute/string3.m compilation,  -O0 
-4943900: objc/execute/string3.m compilation,  -O1 
-4943900: objc/execute/string3.m compilation,  -O2 
-4943900: objc/execute/string3.m compilation,  -O3 -fomit-frame-pointer 
-4943900: objc/execute/string3.m compilation,  -O3 -g 
-4943900: objc/execute/string3.m compilation,  -Os 
-4943900: objc/execute/string3.m compilation,  -fast 
-4943900: objc/execute/string4.m compilation,  -O0 
-4943900: objc/execute/string4.m compilation,  -O1 
-4943900: objc/execute/string4.m compilation,  -O2 
-4943900: objc/execute/string4.m compilation,  -O3 -fomit-frame-pointer 
-4943900: objc/execute/string4.m compilation,  -O3 -g 
-4943900: objc/execute/string4.m compilation,  -Os 
-4943900: objc/execute/string4.m compilation,  -fast 
-#
-# the following failures are for -m64 only 
-5245963: objc/execute/protocol-isEqual-3.m execution,  -O0
-5245963: objc/execute/protocol-isEqual-3.m execution,  -O1
-5245963: objc/execute/protocol-isEqual-3.m execution,  -O2
-5245963: objc/execute/protocol-isEqual-3.m execution,  -O3 -fomit-frame-pointer
-5245963: objc/execute/protocol-isEqual-3.m execution,  -O3 -g
-5245963: objc/execute/protocol-isEqual-3.m execution,  -Os
-5245963: objc/execute/protocol-isEqual-3.m execution,  -fast
 #
 # the following failures are for -fstack-protector-all only
 4990353: objc.dg/stubify-1.m scan-assembler-not \\$non_lazy_ptr
 # (x86 only)
 4990353: objc.dg/volatile-1-x86-64.m scan-assembler movl\t\\$1, -4\\(%rbp\\)
 4990353: objc.dg/volatile-1.m scan-assembler movl\t\\$1, 16\\(%ebp\\)
+#
+# (SnowLeopard only)
+5814854: objc.dg/property-13.m (test for excess errors)
+#
+# (SnowLeopard x86 only)
+5706927: objc.dg/try-catch-15.m (test for excess errors)

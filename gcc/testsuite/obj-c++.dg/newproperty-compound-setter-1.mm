@@ -1,7 +1,8 @@
 /* APPLE LOCAL file radar 5140757 */
 /* Check that compound assignment to properties when rhs is a gimplifiable 
    expression works.  Program should build with no ICE or error. */
-/* { dg-options "-fobjc-new-property -mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" } */
+/* { dg-options "-fobjc-new-property -mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-fobjc-new-property -framework Foundation -framework CoreFoundation" { target arm*-*-darwin* } } */
 /* { dg-do run } */
 
 #include <Foundation/Foundation.h>

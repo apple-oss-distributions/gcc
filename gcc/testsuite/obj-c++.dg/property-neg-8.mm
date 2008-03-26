@@ -3,7 +3,8 @@
    property which must be synthesized and needs to synthesize its own 
    setter/getter. */
 /* APPLE LOCAL radar 4899595 */
-/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5" } */
+/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-fno-objc-new-property" { target arm*-*-darwin* } } */
 /* { dg-do compile } */
 
 typedef const char SCMLog;
@@ -13,5 +14,5 @@ typedef const char SCMLog;
 - (SCMLog *) log;
 - (void) setLog:(SCMLog *)log;
 @end		/* { dg-error "user accessor '-log' not allowed" } */
-		/* { dg-error "user accessor '-setLog:' not allowed" "" { target *-*-* } 15 } */
+		/* { dg-error "user accessor '-setLog:' not allowed" "" { target *-*-* } 16 } */
 @implementation INTF @end

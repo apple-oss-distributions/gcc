@@ -1,7 +1,8 @@
 /* APPLE LOCAL file radar 4621020 */
 /* Test that we call objc_assign_weak and objc_read_weak */
 /* { dg-do run { target *-*-darwin* } } */
-/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" } */
+/* { dg-options "-fno-objc-new-property -mmacosx-version-min=10.5 -framework Foundation -framework CoreFoundation" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-fno-objc-new-property -framework Foundation -framework CoreFoundation" { target arm*-*-darwin* } } */
 
 #include <Foundation/Foundation.h>
 

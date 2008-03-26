@@ -1,7 +1,8 @@
 /* APPLE LOCAL file radar 5082000 */
 /* Test of ivar layour involving array ivars. */
-/* { dg-do run { target *-*-darwin* } } */
+/* { dg-do run { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "-mmacosx-version-min=10.5 -framework Foundation -fobjc-gc" } */
+/* { dg-require-effective-target objc_gc } */
 
 #include <objc/runtime.h>
 #include <Foundation/Foundation.h>

@@ -388,8 +388,10 @@ enum dwarf_attribute
     /* APPLE LOCAL begin option verifier 4957887 */
     DW_AT_PGI_lstride  = 0x3a02,
     /* Apple extensions.  */
-    DW_AT_APPLE_flags = 0x3fe2
+    DW_AT_APPLE_flags = 0x3fe2,
     /* APPLE LOCAL end option verifier 4957887 */
+    /* APPLE LOCAL differentiate between arm & thumb.  */
+    DW_AT_APPLE_isa   = 0x3fe3
   };
 
 #define DW_AT_lo_user	0x2000	/* Implementation-defined range start.  */

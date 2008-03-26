@@ -1,6 +1,7 @@
 /* APPLE LOCAL file for-4_3 4134307 */
 /* { dg-do compile } */
-/* { dg-options "-std=gnu89" } */
+/* APPLE LOCAL inline fixups 5580320 */
+/* { dg-options "-std=gnu89 -pedantic" } */
 static int i;
 extern int j;
 extern inline int func1 (void) {

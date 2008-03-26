@@ -1,5 +1,6 @@
-/* Radar 5694615 */
+/* APPLE LOCAL file 5694615 */
 /* ivar offset incorrectly emitted as zerofill common symbol.  */
+/* Radar 5694615 */
 
 /* { dg-options "-mmacosx-version-min=10.5 -m64" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-options "" { target arm*-*-darwin* } } */

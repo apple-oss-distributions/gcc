@@ -1040,21 +1040,21 @@ macosx_version_as_macro (void)
 }
 
 /* APPLE LOCAL begin ARM 5683689 */
-/* Return the value of darwin_aspen_version_min suitable for the
-   __ENVIRONMENT_ASPEN_VERSION_MIN_REQUIRED__ macro.  Unlike the
+/* Return the value of darwin_iphoneos_version_min suitable for the
+   __ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__ macro.  Unlike the
    __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ macros, minor version
    numbers are left-zero-padded.  e.g., '1.2.3' becomes 10203.
    The last/third version number (patch level?) is optional, and
    defaults to '00' if not specified.  In the case of a parse error,
    print a warning and return 10200.  */
 static const char *
-aspen_version_as_macro (void)
+iphoneos_version_as_macro (void)
 {
   static char result[sizeof ("99.99.99") + 1];
-  const char *src_ptr = darwin_aspen_version_min;
+  const char *src_ptr = darwin_iphoneos_version_min;
   char *result_ptr = &result[0];
 
-  if (! darwin_aspen_version_min)
+  if (! darwin_iphoneos_version_min)
     goto fail;
 
   if (! ISDIGIT (*src_ptr))
@@ -1108,8 +1108,8 @@ aspen_version_as_macro (void)
   return result;
   
  fail:
-  error ("Unknown value %qs of -maspen-version-min",
-	 darwin_aspen_version_min);
+  error ("Unknown value %qs of -miphoneos-version-min",
+	 darwin_iphoneos_version_min);
   return "10200";
 }
 /* APPLE LOCAL end ARM 5683689 */
@@ -1132,8 +1132,8 @@ darwin_cpp_builtins (cpp_reader *pfile)
     builtin_define_with_value ("__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__",
 			       macosx_version_as_macro(), false);
   else
-    builtin_define_with_value ("__ENVIRONMENT_ASPEN_VERSION_MIN_REQUIRED__",
-			       aspen_version_as_macro(), false);
+    builtin_define_with_value ("__ENVIRONMENT_IPHONE_OS_VERSION_MIN_REQUIRED__",
+			       iphoneos_version_as_macro(), false);
 
 /* APPLE LOCAL end ARM 5683689 */
   /* APPLE LOCAL begin constant cfstrings */

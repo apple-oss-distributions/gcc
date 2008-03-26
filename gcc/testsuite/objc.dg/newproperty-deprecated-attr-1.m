@@ -1,6 +1,7 @@
 /* APPLE LOCAL file radar 4712415 */
 /* This program tests use of deprecated attribute on property. */
-/* { dg-options "-fobjc-new-property -mmacosx-version-min=10.5" } */
+/* { dg-options "-fobjc-new-property -mmacosx-version-min=10.5" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-fobjc-new-property" { target arm*-*-darwin* } } */
 /* { dg-do compile { target *-*-darwin* } } */
 
 #include <objc/objc.h>
@@ -25,6 +26,6 @@
 int main(int argc, char *argv[]) {
     Bar *f = [Bar new];
     f.FooBar = 1;	/* { dg-warning "\'FooBar\' is deprecated" } */
-			/* { dg-warning "\'MySetter:\' is deprecated" "" { target *-*-* } 27 } */
+			/* { dg-warning "\'MySetter:\' is deprecated" "" { target *-*-* } 28 } */
     return f.FooBar;	/* { dg-warning "\'FooBar\' is deprecated" } */
 }

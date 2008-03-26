@@ -1986,11 +1986,17 @@ build_external_ref (tree id, int fun)
      linkage ... shall not contain a reference to an identifier with
      internal linkage.  */
   else if (current_function_decl != 0
+	   /* APPLE LOCAL inline fixups 5580320 */
+	   && pedantic
 	   && DECL_DECLARED_INLINE_P (current_function_decl)
 	   && DECL_EXTERNAL (current_function_decl)
 	   && VAR_OR_FUNCTION_DECL_P (ref)
 	   && (TREE_CODE (ref) != VAR_DECL || TREE_STATIC (ref))
-	   && ! TREE_PUBLIC (ref))
+	   /* APPLE LOCAL begin inline fixups 5580320 */
+	   && ! TREE_PUBLIC (ref)
+	   && DECL_CONTEXT (ref) != current_function_decl
+	   && (! DECL_IN_SYSTEM_HEADER (ref) || warn_system_headers))
+	   /* APPLE LOCAL end inline fixups 5580320 */
     pedwarn ("%qD is static but used in inline function %qD "
 	     "which is not static", ref, current_function_decl);
 

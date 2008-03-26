@@ -3435,6 +3435,8 @@ start_decl (struct c_declarator *declarator, struct c_declspecs *declspecs,
   if (TREE_CODE (decl) == VAR_DECL
       && current_scope != file_scope
       && TREE_STATIC (decl)
+      /* APPLE LOCAL inline fixups 5580320 */
+      && !TREE_READONLY (decl)
       && DECL_DECLARED_INLINE_P (current_function_decl)
       && DECL_EXTERNAL (current_function_decl))
     pedwarn ("%J%qD is static but declared in inline function %qD "

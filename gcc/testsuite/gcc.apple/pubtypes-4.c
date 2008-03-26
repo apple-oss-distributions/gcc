@@ -91,7 +91,7 @@ main (int argc, char **argv)
 
 /* { dg-final { scan-assembler "__debug_pubtypes" } } */
 /* APPLE LOCAL begin ARM assembler uses @ for comments */
-/* { dg-final { scan-assembler "long\[ \t]+0xa1+\[ \t]+\[#;@]\[ \t]+Length of Public Type Names Info" } } */
+/* { dg-final { scan-assembler "long\[ \t]+\(0xa1|161\)+\[ \t\n]+\[#;@]\[ \t]+Length of Public Type Names Info" } } */
 /* { dg-final { scan-assembler "used_struct\\\\0\"\[ \t]+\[#;@]\[ \t]+external name" } } */
 /* { dg-final { scan-assembler-not "unused_struct\\\\0\"\[ \t]+\[#;@]\[ \t]+external name" } } */
 /* { dg-final { scan-assembler "\"list_name_type\\\\0\"\[ \t]+\[#;@]\[ \t]+external name" } } */

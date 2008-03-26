@@ -1,7 +1,8 @@
 /* APPLE LOCAL file mainline */
 /* Author:  Ziemowit Laski <zlaski@apple.com>.  */
 /* APPLE LOCAL radar 4842177 */
-/* { dg-options "-fnext-runtime -mmacosx-version-min=10.3 -fno-constant-cfstrings" } */
+/* { dg-options "-fnext-runtime -mmacosx-version-min=10.3 -fno-constant-cfstrings" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-fnext-runtime -fno-constant-cfstrings" { target arm*-*-darwin* } } */
 /* { dg-do run } */
 /* APPLE LOCAL radar 4894756 */
 /* { dg-skip-if "" { *-*-darwin* } { "-m64" } { "" } } */

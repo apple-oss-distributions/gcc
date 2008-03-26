@@ -1124,6 +1124,10 @@ extern const char * structure_size_string;
 /* VFP adds 32 + 1 more.  */
 #define FIRST_PSEUDO_REGISTER   96
 
+/* APPLE LOCAL begin ARM mainline 5757769 */
+#define DBX_REGISTER_NUMBER(REGNO) arm_dbx_register_number (REGNO)
+/* APPLE LOCAL end ARM mainline 5757769 */
+
 /* Value should be nonzero if functions must have frame pointers.
    Zero means the frame pointer need not be set up (and parms may be accessed
    via the stack pointer) in functions that seem suitable.
@@ -1402,6 +1406,10 @@ enum reg_class
    'Dc' takes four ARM insns, if we allow that in this compilation.
        APPLE LOCAL ARM 4468410 long long constants (Dd constraint)
    'Dd' is a constant each of whose 32-bit halves is a valid immediate value
+   APPLE LOCAL begin ARM 5482075 DI mode bitwise constant optimization
+   'De' is a constant each of whose 32-bit halves is a valid immediate value
+   or the inverted value is a valid immediate value
+   APPLE LOCAL end ARM 5482075 DI mode bitwise constant optimization
    'U' Prefixes an extended memory constraint where:
    'Uv' is an address valid for VFP load/store insns.
    'Uy' is an address valid for iwmmxt load/store insns.
@@ -1413,6 +1421,7 @@ http://gcc.gnu.org/ml/gcc-patches/2005-09/msg01342.html
 http://gcc.gnu.org/ml/gcc-patches/2005-04/msg00769.html */
 
 /* APPLE LOCAL begin ARM 4468410 long long constants (Dd constraint) */
+/* APPLE LOCAL begin ARM 5482075 DI mode bitwise constant optimization */
 #define EXTRA_CONSTRAINT_STR_ARM(OP, C, STR)				\
   (((C) == 'D') ? ((GET_CODE (OP) == CONST_DOUBLE			\
 		    || GET_CODE (OP) == CONST_INT			\
@@ -1425,7 +1434,9 @@ http://gcc.gnu.org/ml/gcc-patches/2005-04/msg00769.html */
 			   && arm_const_double_inline_cost (OP) == 4	\
 			   && !(optimize_size || arm_ld_sched))		\
 		       || ((STR)[1] == 'd'				\
-			   && const64_ok_for_arm_immediate (OP)))) :	\
+			   && const64_ok_for_arm_immediate (OP))        \
+		       || ((STR)[1] == 'e'				\
+			   && const64_ok_for_arm_and (OP)))) :          \
    ((C) == 'Q') ? (GET_CODE (OP) == MEM					\
 		 && GET_CODE (XEXP (OP, 0)) == REG) :			\
    ((C) == 'R') ? (GET_CODE (OP) == MEM					\
@@ -1438,6 +1449,7 @@ http://gcc.gnu.org/ml/gcc-patches/2005-04/msg00769.html */
    ((C) == 'U' && (STR)[1] == 'q')					\
     ? arm_extendqisi_mem_op (OP, GET_MODE (OP))				\
    : 0)
+/* APPLE LOCAL end ARM 5482075 DI mode bitwise constant optimization */
 /* APPLE LOCAL end ARM 4468410 long long constants (Dd constraint) */
 /* APPLE LOCAL end ARM 20060306 merge these from mainline */
 

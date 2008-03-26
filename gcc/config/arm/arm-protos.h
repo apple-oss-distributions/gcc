@@ -57,6 +57,8 @@ extern HOST_WIDE_INT arm_compute_initial_elimination_offset (unsigned int,
 							     unsigned int);
 extern HOST_WIDE_INT thumb_compute_initial_elimination_offset (unsigned int,
 							       unsigned int);
+/* APPLE LOCAL ARM mainline 5757769 */
+extern unsigned int arm_dbx_register_number (unsigned int);
 /* APPLE LOCAL ARM 5512097 clzdi2 */
 extern bool arm_expand_clzdi2 (rtx, rtx);
 
@@ -72,6 +74,8 @@ extern int const_ok_for_arm (HOST_WIDE_INT);
 extern bool const64_ok_for_arm_immediate (rtx);
 extern bool const64_ok_for_arm_add (rtx);
 /* APPLE LOCAL end ARM 4468410 long long constants */
+/* APPLE LOCAL ARM 5482075 DI mode bitwise constant optimization */
+extern bool const64_ok_for_arm_and (rtx);
 extern int arm_split_constant (RTX_CODE, enum machine_mode, rtx,
 			       HOST_WIDE_INT, rtx, rtx, int);
 extern RTX_CODE arm_canonicalize_comparison (RTX_CODE, rtx *);

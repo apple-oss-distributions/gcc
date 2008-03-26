@@ -65,7 +65,7 @@ Boston, MA 02111-1307, USA.  */
   "/* APPLE LOCAL ARM ignore -mthumb and -mno-thumb */"\
   %<mthumb %<mno-thumb \
   "/* APPLE LOCAL ARM 5683689 */"\
-  %{!mmacosx-version-min=*: %{!maspen-version-min=*: %(darwin_cc1_minversion)}} \
+  %{!mmacosx-version-min=*: %{!miphoneos-version-min=*: %(darwin_cc1_minversion)}} \
   "/* APPLE LOCAL ignore -mcpu=G4 -mcpu=G5 */"\
   %<faltivec %<mno-fused-madd %<mlong-branch %<mlongcall %<mcpu=G4 %<mcpu=G5 \
   %{g: %{!fno-eliminate-unused-debug-symbols: -feliminate-unused-debug-symbols }}"
@@ -102,10 +102,8 @@ Boston, MA 02111-1307, USA.  */
 #define DARWIN_DEFAULT_VERSION_TYPE  DARWIN_VERSION_MACOSX
 /* APPLE LOCAL end ARM 5683689 */
 
-/* APPLE LOCAL begin 5342595 */
-#define DARWIN_DSYMUTIL_SPEC \
-  "%{g*:%{!gstabs*:%{!g0: dsymutil %{o*:%*}%{!o:a.out}}}}"
-/* APPLE LOCAL end 5342595 */
+/* APPLE LOCAL ARM 5681645 */
+#define DARWIN_IPHONEOS_LIBGCC_SPEC "-lgcc_s.10.5 -lgcc"
 
 #undef SUBTARGET_EXTRA_SPECS
 #define SUBTARGET_EXTRA_SPECS					\
@@ -242,7 +240,7 @@ extern int flag_iasm_blocks;
   do {								\
     /* APPLE LOCAL begin ARM 5683689 */				\
     if (!darwin_macosx_version_min				\
-	&& !darwin_aspen_version_min)				\
+	&& !darwin_iphoneos_version_min)			\
       darwin_macosx_version_min = "10.1";			\
     /* APPLE LOCAL end ARM 5683689 */				\
     /* Handle -mfix-and-continue.  */				\

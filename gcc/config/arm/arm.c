@@ -8817,6 +8817,39 @@ const64_ok_for_arm_add (rtx val)
 }
 /* APPLE LOCAL end ARM 4468410 long long constants */
 
+/* APPLE LOCAL begin ARM 5482075 DI mode bitwise constant optimization */
+/* As above, but allow for constants whose inverted value
+   fits as well.  Both halves must match either as themselves
+   or as inverted.  */
+bool
+const64_ok_for_arm_and (rtx val)
+{
+  rtx lowpart, highpart;
+  enum machine_mode mode;
+
+  if (!TARGET_ARM)
+    return false;
+
+  mode = GET_MODE (val);
+
+  if (mode == VOIDmode)
+    mode = DImode;
+
+  gcc_assert (GET_MODE_SIZE (mode) == 8);
+
+  lowpart = gen_lowpart (SImode, val);
+  highpart = gen_highpart_mode (SImode, mode, val);
+
+  gcc_assert (GET_CODE (lowpart) == CONST_INT);
+  gcc_assert (GET_CODE (highpart) == CONST_INT);
+
+  return ((const_ok_for_arm (INTVAL (lowpart))
+	   || const_ok_for_arm (~INTVAL (lowpart))) 
+	  && (const_ok_for_arm (INTVAL (highpart))
+	      || const_ok_for_arm (~INTVAL (highpart))));
+}
+
+/* APPLE LOCAL end ARM 5482075 DI mode bitwise constant optimization */
 /* Return true if it is worthwhile to split a 64-bit constant into two
    32-bit operations.  This is the case if optimizing for size, or
    if we have load delay slots, or if one 32-bit part can be done with
@@ -15917,22 +15950,25 @@ arm_encode_section_info (tree decl, rtx rtl, int first)
   /* If we are referencing a function that is weak then encode a long call
      flag in the function name, otherwise if the function is static or
      or known to be defined in this file then encode a short call flag.  */
-  if (first && DECL_P (decl))
-    {
 /* APPLE LOCAL begin ARM longcall */
 #if TARGET_MACHO
+  if (DECL_P (decl))
+    {
       if (TREE_CODE (decl) == FUNCTION_DECL && DECL_WEAK (decl))
 	arm_encode_call_attribute (decl, SYMBOL_LONG_CALL);
       else if (! TREE_PUBLIC (decl))
 	arm_encode_call_attribute (decl, SYMBOL_SHORT_CALL);
+    }
 #else
+  if (first && DECL_P (decl))
+    {
       if (TREE_CODE (decl) == FUNCTION_DECL && DECL_WEAK (decl))
 	arm_encode_call_attribute (decl, LONG_CALL_FLAG_CHAR);
       else if (! TREE_PUBLIC (decl))
 	arm_encode_call_attribute (decl, SHORT_CALL_FLAG_CHAR);
+    }
 #endif
 /* APPLE LOCAL end ARM longcall */
-    }
 }
 #endif /* !ARM_PE */
 
@@ -16519,6 +16555,34 @@ arm_shift_truncation_mask (enum machine_mode mode)
 {
   return mode == SImode ? 255 : 0;
 }
+
+/* APPLE LOCAL begin ARM mainline 5757769 */
+
+/* Map internal gcc register numbers to DWARF2 register numbers.  */
+
+unsigned int
+arm_dbx_register_number (unsigned int regno)
+{
+  if (regno < 16)
+    return regno;
+
+  /* TODO: Legacy targets output FPA regs as registers 16-23 for backwards
+     compatibility.  The EABI defines them as registers 96-103.  */
+  if (regno >= FIRST_FPA_REGNUM && regno <= LAST_FPA_REGNUM)
+    return (TARGET_AAPCS_BASED ? 96 : 16) + regno - FIRST_FPA_REGNUM;
+
+  if (IS_VFP_REGNUM (regno))
+    return 256 + regno - FIRST_VFP_REGNUM;
+
+  if (IS_IWMMXT_GR_REGNUM (regno))
+    return 104 + regno - FIRST_IWMMXT_GR_REGNUM;
+
+  if (IS_IWMMXT_REGNUM (regno))
+    return 112 + regno - FIRST_IWMMXT_REGNUM;
+
+  gcc_unreachable ();
+}
+/* APPLE LOCAL end ARM mainline 5757769 */
 
 /* APPLE LOCAL begin ARM pic support */
 #ifdef OBJECT_FORMAT_MACHO
@@ -17400,4 +17464,3 @@ arm_delegitimize_address (rtx addr)
   return addr;
 }
 /* APPLE LOCAL end ARM 5602348 */
-

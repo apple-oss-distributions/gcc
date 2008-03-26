@@ -1974,8 +1974,8 @@ const char *darwin_fix_and_continue_switch;
 /* Argument supplied to -mmacosx-version-min switch.  */
 const char *darwin_macosx_version_min = NULL;
 
-/* Argument supplied to -maspen-version-min switch.  */
-const char *darwin_aspen_version_min = NULL;
+/* Argument supplied to -miphoneos-version-min switch.  */
+const char *darwin_iphoneos_version_min = NULL;
 /* APPLE LOCAL end ARM 5683689 */
 
 /* APPLE LOCAL begin mainline */

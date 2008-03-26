@@ -43,7 +43,7 @@ Boston, MA 02110-1301, USA.  */
    set the appropriate version specification flag to a default value.
    The version flag used is based on VERS_TYPE, and is either:
    DARWIN_VERSION_MACOSX to use -mmacosx-version-min and
-   DARWIN_VERSION_ASPEN to use -maspen-version-min.  */
+   DARWIN_VERSION_IPHONEOS to use -miphoneos-version-min.  */
 
 void
 darwin_default_min_version (int * argc_p, char *** argv_p,
@@ -76,16 +76,16 @@ darwin_default_min_version (int * argc_p, char *** argv_p,
     return;
   
   /* Don't do this if the user specified -mmacosx-version-min=,
-     -maspen-version-min=, -mno-macosx-version-min, or
-     -mno-aspen-version-min.  */
+     -miphoneos-version-min=, -mno-macosx-version-min, or
+     -mno-iphoneos-version-min.  */
   for (i = 1; i < argc; i++)
     if (argv[i][0] == '-')
       {
 	const char * const p = argv[i];
 	if (strncmp (p, "-mno-macosx-version-min", 23) == 0
-	    || strncmp (p, "-mno-aspen-version-min", 22) == 0
+	    || strncmp (p, "-mno-iphoneos-version-min", 25) == 0
 	    || strncmp (p, "-mmacosx-version-min", 20) == 0
-	    || strncmp (p, "-maspen-version-min", 19) == 0)
+	    || strncmp (p, "-miphoneos-version-min", 22) == 0)
 	  return;
 	
 	/* It doesn't count if it's an argument to a different switch.  */
@@ -100,33 +100,28 @@ darwin_default_min_version (int * argc_p, char *** argv_p,
      it as a flag.  */
   {
     const char * macosx_deployment_target;
-    const char * aspen_deployment_target;
-    bool aspen_env_set, macosx_env_set;
+    const char * iphoneos_deployment_target;
+    bool iphoneos_env_set, macosx_env_set;
 
     macosx_deployment_target = getenv ("MACOSX_DEPLOYMENT_TARGET");
-    aspen_deployment_target = getenv ("ASPEN_DEPLOYMENT_TARGET");
+    iphoneos_deployment_target = getenv ("IPHONEOS_DEPLOYMENT_TARGET");
 
     /* We choose to ignore an environment variable set to an empty
        string.  */
     macosx_env_set = macosx_deployment_target
 		     && macosx_deployment_target[0];
-    aspen_env_set = aspen_deployment_target
-		     && aspen_deployment_target[0];
+    iphoneos_env_set = iphoneos_deployment_target
+		       && iphoneos_deployment_target[0];
 
-    if (macosx_env_set && aspen_env_set)
+    if (macosx_env_set && iphoneos_env_set)
       {
-	error ("warning: MACOSX_DEPLOYMENT_TARGET and "
-	       "ASPEN_DEPLOYMENT_TARGET environment variables both set");
-	if (vers_type == DARWIN_VERSION_ASPEN)
-	  {
-	    error ("warning: Using ASPEN_DEPLOYMENT_TARGET");
-	    macosx_env_set = 0;
-	  }
+	/* Conflicting DEPLOYMENT_TARGETs given.  Don't emit a warning
+	   for now (see rdar://5819018) -- just choose based on
+	   VERS_TYPE.  */
+	if (vers_type == DARWIN_VERSION_IPHONEOS)
+	  macosx_env_set = 0;
 	else
-	  {
-	    error ("warning: Using MACOSX_DEPLOYMENT_TARGET");
-	    aspen_env_set = 0;
-	  }
+	  iphoneos_env_set = 0;
       }
 
     if (macosx_env_set)
@@ -140,13 +135,13 @@ darwin_default_min_version (int * argc_p, char *** argv_p,
 	return;
       }
 
-    if (aspen_env_set)
+    if (iphoneos_env_set)
       {
 	++*argc_p;
 	*argv_p = xmalloc (sizeof (char *) * *argc_p);
 	(*argv_p)[0] = argv[0];
-	(*argv_p)[1] = concat ("-maspen-version-min=",
-			       aspen_deployment_target, NULL);
+	(*argv_p)[1] = concat ("-miphoneos-version-min=",
+			       iphoneos_deployment_target, NULL);
 	memcpy (*argv_p + 2, argv + 1, (argc - 1) * sizeof (char *));
 	return;
       }
@@ -154,13 +149,13 @@ darwin_default_min_version (int * argc_p, char *** argv_p,
   }
   /* APPLE LOCAL end deployment target */
 
-  /* For Aspen, if no version number is specified, we default to 1.2.  */
-  if (vers_type == DARWIN_VERSION_ASPEN)
+  /* For iPhone OS, if no version number is specified, we default to 2.0.  */
+  if (vers_type == DARWIN_VERSION_IPHONEOS)
     {
       ++*argc_p;
       *argv_p = xmalloc (sizeof (char *) * *argc_p);
       (*argv_p)[0] = argv[0];
-      (*argv_p)[1] = xstrdup ("-maspen-version-min=1.2");
+      (*argv_p)[1] = xstrdup ("-miphoneos-version-min=2.0");
       memcpy (*argv_p + 2, argv + 1, (argc - 1) * sizeof (char *));  
       return;
     }

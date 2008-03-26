@@ -10473,7 +10473,7 @@ ivar_offset_ref (tree class_name, tree field_decl)
      value doesn't get written out during cp_finish_file.  This value
      should never change anyway.  */
   DECL_INITIAL (decl) = byte_position (field_decl);
-  /* APPLE LOCAL begin 5694615 */
+  /* APPLE LOCAL end 5694615 */
 
   while (*chain)
     chain = &TREE_CHAIN (*chain);
@@ -13131,11 +13131,7 @@ build_objc_method_call (int super_flag, tree method_prototype,
 {
   tree sender = (super_flag ? umsg_super_decl :
 		 (!flag_next_runtime || flag_nil_receivers
-		  /* APPLE LOCAL begin mainline */
-		  /* APPLE LOCAL begin radar 4590221 */
 		  ? umsg_decl
-		  /* APPLE LOCAL end radar 4590221 */
-		  /* APPLE LOCAL end mainline */
 		  : umsg_nonnil_decl));
   tree rcv_p = (super_flag ? objc_super_type : objc_object_type);
 

@@ -680,12 +680,20 @@ expand_asm_operands (tree string, tree outputs, tree inputs,
       if (i >= 0)
         {
 	  /* Clobbering the PIC register is an error.  */
+	  /* APPLE LOCAL begin 5695218 */
 	  /* APPLE LOCAL begin CW asm blocks. */
 	  /* Clobbering of PIC register is allowed in CW asm block.
 	     We check this condition by checking value of 'uses'.
 	     'uses' is non-null for a CW asm expression only. */
-	  if (uses == NULL && i == (int) PIC_OFFSET_TABLE_REGNUM)
+	  if (uses == NULL && flag_pic
+#ifdef REAL_PIC_OFFSET_TABLE_REGNUM
+	      && i == REAL_PIC_OFFSET_TABLE_REGNUM
+#else
+	      && i == (int)PIC_OFFSET_TABLE_REGNUM
+#endif
+	      )
 	  /* APPLE LOCAL end CW asm blocks. */
+	  /* APPLE LOCAL end 5695218 */
 	    {
 	      error ("PIC register %qs clobbered in %<asm%>", regname);
 	      return;

@@ -1,4 +1,392 @@
+2008-03-24  Jon Ziegler  <jonz@apple.com>
+
+	Radar 5712367
+	* gcc.dg/pch/pch.exp: eliminate environment pollution
+
+2008-03-19  Josh Conner  <jconner@apple.com>
+
+	Radar 5237050
+	* gcc.apple/pubtypes-[1234].c: Fix assembler syntax for ARM.
+	* g++.apple/pubtypes.C: Likewise.
+
+2008-03-14  Josh Conner  <jconner@apple.com>
+
+	Radar 5777572 - take 2
+	* gcc.apple/iphone-minversion-[1-4].c: Rename to...
+	* gcc.apple/iphoneos-minversion-[1-4].c: ... this.  Also,
+	change all iphone references to iphoneos.
+	* gcc.apple/iphone-minversion-err-[1-8].c: Rename to...
+	* gcc.apple/iphoneos-minversion-err-[1-8].c: ...this.
+	Also, change all iphone references to iphoneos.
+	* gcc.apple/iphone-minversion-default-[12].c: Rename to...
+	* gcc.apple/iphoneos-minversion-default-[12].c: ... this.
+	Also, change all iphone references to iphoneos.
+
+2008-03-12  Josh Conner  <jconner@apple.com>
+
+	Undo Radar 5730079
+	* gcc.apple/iphone-minversion-err-1.c: Remove invalid option
+	checks.
+
+2008-03-07  Josh Conner  <jconner@apple.com>
+
+	Radar 5777572
+	* gcc.apple/aspen-minversion-[1-4].c: Rename to...
+	* gcc.apple/iphone-minversion-[1-4].c: ... this.  Also,
+	change all aspen references to iphone.
+	* gcc.apple/aspen-minversion-err-[1-8].c: Rename to...
+	* gcc.apple/iphone-minversion-err-[1-8].c: ...this.
+	Also, change all aspen references to iphone.
+	* gcc.apple/aspen-minversion-default-[12].c: Rename to...
+	* gcc.apple/iphone-minversion-default-[12].c: ... this.
+	Also, change all aspen references to iphone.
+
+2008-02-29  Josh Conner  <jconner@apple.com>
+
+	Radar 5730079
+	* objc.dg/newproperty-warn-weak-1.m: Fix error message line
+	number.
+
+2008-02-25  Josh Conner  <jconner@apple.com>
+
+	Radar 5730079
+	* gcc.apple/aspen-minversion-1.c: Don't run on ppc.
+	* gcc.apple/aspen-minversion-2.c: Likewise.
+	* gcc.apple/aspen-minversion-3.c: Likewise.
+	* gcc.apple/aspen-minversion-4.c: Likewise.
+	* gcc.apple/aspen-minversion-err-1.c: Likewise.
+	* gcc.apple/aspen-minversion-err-2.c: Likewise.
+	* gcc.apple/aspen-minversion-err-3.c: Likewise.
+	* gcc.apple/aspen-minversion-err-4.c: Likewise.
+	* gcc.apple/aspen-minversion-err-5.c: Likewise.
+	* gcc.apple/aspen-minversion-err-6.c: Likewise.
+	* gcc.apple/aspen-minversion-err-7.c: Likewise.
+	* gcc.apple/aspen-minversion-err-8.c: Likewise.
+	* gcc.dg/darwin-minversion-1.c: Don't run on arm.
+	* gcc.dg/darwin-minversion-2.c: Likewise.
+	* gcc.dg/darwin-version-1.c: Likewise.
+	* objc.dg/newproperty-forward-class-1.m: Likewise.
+	* objc.dg/newproperty-protocol-type.m: Likewise.
+	* objc.dg/newproperty-warn-weak-1.m: Likewise.
+	* objc.dg/newproperty-weak-attribute-2.m: Likewise.
+	* objc.dg/newproperty-weak-attribute-3.m: Likewise.
+	* objc.dg/objc2-defs-ok.m: Likewise.
+	* objc.dg/objc2-ivar-layout-2.m: Likewise.
+	* objc.dg/objc2-ivar-layout-3.m: Likewise.
+	* objc.dg/objc2-ivar-layout-4.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-1.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-2.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-3.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-4.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-5.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-6.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-7.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-8.m: Likewise.
+	* objc.dg/objc2-protocol-ext-1.m: Likewise.
+	* objc.dg/objc2-warn-prev-osx-1.m: Likewise.
+	* objc.dg/property-weak-attribute-2.m: Likewise.
+	* objc.dg/property-weak-attribute-3.m: Likewise.
+	* objc.dg/try-catch-15.m: Likewise.
+	* obj-c++.dg/newproperty-atomiccopy.mm: Likewise.
+	* obj-c++.dg/newproperty-atomiccopy-1.mm: Likewise.
+	* obj-c++.dg/newproperty-atomicretained.mm: Likewise.
+	* obj-c++.dg/newproperty-atomicretained-1.mm: Likewise.
+	* obj-c++.dg/newproperty-protocol-type.mm: Likewise.
+	* obj-c++.dg/newproperty-weak-attribute-3.mm: Likewise.
+	* obj-c++.dg/objc2-defs-ok.mm: Likewise.
+	* obj-c++.dg/objc-gc-4.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-ext-1.mm: Likewise.
+	* obj-c++.dg/objc2-warn-prev-osx-1.mm: Likewise.
+	* obj-c++.dg/property-weak-attribute-3.mm: Likewise.
+	* obj-c++.dg/class-attribute-1.mm: Don't pass
+	-mmacosx-version-min for arm*-*-darwin* targets.
+	* obj-c++.dg/const-str-13.mm: Likewise.
+	* obj-c++.dg/cxx-ivars-3.mm: Likewise.
+	* obj-c++.dg/message-metadata-1.mm: Likewise.
+	* obj-c++.dg/newproperty-1.mm: Likewise.
+	* obj-c++.dg/newproperty-2.mm: Likewise.
+	* obj-c++.dg/newproperty-3.mm: Likewise.
+	* obj-c++.dg/newproperty-4.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-1.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-2.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-3.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-4.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-5.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-6.mm: Likewise.
+	* obj-c++.dg/newproperty-anon-category-7.mm: Likewise.
+	* obj-c++.dg/newproperty-atomic-neg-1.mm: Likewise.
+	* obj-c++.dg/newproperty-category-impl-1.mm: Likewise.
+	* obj-c++.dg/newproperty-compound-setter-1.mm: Likewise.
+	* obj-c++.dg/newproperty-copy-2.mm: Likewise.
+	* obj-c++.dg/newproperty-copy-3.mm: Likewise.
+	* obj-c++.dg/newproperty-deprecated-attr-1.mm: Likewise.
+	* obj-c++.dg/newproperty-dot-syntax-1.mm: Likewise.
+	* obj-c++.dg/newproperty-dotsyntax-setter-getter-1.mm: Likewise.
+	* obj-c++.dg/newproperty-dotsyntax-setter-getter-2.mm: Likewise.
+	* obj-c++.dg/newproperty-impl-nowarn-1.mm: Likewise.
+	* obj-c++.dg/newproperty-lookup-1.mm: Likewise.
+	* obj-c++.dg/newproperty-lookup-2.mm: Likewise.
+	* obj-c++.dg/newproperty-lookup-3.mm: Likewise.
+	* obj-c++.dg/newproperty-lookup-4.mm: Likewise.
+	* obj-c++.dg/newproperty-lookup-5.mm: Likewise.
+	* obj-c++.dg/newproperty-lookup-6.mm: Likewise.
+	* obj-c++.dg/newproperty-neg-ivar-check-1.mm: Likewise.
+	* obj-c++.dg/newproperty-neg-warn-ro-1.mm: Likewise.
+	* obj-c++.dg/newproperty-neg-warn-unimp-1.mm: Likewise.
+	* obj-c++.dg/newproperty-nested-synthesis-1.mm: Likewise.
+	* obj-c++.dg/newproperty-no-category-synthesis.mm: Likewise.
+	* obj-c++.dg/newproperty-no-protocol-warn-1.mm: Likewise.
+	* obj-c++.dg/newproperty-nowarn-compound-exp.mm: Likewise.
+	* obj-c++.dg/newproperty-nowarn-default-assign-1.mm: Likewise.
+	* obj-c++.dg/newproperty-nowarn-unused-param.mm: Likewise.
+	* obj-c++.dg/newproperty-protocol-lookup-1.mm: Likewise.
+	* obj-c++.dg/newproperty-redundant-decl-accessor.mm: Likewise.
+	* obj-c++.dg/newproperty-retain-1.mm: Likewise.
+	* obj-c++.dg/newproperty-retain-2.mm: Likewise.
+	* obj-c++.dg/newproperty-setter-decl-1.mm: Likewise.
+	* obj-c++.dg/newproperty-setter-getter-1.mm: Likewise.
+	* obj-c++.dg/newproperty-setter-getter-attr-1.mm: Likewise.
+	* obj-c++.dg/newproperty-struct-val-1.mm: Likewise.
+	* obj-c++.dg/newproperty-syntax-1.mm: Likewise.
+	* obj-c++.dg/newproperty-type-conv-1.mm: Likewise.
+	* obj-c++.dg/newproperty-warn-cont-class-1.mm: Likewise.
+	* obj-c++.dg/newproperty-weak-attribute-1.mm: Likewise.
+	* obj-c++.dg/newproperty-weak-attribute-2.mm: Likewise.
+	* obj-c++.dg/objc-foreach-1.mm: Likewise.
+	* obj-c++.dg/objc-foreach-10.mm: Likewise.
+	* obj-c++.dg/objc-foreach-11.mm: Likewise.
+	* obj-c++.dg/objc-foreach-2.mm: Likewise.
+	* obj-c++.dg/objc-foreach-3.mm: Likewise.
+	* obj-c++.dg/objc-foreach-4.mm: Likewise.
+	* obj-c++.dg/objc-foreach-5.mm: Likewise.
+	* obj-c++.dg/objc-foreach-6.mm: Likewise.
+	* obj-c++.dg/objc-foreach-7.mm: Likewise.
+	* obj-c++.dg/objc-foreach-8.mm: Likewise.
+	* obj-c++.dg/objc-foreach-9.mm: Likewise.
+	* obj-c++.dg/objc-foreach-elem-collection-elem.mm: Likewise.
+	* obj-c++.dg/objc-foreach-lvalue-1.mm: Likewise.
+	* obj-c++.dg/objc-foreach-nil-collection-1.mm: Likewise.
+	* obj-c++.dg/objc-visibility-hidden-1.mm: Likewise.
+	* obj-c++.dg/objc2-4698856.mm: Likewise.
+	* obj-c++.dg/objc2-ivar-test-1.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-1.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-2.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-3.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-4.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-5.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-7.mm: Likewise.
+	* obj-c++.dg/objc2-protocol-9.mm: Likewise.
+	* obj-c++.dg/objc2-super-class-1.mm: Likewise.
+	* obj-c++.dg/objc2-visibility-hidden-1.mm: Likewise.
+	* obj-c++.dg/objc2-visibility-hidden-2.mm: Likewise.
+	* obj-c++.dg/property-1.mm: Likewise.
+	* obj-c++.dg/property-10.mm: Likewise.
+	* obj-c++.dg/property-12.mm: Likewise.
+	* obj-c++.dg/property-13.mm: Likewise.
+	* obj-c++.dg/property-14.mm: Likewise.
+	* obj-c++.dg/property-15.mm: Likewise.
+	* obj-c++.dg/property-16.mm: Likewise.
+	* obj-c++.dg/property-18.mm: Likewise.
+	* obj-c++.dg/property-19.mm: Likewise.
+	* obj-c++.dg/property-2.mm: Likewise.
+	* obj-c++.dg/property-20.mm: Likewise.
+	* obj-c++.dg/property-3.mm: Likewise.
+	* obj-c++.dg/property-5.mm: Likewise.
+	* obj-c++.dg/property-6.mm: Likewise.
+	* obj-c++.dg/property-7.mm: Likewise.
+	* obj-c++.dg/property-8.mm: Likewise.
+	* obj-c++.dg/property-9.mm: Likewise.
+	* obj-c++.dg/property-bycopy-1.mm: Likewise.
+	* obj-c++.dg/property-bycopy-2.mm: Likewise.
+	* obj-c++.dg/property-bycopy-3.mm: Likewise.
+	* obj-c++.dg/property-byref-default-1.mm: Likewise.
+	* obj-c++.dg/property-dwarf-1.mm: Likewise.
+	* obj-c++.dg/property-incr-decr-1.mm: Likewise.
+	* obj-c++.dg/property-metadata-1.mm: Likewise.
+	* obj-c++.dg/property-metadata-2.mm: Likewise.
+	* obj-c++.dg/property-metadata-3.mm: Likewise.
+	* obj-c++.dg/property-metadata-4.mm: Likewise.
+	* obj-c++.dg/property-metadata-5.mm: Likewise.
+	* obj-c++.dg/property-neg-1.mm: Likewise.
+	* obj-c++.dg/property-neg-2.mm: Likewise.
+	* obj-c++.dg/property-neg-3.mm: Likewise.
+	* obj-c++.dg/property-neg-4.mm: Likewise.
+	* obj-c++.dg/property-neg-5.mm: Likewise.
+	* obj-c++.dg/property-neg-6.mm: Likewise.
+	* obj-c++.dg/property-neg-7.mm: Likewise.
+	* obj-c++.dg/property-neg-8.mm: Likewise.
+	* obj-c++.dg/property-weak-attribute-1.mm: Likewise.
+	* obj-c++.dg/property-weak-attribute-2.mm: Likewise.
+	* obj-c++.dg/property-weak-attribute-4.mm: Likewise.
+	* obj-c++.dg/template-4.mm: Likewise.
+	* objc.dg/class-attribute-1.m: Likewise.
+	* objc.dg/const-str-13.m: Likewise.
+	* objc.dg/message-metadata-1.m: Likewise.
+	* objc.dg/newproperty-1.m: Likewise.
+	* objc.dg/newproperty-2.m: Likewise.
+	* objc.dg/newproperty-3.m: Likewise.
+	* objc.dg/newproperty-4.m: Likewise.
+	* objc.dg/newproperty-anon-category-1.m: Likewise.
+	* objc.dg/newproperty-anon-category-2.m: Likewise.
+	* objc.dg/newproperty-anon-category-3.m: Likewise.
+	* objc.dg/newproperty-anon-category-4.m: Likewise.
+	* objc.dg/newproperty-anon-category-5.m: Likewise.
+	* objc.dg/newproperty-anon-category-6.m: Likewise.
+	* objc.dg/newproperty-anon-category-7.m: Likewise.
+	* objc.dg/newproperty-atomic-neg-1.m: Likewise.
+	* objc.dg/newproperty-category-impl-1.m: Likewise.
+	* objc.dg/newproperty-compound-setter-1.m: Likewise.
+	* objc.dg/newproperty-copy-2.m: Likewise.
+	* objc.dg/newproperty-deprecated-attr-1.m: Likewise.
+	* objc.dg/newproperty-dot-syntax-1.m: Likewise.
+	* objc.dg/newproperty-dotsyntax-setter-getter-1.m: Likewise.
+	* objc.dg/newproperty-dotsyntax-setter-getter-2.m: Likewise.
+	* objc.dg/newproperty-dotsyntax-warn-setter-1.m: Likewise.
+	* objc.dg/newproperty-getter-lookup-1.m: Likewise.
+	* objc.dg/newproperty-impl-nowarn-1.m: Likewise.
+	* objc.dg/newproperty-lookup-1.m: Likewise.
+	* objc.dg/newproperty-lookup-2.m: Likewise.
+	* objc.dg/newproperty-lookup-3.m: Likewise.
+	* objc.dg/newproperty-lookup-4.m: Likewise.
+	* objc.dg/newproperty-lookup-5.m: Likewise.
+	* objc.dg/newproperty-lookup-6.m: Likewise.
+	* objc.dg/newproperty-neg-error-bad-impl-1.m: Likewise.
+	* objc.dg/newproperty-neg-ivar-check-1.m: Likewise.
+	* objc.dg/newproperty-neg-warn-ro-1.m: Likewise.
+	* objc.dg/newproperty-neg-warn-unimp-1.m: Likewise.
+	* objc.dg/newproperty-nested-synthesis-1.m: Likewise.
+	* objc.dg/newproperty-no-category-synthesis.m: Likewise.
+	* objc.dg/newproperty-no-protocol-warn-1.m: Likewise.
+	* objc.dg/newproperty-nowarn-compound-exp.m: Likewise.
+	* objc.dg/newproperty-nowarn-default-assign-1.m: Likewise.
+	* objc.dg/newproperty-nowarn-readonly-1.m: Likewise.
+	* objc.dg/newproperty-protocol-lookup-1.m: Likewise.
+	* objc.dg/newproperty-redundant-decl-accessor.m: Likewise.
+	* objc.dg/newproperty-retain-1.m: Likewise.
+	* objc.dg/newproperty-retain-2.m: Likewise.
+	* objc.dg/newproperty-setter-decl-1.m: Likewise.
+	* objc.dg/newproperty-setter-getter-1.m: Likewise.
+	* objc.dg/newproperty-setter-getter-attr-1.m: Likewise.
+	* objc.dg/newproperty-syntax-1.m: Likewise.
+	* objc.dg/newproperty-type-conv-1.m: Likewise.
+	* objc.dg/newproperty-warn-cont-class-1.m: Likewise.
+	* objc.dg/newproperty-weak-attribute-1.m: Likewise.
+	* objc.dg/objc-dir-dispatch.m: Likewise.
+	* objc.dg/objc-foreach-1.m: Likewise.
+	* objc.dg/objc-foreach-10.m: Likewise.
+	* objc.dg/objc-foreach-11.m: Likewise.
+	* objc.dg/objc-foreach-2.m: Likewise.
+	* objc.dg/objc-foreach-3.m: Likewise.
+	* objc.dg/objc-foreach-4.m: Likewise.
+	* objc.dg/objc-foreach-5.m: Likewise.
+	* objc.dg/objc-foreach-6.m: Likewise.
+	* objc.dg/objc-foreach-7.m: Likewise.
+	* objc.dg/objc-foreach-8.m: Likewise.
+	* objc.dg/objc-foreach-9.m: Likewise.
+	* objc.dg/objc-foreach-elem-collection-elem.m: Likewise.
+	* objc.dg/objc-foreach-lvalue-1.m: Likewise.
+	* objc.dg/objc-foreach-nil-collection-1.m: Likewise.
+	* objc.dg/objc-gc-assign-ivar-2.m: Likewise.
+	* objc.dg/objc-visibility-hidden-1.m: Likewise.
+	* objc.dg/objc2-4698856.m: Likewise.
+	* objc.dg/objc2-ivar-test-1.m: Likewise.
+	* objc.dg/objc2-protocol-1.m: Likewise.
+	* objc.dg/objc2-protocol-2.m: Likewise.
+	* objc.dg/objc2-protocol-3.m: Likewise.
+	* objc.dg/objc2-protocol-4.m: Likewise.
+	* objc.dg/objc2-protocol-5.m: Likewise.
+	* objc.dg/objc2-protocol-7.m: Likewise.
+	* objc.dg/objc2-protocol-9.m: Likewise.
+	* objc.dg/objc2-protocol-enc-1.m: Likewise.
+	* objc.dg/objc2-super-class-1.m: Likewise.
+	* objc.dg/objc2-visibility-hidden-1.m: Likewise.
+	* objc.dg/objc2-visibility-hidden-2.m: Likewise.
+	* objc.dg/objc2.m: Likewise.
+	* objc.dg/property-1.m: Likewise.
+	* objc.dg/property-10.m: Likewise.
+	* objc.dg/property-12.m: Likewise.
+	* objc.dg/property-13.m: Likewise.
+	* objc.dg/property-14.m: Likewise.
+	* objc.dg/property-15.m: Likewise.
+	* objc.dg/property-17.m: Likewise.
+	* objc.dg/property-18.m: Likewise.
+	* objc.dg/property-2.m: Likewise.
+	* objc.dg/property-3.m: Likewise.
+	* objc.dg/property-5.m: Likewise.
+	* objc.dg/property-6.m: Likewise.
+	* objc.dg/property-7.m: Likewise.
+	* objc.dg/property-8.m: Likewise.
+	* objc.dg/property-9.m: Likewise.
+	* objc.dg/property-bycopy-1.m: Likewise.
+	* objc.dg/property-bycopy-2.m: Likewise.
+	* objc.dg/property-bycopy-4.m: Likewise.
+	* objc.dg/property-byref-default-1.m: Likewise.
+	* objc.dg/property-dwarf-1.m: Likewise.
+	* objc.dg/property-incr-decr-1.m: Likewise.
+	* objc.dg/property-metadata-1.m: Likewise.
+	* objc.dg/property-metadata-2.m: Likewise.
+	* objc.dg/property-metadata-3.m: Likewise.
+	* objc.dg/property-metadata-4.m: Likewise.
+	* objc.dg/property-metadata-5.m: Likewise.
+	* objc.dg/property-neg-1.m: Likewise.
+	* objc.dg/property-neg-10.m: Likewise.
+	* objc.dg/property-neg-2.m: Likewise.
+	* objc.dg/property-neg-3.m: Likewise.
+	* objc.dg/property-neg-4.m: Likewise.
+	* objc.dg/property-neg-5.m: Likewise.
+	* objc.dg/property-neg-6.m: Likewise.
+	* objc.dg/property-neg-7.m: Likewise.
+	* objc.dg/property-neg-8.m: Likewise.
+	* objc.dg/property-neg-9.m: Likewise.
+	* objc.dg/property-weak-attribute-1.m: Likewise.
+	* objc.dg/property-weak-attribute-4.m: Likewise.
+	* objc.dg/propperty-neg-8.m: Likewise.
+
 2008-02-14  Josh Conner  <jconner@apple.com>
+
+	Radar 5660282
+	* objc.dg/newproperty-warn-weak-1.m: Fix error line numbers that
+	were affected by previous commit.
+	* objc.dg/property-weak-attribute-2.m: Likewise.
+	* obj-c++.dg/property-weak-attribute-2.mm: Likewise.
+
+2008-02-14  Josh Conner  <jconner@apple.com>
+
+	Radar 5660282
+	* lib/target-supports.exp (check_effective_target_objc_gc): New
+	function.
+	* objc.dg/objc2-ivar-layout-array-8.m: Require objc_gc target
+	support.
+	* objc.dg/newproperty-weak-attribute-2.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-1.m: Likewise.
+	* objc.dg/newproperty-weak-attribute-3.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-2.m: Likewise.
+	* objc.dg/newproperty-warn-weak-1.m: Likewise.
+	* objc.dg/objc2-ivar-layout-2.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-3.m: Likewise.
+	* objc.dg/objc2-ivar-layout-3.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-4.m: Likewise.
+	* objc.dg/property-weak-attribute-2.m: Likewise.
+	* objc.dg/objc2-ivar-layout-4.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-5.m: Likewise.
+	* objc.dg/property-weak-attribute-3.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-6.m: Likewise.
+	* objc.dg/newproperty-forward-class-1.m: Likewise.
+	* objc.dg/newproperty-protocol-type.m: Likewise.
+	* objc.dg/objc2-ivar-layout-array-7.m: Likewise.
+	* obj-c++.dg/property-weak-attribute-2.mm: Likewise.
+	* obj-c++.dg/property-weak-attribute-3.mm: Likewise.
+	* obj-c++.dg/newproperty-weak-attribute-2.mm: Likewise.
+	* obj-c++.dg/objc-gc-4.mm: Likewise.
+	* obj-c++.dg/newproperty-atomicretained.mm: Likewise.
+	* obj-c++.dg/newproperty-protocol-type.mm: Likewise.
+	* obj-c++.dg/newproperty-atomiccopy.mm: Likewise.
+	* obj-c++.dg/newproperty-atomicretained-1.mm: Likewise.
+	* obj-c++.dg/newproperty-atomiccopy-1.mm: Likewise.
+
+2008-02-13  Josh Conner  <jconner@apple.com>
 
 	Radar 5694615
 	* obj-c++.dg/ivar-offset.mm: New test.

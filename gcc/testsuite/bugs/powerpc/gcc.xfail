@@ -10,33 +10,6 @@
 ### file and make sure the Radar is closed.
 ###
 ###------------------------------------------------------------------
-3191500: gcc.dg/c99-func-3.c execution test
-3673618: gcc.c-torture/execute/ieee/fp-cmp-1.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-2.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-3.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-4.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-5.c compilation,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-6.c compilation,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-8.c execution,  -fast
-3717694: gcc.dg/pch/valid-3.c  -fast   (test for errors, line 3)
-3717694: gcc.dg/pch/valid-3.c  -fast   (test for errors, line 3) #1
-3846097: gcc.c-torture/execute/builtins/fputs.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/memmove.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/memops-asm.c compilation,  -fast
-3846097: gcc.c-torture/execute/builtins/mempcpy.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/memset.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/strlen-2.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/strpcpy.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/strstr-asm.c compilation,  -fast
-3846097: gcc.c-torture/execute/builtins/memmove-2.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/strcpy-2.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/strlen-3.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/compare-fp-1.c compilation,  -fast
-3673618: gcc.c-torture/execute/ieee/compare-fp-4.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-4f.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-4l.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-8f.c execution,  -fast
-3673618: gcc.c-torture/execute/ieee/fp-cmp-8l.c execution,  -fast
 3869017: gcc.dg/tree-ssa-chrec/ssa-chrec-04.c scan-tree-dump-times remove_me 0
 3869017: gcc.dg/tree-ssa-chrec/ssa-chrec-06.c scan-tree-dump-times remove_me 0
 3869017: gcc.dg/tree-ssa-chrec/ssa-chrec-07.c scan-tree-dump-times remove_me 0
@@ -45,7 +18,6 @@
 3869017: gcc.dg/tree-ssa-chrec/ssa-chrec-58.c scan-tree-dump-times remove_me 0
 3869017: gcc.dg/tree-ssa-chrec/20040216-1.c scan-tree-dump-times Dependence Node 4
 3869017: gcc.dg/tree-ssa/20031216-1.c scan-tree-dump-times link_error 0
-3673618: gcc.c-torture/execute/ieee/unsafe-fp-assoc.c execution,  -fast
 3906375: gcc.dg/debug/debug-1.c -gstabs -fast scan-assembler xyzzy
 3906375: gcc.dg/debug/debug-1.c -gstabs3 -fast scan-assembler xyzzy
 3906375: gcc.dg/debug/debug-1.c -gstabs+ -fast scan-assembler xyzzy
@@ -54,27 +26,6 @@
 3906375: gcc.dg/debug/debug-2.c -gstabs3 -fast scan-assembler xyzzy
 3906375: gcc.dg/debug/debug-2.c -gstabs+ -fast scan-assembler xyzzy
 3906375: gcc.dg/debug/debug-2.c -gstabs+3 -fast scan-assembler xyzzy
-3961392: gcc.dg/ppc-fsel-3.c scan-assembler-not fsub
-4078995: gcc.c-torture/execute/ieee/copysign1.c execution,  -fast
-4078995: gcc.c-torture/execute/ieee/copysign2.c execution,  -fast
-4078995: gcc.c-torture/execute/ieee/mzero6.c execution,  -fast
-4366412: gcc.dg/trampoline-1.c (test for excess errors)
-4492939: gcc.dg/stabs-4232445.c scan-assembler .stabs.*xsICAHeader:,
-#4531674: gcc.apple/bitreverse-22.c execution test
-4563838: gcc.c-torture/compile/20021204-1.c  -O0  (test for excess errors)
-4563838: gcc.c-torture/compile/20021204-1.c  -O1  (test for excess errors)
-4563838: gcc.c-torture/compile/20021204-1.c  -O2  (test for excess errors)
-4563838: gcc.c-torture/compile/20021204-1.c  -O3 -fomit-frame-pointer  (test for excess errors)
-4563838: gcc.c-torture/compile/20021204-1.c  -O3 -g  (test for excess errors)
-4563838: gcc.c-torture/compile/20021204-1.c  -Os  (test for excess errors)
-4563838: gcc.c-torture/compile/20021204-1.c  -fast  (test for excess errors)
-4787132: gcc.dg/cleanup-10.c execution test
-4787132: gcc.dg/cleanup-11.c execution test
-4787132: gcc.dg/cleanup-8.c execution test
-4787132: gcc.dg/cleanup-9.c execution test
-#
-# the following failures occur only for ppc32
-4965359: building longcall/dylib library
 #
 # the following failures occur only when the tests are being run through ObjC
 4079037: gcc.dg/cpp/direct2.c (test for excess errors)
@@ -93,18 +44,6 @@
 3904235: gcc.dg/wtr-unary-plus-1.c unary plus operator (test for warnings, line 12)
 3904235: gcc.dg/wtr-unary-plus-1.c unary plus operator (test for warnings, line 13)
 3904213: gcc.apple/objc-negtest.c  (test for errors, line 3)
-5040758: gcc.apple/asm-block-21.c (test for excess errors)
-5040758: gcc.apple/asm-block-58.c (test for excess errors)
-5040758: gcc.apple/default-x86_64-sse3.c (test for excess errors)
-5040758: gcc.dg/builtin-cast.c (test for excess errors)
-5040758: gcc.dg/darwin-literal16-1.c (test for excess errors)
-5040758: gcc.apple/power-align-unsup.c (test for excess errors)
-5040758: gcc.apple/pragma.c (test for excess errors)
-5040758: gcc.dg/20060713-1.c (test for excess errors)
-5040758: gcc.dg/const-compare.c (test for excess errors)
-5040758: gcc.dg/darwin64-abi.c (test for excess errors)
-5040758: gcc.dg/mac68k-pragma-unsup-1.c (test for excess errors)
-5040758: gcc.dg/pragma-align-3.c (test for excess errors)
 #
 # the following failures are for -mcpu=G5
 #3788046: gcc.dg/simd-2.c (test for excess errors)
@@ -115,37 +54,14 @@
 # the following failures are for -m64
 3996036: gcc.dg/Wpadded.c (test for excess errors)
 3996036: gcc.dg/20050607-1.c (test for excess errors)
-4157559: gcc.dg/20050607-1.c (test for excess errors)
-4239312: gcc.c-torture/execute/loop-2b.c compilation,  -O3 -fomit-frame-pointer
-4239312: gcc.c-torture/execute/loop-2b.c compilation,  -O3 -g
-4239312: gcc.c-torture/execute/loop-2b.c compilation,  -Os
 4563868: gcc.c-torture/execute/pr21331.c execution,  -O1
 4563868: gcc.c-torture/execute/pr21331.c execution,  -O2
-4563834: gcc.dg/inline-16.c (test for excess errors)
-5040758: gcc.apple/objcpp.c (test for excess errors)
 #
 # the following failures are for -m64 on ppc only
 3966342: gcc.apple/apple-altivec-13.c (test for excess errors)
 3966342: gcc.dg/darwin-bool-1.c (test for excess errors)
 3966342: gcc.dg/lvalue-cast-1.c (test for excess errors)
-3967747: gcc.dg/cleanup-10.c execution test
-3967747: gcc.dg/cleanup-11.c execution test
-3967747: gcc.dg/cleanup-8.c execution test
-3967747: gcc.dg/cleanup-9.c execution test
 4078834: gcc.dg/pr18096-1.c stack frame too large (test for warnings, line 11)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 7)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 8)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 9)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 10)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 11)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 12)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 14)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 15)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 16)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 20)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 21)
-4085016: gcc.dg/altivec-14.c  (test for warnings, line 22)
-4085016: gcc.dg/altivec-14.c (test for excess errors)
 4085231: gcc.dg/transparent-union-1.c (test for excess errors)
 4085231: gcc.dg/transparent-union-2.c (test for excess errors)
 4464421: gcc.dg/vect/pr18536.c scan-tree-dump-times vectorized 1 loops 1
@@ -178,10 +94,7 @@
 5643423: tmpdir-gcc.dg-struct-layout-1/t027 c_compat_x_tst.o-c_compat_y_tst.o execute
 #
 # the following failures are for x86 only
-3846097: gcc.c-torture/execute/builtins/strcat.c execution,  -fast
-3846097: gcc.c-torture/execute/builtins/strlen-3.c compilation,  -fast
 4261902: gcc.dg/i386-cmov4.c scan-assembler cmov
-4218476: gcc.c-torture/execute/builtin-return-address-1.c execution,  -O3 -fomit-frame-pointer
 4547448: gcc.apple/4109832.c (test for excess errors)
 4547448: gcc.dg/cpp/19990407-1.c (test for excess errors)
 4547448: gcc.dg/cpp/strp1.c (test for excess errors)
@@ -197,38 +110,15 @@
 5346453: gcc.c-torture/execute/20000801-4.c execution,  -fast
 #
 # the following failures are for x86_32 only
-3846097: gcc.c-torture/execute/builtins/strncmp-2.c execution,  -fast
-4015789: gcc.c-torture/compile/20011029-1.c  -O0  (test for excess errors)
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -O0 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -O1 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -O2 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -O3 -fomit-frame-pointer 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -O3 -fomit-frame-pointer -funroll-loops 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -O3 -fomit-frame-pointer -funroll-all-loops -finline-functions 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -O3 -g 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -Os 
-4015789: gcc.c-torture/execute/built-in-setjmp.c compilation,  -fast 
 #
 # the following failures are for x86 -m64 only
-4659159: gcc.c-torture/execute/20030928-1.c execution,  -O1
-4659159: gcc.c-torture/execute/20030928-1.c execution,  -O2
-4659159: gcc.c-torture/execute/20030928-1.c execution,  -O3 -fomit-frame-pointer
-4640264: gcc.c-torture/execute/20030928-1.c execution,  -O3 -fomit-frame-pointer -funroll-loops
-4640264: gcc.c-torture/execute/20030928-1.c execution,  -O3 -fomit-frame-pointer -funroll-all-loops -finline-functions
-4659159: gcc.c-torture/execute/20030928-1.c execution,  -O3 -g
-4659159: gcc.c-torture/execute/20030928-1.c execution,  -Os
-4659159: gcc.c-torture/execute/20030928-1.c execution,  -fast
 4659165: gcc.c-torture/execute/20050121-1.c execution,  -O0
 4659167: gcc.c-torture/execute/complex-6.c execution,  -O0
-4239312: gcc.c-torture/execute/loop-2b.c compilation,  -fast
-4578081: gcc.c-torture/execute/ptr-arith-1.c execution,  -O2
 4659172: gcc.dg/compat/scalar-return-3 c_compat_x_tst.o-c_compat_y_tst.o execute
 4659178: gcc.dg/asm-fs-1.c scan-assembler-not \\*_bar
 4659178: gcc.dg/i386-asm-4.c (test for excess errors)
 4659178: gcc.dg/darwin-weakimport-1.c scan-assembler-not weak_[a-z \t]*_b
 4659178: gcc.dg/darwin-weakimport-3.c scan-assembler-not coalesced
-4803160: gcc.apple/asm-block-59.c (test for excess errors)
-4877693: gcc.apple/4861528.c (test for excess errors)
 #
 # the following failures are for -fasm-blocks only
 4756486: gcc.dg/cpp/19951227-1.c  (test for errors, line 2)
@@ -280,13 +170,6 @@
 4990360: gcc.c-torture/execute/920501-7.c execution,  -O0
 4990360: gcc.c-torture/execute/comp-goto-2.c execution,  -O0
 # (x86 only)
-4990350: gcc.apple/asm-block-11.c (test for excess errors)
-4990350: gcc.apple/asm-block-15.c (test for excess errors)
-4990350: gcc.apple/asm-block-27.c (test for excess errors)
-4990350: gcc.apple/asm-block-37.c (test for excess errors)
-4990350: gcc.apple/asm-block-38.c (test for excess errors)
-4990353: gcc.apple/asm-block-54.c scan-assembler movq -16\\(%ebp\\), %mm0
-4990353: gcc.apple/asm-block-59.c scan-assembler -24\\(%ebp,%edx,2\\), %ebx
 4990353: gcc.apple/4113078.c scan-assembler \\-24\\(\\%ebp\\)
 4990353: gcc.apple/4172200.c scan-assembler-not \tmovl\t-12\\(%ebp\\)
 4990353: gcc.apple/i386-leaf-stack-opt.c scan-assembler-not sub[^\\n]*sp
@@ -321,5 +204,4 @@
 4990353: gcc.dg/non-lazy-ptr-test.c scan-assembler-not non_lazy_ptr
 4990353: gcc.dg/rs6000-power2-2.c scan-assembler-not lfd
 4990353: gcc.dg/rs6000-power2-2.c scan-assembler lfq
-4990360: gcc.dg/darwin64-abi.c execution test
 4990372: gcc.dg/pr18096-1.c (test for excess errors)

@@ -368,6 +368,19 @@
 ;; Cirrus 64bit additions should not be split because we have a native
 ;; 64bit addition instructions.
 
+;; APPLE LOCAL begin ARM 5482075 DI mode bitwise constant optimization
+;; Sometimes a split will generate an y = x & 0xffffffff, which is obviously
+;; just a copy, so make it that way.
+(define_peephole2
+ [(set (match_operand:SI         0 "s_register_operand" "")
+       (and:SI (match_operand:SI 1 "s_register_operand" "")
+               (match_operand:SI 2 "immediate_operand" "")))]
+  "TARGET_EITHER && INTVAL (operands[2]) == (HOST_WIDE_INT)-1"
+ [(set (match_dup 0) (match_dup 1))]
+ ""
+)
+;; APPLE LOCAL end ARM 5482075 DI mode bitwise constant optimization
+ 
 ;; APPLE LOCAL begin ARM 4468410 long long constants
 (define_expand "adddi3"
  [(parallel
@@ -1535,6 +1548,25 @@
 
 ;; Split up double word logical operations
 
+;; APPLE LOCAL begin ARM 5482075 DI mode bitwise constant optimization
+(define_split
+  [(set (match_operand:DI 0 "s_register_operand" "")
+	(and:DI (match_operand:DI 1 "s_register_operand" "")
+		(match_operand:DI 2 "arm_and64_operand" "")))]
+  "TARGET_ARM && reload_completed && ! IS_IWMMXT_REGNUM (REGNO (operands[0]))"
+  [(set (match_dup 0) (and:SI (match_dup 1) (match_dup 2)))
+   (set (match_dup 3) (and:SI (match_dup 4) (match_dup 5)))]
+  "
+  {
+    operands[3] = gen_highpart (SImode, operands[0]);
+    operands[0] = gen_lowpart (SImode, operands[0]);
+    operands[4] = gen_highpart (SImode, operands[1]);
+    operands[1] = gen_lowpart (SImode, operands[1]);
+    operands[5] = gen_highpart_mode (SImode, DImode, operands[2]);
+    operands[2] = gen_lowpart (SImode, operands[2]);
+  }"
+)
+;; APPLE LOCAL end ARM 5482075 DI mode bitwise constant optimization
 ;; APPLE LOCAL begin ARM 4468410 long long constants
 ;; Split up simple DImode logical operations.  Simply perform the logical
 ;; operation on the upper and lower halves of the registers.
@@ -1621,7 +1653,8 @@
 (define_insn "anddi3"
   [(set (match_operand:DI         0 "s_register_operand" "=&r,&r,&r,&r")
 	(and:DI (match_operand:DI 1 "s_register_operand"  "%0,r, 0, r")
-		(match_operand:DI 2 "arm_rhs64_operand"    "r,r,Dd,Dd")))]
+;;  APPLE LOCAL ARM 5482075 DI mode bitwise constant optimization
+		(match_operand:DI 2 "arm_and64_operand"    "r,r,De,De")))]
   "TARGET_ARM && ! TARGET_IWMMXT"
   "#"
   [(set_attr "length" "8")
@@ -8037,18 +8070,19 @@
   "
   {
     rtx callee;
-
-/* APPLE LOCAL begin ARM dynamic */
-#if TARGET_MACHO
-  if (MACHOPIC_INDIRECT)
-    operands[0] = machopic_indirect_call_target (operands[0]);
-#endif
-/* APPLE LOCAL end ARM dynamic */
     
     /* In an untyped call, we can get NULL for operand 2.  */
     if (operands[2] == NULL_RTX)
       operands[2] = const0_rtx;
       
+/* APPLE LOCAL begin ARM dynamic */
+#if TARGET_MACHO
+    if (MACHOPIC_INDIRECT
+	&& !arm_is_longcall_p (operands[0], INTVAL (operands[2]), 0))
+    operands[0] = machopic_indirect_call_target (operands[0]);
+#endif
+/* APPLE LOCAL end ARM dynamic */
+    
     /* This is to decide if we should generate indirect calls by loading the
        32 bit address of the callee into a register before performing the
        branch and link.  operand[2] encodes the long_call/short_call
@@ -8151,18 +8185,19 @@
     /* APPLE LOCAL begin ARM dynamic */
     rtx callee;
 
+    /* In an untyped call, we can get NULL for operand 2.  */
+    if (operands[3] == 0)
+      operands[3] = const0_rtx;
+      
 #if TARGET_MACHO
-    if (MACHOPIC_INDIRECT)
+    if (MACHOPIC_INDIRECT
+	&& !arm_is_longcall_p (operands[1], INTVAL (operands[3]), 0))
       operands[1] = machopic_indirect_call_target (operands[1]);
 #endif
 
     callee = XEXP (operands[1], 0);
     /* APPLE LOCAL end ARM dynamic */
     
-    /* In an untyped call, we can get NULL for operand 2.  */
-    if (operands[3] == 0)
-      operands[3] = const0_rtx;
-      
     /* See the comment in define_expand \"call\".  */
     if (GET_CODE (callee) != REG
 	&& arm_is_longcall_p (operands[1], INTVAL (operands[3]), 0))

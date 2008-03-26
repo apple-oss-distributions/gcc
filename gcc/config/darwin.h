@@ -205,11 +205,11 @@ extern const char *darwin_fix_and_continue_switch;
 
 /* APPLE LOCAL begin ARM 5683689 */
 extern const char *darwin_macosx_version_min;
-extern const char *darwin_aspen_version_min;
+extern const char *darwin_iphoneos_version_min;
 
 enum darwin_version_type {
   DARWIN_VERSION_MACOSX,
-  DARWIN_VERSION_ASPEN
+  DARWIN_VERSION_IPHONEOS
 };
 /* APPLE LOCAL end ARM 5683689 */
 
@@ -230,8 +230,8 @@ extern const char *darwin_macho_att_stub_switch;
    0 },									\
 /* APPLE LOCAL end mainline 2005-09-01 3449986 */			\
 /* APPLE LOCAL begin ARM 5683689 */					\
-  {"aspen-version-min=", &darwin_aspen_version_min,			\
-   N_("The earliest Aspen version on which this program will run"),	\
+  {"iphoneos-version-min=", &darwin_iphoneos_version_min,		\
+   N_("The earliest iPhone OS version on which this program will run"),	\
    0 },									\
 /* APPLE LOCAL end ARM 5683689 */					\
   {"no-fix-and-continue", &darwin_fix_and_continue_switch,		\
@@ -286,9 +286,9 @@ extern const char *darwin_macho_att_stub_switch;
 	  CPP_OPTION (parse_in, pascal_strings) = 1;			\
       }									\
     /* APPLE LOCAL begin ARM 5683689 */					\
-    if (darwin_macosx_version_min && darwin_aspen_version_min)		\
+    if (darwin_macosx_version_min && darwin_iphoneos_version_min)	\
       error ("-mmacosx-version-min not allowed with"			\
-	     " -maspen-version-min");					\
+	     " -miphoneos-version-min");				\
     /* APPLE LOCAL end ARM 5683689 */					\
     /* The c_dialect...() macros are not available to us here.  */	\
     darwin_running_cxx = (strstr (lang_hooks.name, "C++") != 0);	\
@@ -412,7 +412,8 @@ do {					\
 "/* APPLE LOCAL begin mainline 4.3 2006-12-20 4370146 4869554 */"\
     %{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} %{F*} }}}}}}}}\n\
 %{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:\
-    %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm: %(darwin_dsymutil) }}}}}}}}"
+    %{.c|.cc|.C|.cpp|.cp|.c++|.cxx|.CPP|.m|.mm: \
+    %{g*:%{!gstabs*:%{!g0: dsymutil %{o*:%*}%{!o:a.out}}}}}}}}}}}}"
 /* APPLE LOCAL end mainline 4.3 2006-12-20 4370146 4869554 */
 /* APPLE LOCAL end mainline */
 
@@ -468,9 +469,9 @@ do {					\
    %{Zimage_base*:-image_base %*} \
    %{Zinit*:-init %*} \
    "/* APPLE LOCAL begin ARM 5683689 */"\
-   %{!mmacosx-version-min=*: %{!maspen-version-min=*: %(darwin_ld_minversion)}} \
+   %{!mmacosx-version-min=*: %{!miphoneos-version-min=*: %(darwin_ld_minversion)}} \
    %{mmacosx-version-min=*:-macosx_version_min %*} \
-   %{maspen-version-min=*:-aspen_version_min %*} \
+   %{miphoneos-version-min=*:-iphoneos_version_min %*} \
    "/* APPLE LOCAL end ARM 5683689 */"\
    %{nomultidefs} \
    %{Zmulti_module:-multi_module} %{Zsingle_module:-single_module} \
@@ -536,8 +537,8 @@ do {					\
 #define REAL_LIBGCC_SPEC						   \
 /* APPLE LOCAL libgcc_static.a  */					   \
    "%{static:-lgcc_static; static-libgcc: -lgcc_eh -lgcc;		   \
-      "/* APPLE LOCAL ARM 5683689 */"					   \
-      maspen-version-min=*: -lgcc_s.10.5 -lgcc;				   \
+      "/* APPLE LOCAL ARM 5683689 5681645 */"				   \
+      miphoneos-version-min=*: %(darwin_iphoneos_libgcc);		   \
       shared-libgcc|fexceptions:					   \
        %:version-compare(!> 10.5 mmacosx-version-min= -lgcc_s.10.4)	   \
        %:version-compare(>= 10.5 mmacosx-version-min= -lgcc_s.10.5)	   \
@@ -586,19 +587,19 @@ do {					\
   { "darwin_cc1_minversion", DARWIN_CC1_MINVERSION_SPEC },		\
   { "darwin_ld_minversion", DARWIN_LD_MINVERSION_SPEC },		\
 /* APPLE LOCAL end ARM 5683689 */					\
-/* APPLE LOCAL 5342595 */						\
-  { "darwin_dsymutil", DARWIN_DSYMUTIL_SPEC },
+/* APPLE LOCAL ARM 5681645 */						\
+  { "darwin_iphoneos_libgcc", DARWIN_IPHONEOS_LIBGCC_SPEC },		\
 
 /* APPLE LOCAL begin ARM 5683689 */
 #define DARWIN_DYLIB1_SPEC						\
-  "%{maspen-version-min=*: -ldylib1.10.5.o}				\
-   %{!maspen-version-min=*:						\
+  "%{miphoneos-version-min=*: -ldylib1.10.5.o}				\
+   %{!miphoneos-version-min=*:						\
      %:version-compare(!> 10.5 mmacosx-version-min= -ldylib1.o)		\
      %:version-compare(>= 10.5 mmacosx-version-min= -ldylib1.10.5.o)}"
 
 #define DARWIN_CRT1_SPEC						\
-  "%{maspen-version-min=*: -lcrt1.10.5.o}				\
-   %{!maspen-version-min=*:						\
+  "%{miphoneos-version-min=*: -lcrt1.10.5.o}				\
+   %{!miphoneos-version-min=*:						\
      %:version-compare(!> 10.5 mmacosx-version-min= -lcrt1.o)		\
      %:version-compare(>= 10.5 mmacosx-version-min= -lcrt1.10.5.o)}"
 /* APPLE LOCAL end ARM 5683689 */
@@ -816,14 +817,14 @@ do {					\
 	   }								\
 	 /* APPLE LOCAL end radar 2848255 */				\
 	/* APPLE LOCAL begin 5660282 */					\
-	if (darwin_aspen_version_min && flag_objc_gc)			\
+	if (darwin_iphoneos_version_min && flag_objc_gc)		\
 	  {								\
-	    warning ("-fobjc-gc not supported for Aspen; ignoring.");	\
+	    warning ("-fobjc-gc not supported for iPhone OS; ignoring.");\
 	    flag_objc_gc = 0;						\
 	  }								\
-	if (darwin_aspen_version_min && flag_objc_gc_only)		\
+	if (darwin_iphoneos_version_min && flag_objc_gc_only)		\
 	  {								\
-	    warning ("-fobjc-gc-only not supported for Aspen; ignoring.");\
+	    warning ("-fobjc-gc-only not supported for iPhone OS; ignoring.");\
 	    flag_objc_gc_only = 0;					\
 	  }								\
 	/* APPLE LOCAL end 5660282 */					\

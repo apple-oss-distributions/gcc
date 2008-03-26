@@ -445,6 +445,13 @@ static void def_cfa_1 (const char *, dw_cfa_location *);
 #ifndef INCOMING_FRAME_SP_OFFSET
 #define INCOMING_FRAME_SP_OFFSET 0
 #endif
+
+/* APPLE LOCAL begin differentiate between arm & thumb.  */
+#define DW_ISA_UNKNOWN         0
+#define DW_ISA_ARM_thumb       1
+#define DW_ISA_ARM_arm         2
+#define DW_ISA_USE_STMT_LIST  -1
+/* APPLE LOCAL end differentiate between arm & thumb.  */
 
 /* Hook used by __throw.  */
 
@@ -4761,6 +4768,11 @@ dwarf_attr_name (unsigned int attr)
 
     case DW_AT_VMS_rtnbeg_pd_address:
       return "DW_AT_VMS_rtnbeg_pd_address";
+
+    /* APPLE LOCAL begin differentiate between arm & thumb.  */
+    case DW_AT_APPLE_isa:
+      return "DW_AT_APPLE_isa";
+    /* APPLE LOCAL end differentiate between arm & thumb.  */
 
     default:
       return "DW_AT_<unknown>";
@@ -12027,6 +12039,14 @@ gen_subprogram_die (tree decl, dw_die_ref context_die)
   /* Add the calling convention attribute if requested.  */
   add_calling_convention_attribute (subr_die, TREE_TYPE (decl));
 
+  /* APPLE LOCAL begin differentiate between arm & thumb.  */
+#ifdef TARGET_ARM
+  if (TARGET_THUMB)
+    add_AT_int (subr_die, DW_AT_APPLE_isa, DW_ISA_ARM_thumb);
+  else if (TARGET_ARM)
+    add_AT_int  (subr_die, DW_AT_APPLE_isa, DW_ISA_ARM_arm);
+#endif
+  /* APPLE LOCAL end differentiate between arm & thumb.  */
 }
 
 /* Generate a DIE to represent a declared data object.  */

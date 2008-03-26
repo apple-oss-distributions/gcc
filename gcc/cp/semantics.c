@@ -2276,6 +2276,8 @@ note_decl_for_pch (tree decl)
 {
   gcc_assert (pch_file);
 
+/* APPLE LOCAL ARM mainline 5712561 */
+#ifndef TARGET_ARM
   /* A non-template inline function with external linkage will always
      be COMDAT.  As we must eventually determine the linkage of all
      functions, and as that causes writes to the data mapped in from
@@ -2289,6 +2291,8 @@ note_decl_for_pch (tree decl)
       comdat_linkage (decl);
       DECL_INTERFACE_KNOWN (decl) = 1;
     }
+/* APPLE LOCAL ARM mainline 5712561 */
+#endif
   
   /* There's a good chance that we'll have to mangle names at some
      point, even if only for emission in debugging information.  */

@@ -17,11 +17,10 @@ LIB1ASMFUNCS = _udivsi3 _divsi3 _umodsi3 _modsi3 _dvmd_tls _bb_init_func \
 	_switchu8 _switch8 _switch16 _switch32 _flt_rounds
 # APPLE LOCAL end ARM 5526308
 
-MULTILIB_OPTIONS     = march=armv6k
-MULTILIB_DIRNAMES    = v6
+MULTILIB_OPTIONS     =
+MULTILIB_DIRNAMES    =
 MULTILIB_EXCEPTIONS  = 
 MULTILIB_MATCHES     =
-TARGET_LIBGCC2_CFLAGS = -fno-inline
-
-SHLIB_VERPFX = $(srcdir)/config/arm/darwin-libgcc
+TARGET_LIBGCC2_CFLAGS = -fno-inline -march=armv6k
+DARWIN_EXTRA_CRT_BUILD_CFLAGS = -march=armv6k
 

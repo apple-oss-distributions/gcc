@@ -2,7 +2,8 @@
 /* Normally, -Wno-protocol warns if methods declared in protocol not implemented
    in the class implementation. In this case, how ever, property is dynamic and
    no implementation of its setter/getter is required. */
-/* { dg-options "-mmacosx-version-min=10.5 -fobjc-new-property -Wno-protocol" } */
+/* { dg-options "-mmacosx-version-min=10.5 -fobjc-new-property -Wno-protocol" { target powerpc*-*-darwin* i?86*-*-darwin* } } */
+/* { dg-options "-fobjc-new-property -Wno-protocol" { target arm*-*-darwin* } } */
 /* { dg-do compile { target *-*-darwin* } } */
 
 @interface NSObject @end

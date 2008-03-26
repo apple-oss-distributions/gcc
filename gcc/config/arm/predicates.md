@@ -96,6 +96,12 @@
        (match_test "const64_ok_for_arm_add (op)")))
 ;; APPLE LOCAL end ARM 4468410 long long constants
 
+;; APPLE LOCAL begin ARM 5482075 DI mode bitwise constant optimization
+(define_predicate "arm_and_immediate64_operand"
+  (and (match_code "const_int,const_double")
+       (match_test "const64_ok_for_arm_and (op)")))
+
+;; APPLE LOCAL end ARM 5482075 DI mode bitwise constant optimization
 (define_predicate "arm_neg_immediate_operand"
   (and (match_code "const_int")
        (match_test "const_ok_for_arm (-INTVAL (op))")))
@@ -119,6 +125,12 @@
        (match_operand 0 "arm_add_immediate64_operand")))
 ;; APPLE LOCAL end ARM 4468410 long long constants
 
+;; APPLE LOCAL begin ARM 5482075 DI mode bitwise constant optimization
+(define_predicate "arm_and64_operand"
+  (ior (match_operand 0 "s_register_operand")
+       (match_operand 0 "arm_and_immediate64_operand")))
+
+;; APPLE LOCAL end ARM 5482075 DI mode bitwise constant optimization
 (define_predicate "arm_rhsm_operand"
   (ior (match_operand 0 "arm_rhs_operand")
        (match_operand 0 "memory_operand")))
