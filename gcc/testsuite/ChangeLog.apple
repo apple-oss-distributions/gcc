@@ -1,3 +1,28 @@
+2008-04-01  Jon Ziegler <jonz@apple.com>
+
+	Radar 5706927
+	Apply Fariborz's patch from 4.2.
+	* objc.dg/try-catch-15.m: now 32-bit ppc test only
+	* obj-c++.dg/template-4.mm: now 32-bit ppc test only
+	* obj-c++.dg/cxx-ivars-3.mm: 32-bit ppc test only
+	* obj-c++.dg/objc-gc-4.mm: 32-bit ppc test only
+
+2008-03-28  Jim Grosbach <grosbach@apple.com>
+
+	Radar 5819088
+	* gcc.dg/pch/pch.exp: Remove set/unset of MACOSX_DEPLOYMENT_TARGET
+	until 5823211 is addressed.
+
+2008-03-28  Josh Conner  <jconner@apple.com>
+
+	Radar 5820763
+	* gcc.apple/packed-byteswap.c: New test.
+
+2008-03-27  Josh Conner  <jconner@apple.com>
+
+	Radar 5814138
+	* gcc.apple/condexec-1.c: New test.
+
 2008-03-24  Jon Ziegler  <jonz@apple.com>
 
 	Radar 5712367

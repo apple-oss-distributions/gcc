@@ -598,7 +598,8 @@ do {					\
      %:version-compare(>= 10.5 mmacosx-version-min= -ldylib1.10.5.o)}"
 
 #define DARWIN_CRT1_SPEC						\
-  "%{miphoneos-version-min=*: -lcrt1.10.5.o}				\
+/* APPLE LOCAL ARM 5823776 iphoneos should use crt1.o */		\
+  "%{miphoneos-version-min=*: -lcrt1.o}					\
    %{!miphoneos-version-min=*:						\
      %:version-compare(!> 10.5 mmacosx-version-min= -lcrt1.o)		\
      %:version-compare(>= 10.5 mmacosx-version-min= -lcrt1.10.5.o)}"

@@ -610,8 +610,8 @@ cond_exec_process_if_block (ce_if_block_t * ce_info,
 	    }
 	  else
 	    {
-	      t = gen_rtx_AND (GET_MODE (t), true_expr, t);
-	      f = gen_rtx_IOR (GET_MODE (t), false_expr, f);
+	      f = gen_rtx_IOR (GET_MODE (t), true_expr, f);
+	      t = gen_rtx_AND (GET_MODE (t), false_expr, t);
 	    }
 
 	  /* If the machine description needs to modify the tests, such as

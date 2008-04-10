@@ -33,11 +33,6 @@ GCC_4.0.1 {
   __fixunssfsivfp
   __floatsisfvfp
   __floatunssisfvfp
- # Compact switch tables
-  __switchu8
-  __switch8
-  __switch16
-  __switch32
  # Miscellaneous
   __flt_rounds
 }

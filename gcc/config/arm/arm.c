@@ -17177,6 +17177,7 @@ analyze_leg (tree t, int *bitmask, tree *operand, enum machine_mode mode,
    The table-driven code here is intended to handle arbitrary combinations
    of byte movements like the above, provided all the bytes involved
    are handled exactly once each.
+   If a match is found, the result is returned in a register.
    For FSF purposes, this would need to become a target hook. */
 
 rtx look_for_bytemanip (tree t, rtx subtarget)
@@ -17213,7 +17214,9 @@ rtx look_for_bytemanip (tree t, rtx subtarget)
       /* This expression matches REV32.  Now generate RTL. */
       x = expand_expr (operand, subtarget, VOIDmode, 0);
       x = force_reg (SImode, x);
-      return gen_rtx_UNSPEC (mode, gen_rtvec (1, x), UNSPEC_REV32);
+      x = gen_rtx_UNSPEC (mode, gen_rtvec (1, x), UNSPEC_REV32);
+      x = force_reg (SImode, x);
+      return x;
     }
 
   /* Try for a REV64. */
@@ -17227,7 +17230,9 @@ rtx look_for_bytemanip (tree t, rtx subtarget)
       /* This expression matches REV64.  Now generate RTL. */
       x = expand_expr (operand, subtarget, VOIDmode, 0);
       x = force_reg (DImode, x);
-      return gen_rtx_UNSPEC (mode, gen_rtvec (1, x), UNSPEC_REV64);
+      x = gen_rtx_UNSPEC (mode, gen_rtvec (1, x), UNSPEC_REV64);
+      x = force_reg (DImode, x);
+      return x;
     }
 
   /* Try for UXTB16.  Not available on Thumb. */
@@ -17242,12 +17247,14 @@ rtx look_for_bytemanip (tree t, rtx subtarget)
       /* This expression matches UXTB16.  Now generate RTL. */
       x = expand_expr (operand, subtarget, VOIDmode, 0);
       x = force_reg (SImode, x);
-      return gen_rtx_UNSPEC (SImode,
-			    gen_rtvec (2, x, bitmask == 0x3 ? const0_rtx :
-					     bitmask == 0xc ? gen_rtx_CONST_INT (SImode, 8) :
-					     bitmask == 0x30 ? gen_rtx_CONST_INT (SImode, 16) :
+      x = gen_rtx_UNSPEC (SImode,
+			  gen_rtvec (2, x, bitmask == 0x3 ? const0_rtx :
+					   bitmask == 0xc ? gen_rtx_CONST_INT (SImode, 8) :
+					   bitmask == 0x30 ? gen_rtx_CONST_INT (SImode, 16) :
 					   /*bitmask == 0xc0*/ gen_rtx_CONST_INT (SImode, 24)),
-			    UNSPEC_UXTB16);
+			  UNSPEC_UXTB16);
+      x = force_reg (SImode, x);
+      return x;
     }
   /* Not an instruction we recognize. */
   return NULL_RTX;

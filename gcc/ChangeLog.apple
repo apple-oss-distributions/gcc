@@ -1,3 +1,50 @@
+2008-04-10  Josh Conner  <jconner@apple.com>
+
+	Radar 5854251
+	* config/arm/libgcc-iphoneos.ver: Remove __switch* functions.
+
+2008-04-09  Jim Grosbach <grosbach@apple.com>
+
+	Radar 5316398, 5426017 
+	Backport from 4_2 branch
+	* config/arm/t-darwin (LIB2FUNCS_EXTRA, LIB2FUNCS_EXCLUDE): 
+	Override libgcc functions for double/single float to DI 
+	conversion with arm specific versions.
+	* config/arm/_fixdfdi.c: New file. ARM specific __fixdfdi()
+	* config/arm/_fixunsdfdi.c: New file. ARM specific __fixunsdfdi()
+	* config/arm/_fixsfdi.c: New file. ARM specific __fixsfdi()
+	* config/arm/_fixunssfdi.c: New file. ARM specific __fixunssfdi()
+
+2008-03-31  Stuart Hastings  <stuart@apple.com>
+
+	Radar 5814283
+	* gcc/testsuite/gcc.apple/5814283.c: Tweaked to test on x86
+          only.
+
+2008-03-28  Jim Grosbach <grosbach@apple.com>
+
+	Radar 5819088
+	* cfglayout.c (duplicate_insn_chain): Add missing case to 
+	copy NOTE_INSN_ALLOCA notes.
+
+2008-03-28  Jim Grosbach <grosbach@apple.com>
+
+	Radar 5823776
+	* config/darwin.h: Use crt1.o if iphoneos-version-min is
+	specified
+
+2008-03-28  Josh Conner  <jconner@apple.com>
+
+	Radar 5820763
+	* config/arm/arm.c (look_for_bytemanip): Force result into
+	register.
+
+2008-03-27  Josh Conner  <jconner@apple.com>
+
+	Radar 5814138
+	* ifcvt.c (cond_exec_process_if_block): Fix conditions on
+	or_or blocks.
+
 2008-03-26  Stuart Hastings  <stuart@apple.com>
 
 	Radar 5814283
