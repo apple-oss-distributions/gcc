@@ -592,7 +592,7 @@ do {					\
 
 /* APPLE LOCAL begin ARM 5683689 */
 #define DARWIN_DYLIB1_SPEC						\
-  "%{miphoneos-version-min=*: -ldylib1.10.5.o}				\
+  "%{miphoneos-version-min=*: -ldylib1.o}				\
    %{!miphoneos-version-min=*:						\
      %:version-compare(!> 10.5 mmacosx-version-min= -ldylib1.o)		\
      %:version-compare(>= 10.5 mmacosx-version-min= -ldylib1.10.5.o)}"

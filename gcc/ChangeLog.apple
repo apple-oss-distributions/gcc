@@ -1,3 +1,9 @@
+2008-04-15  Josh Conner  <jconner@apple.com>
+
+	Radar 5866711
+	* config/darwin.h (DARWIN_DYLIB1_SPEC): When
+	-miphoneos-version-min is seen, use dylib1.o.
+
 2008-04-10  Josh Conner  <jconner@apple.com>
 
 	Radar 5854251
