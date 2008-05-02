@@ -1,3 +1,9 @@
+2008-05-02  Josh Conner  <jconner@apple.com>
+
+	Radar 5905142
+	* doc/invoke.texi: Add documentation for
+	MACOSX_DEPLOYMENT_TARGET and IPHONEOS_DEPLOYMENT_TARGET.
+
 2008-04-15  Josh Conner  <jconner@apple.com>
 
 	Radar 5866711

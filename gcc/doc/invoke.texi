@@ -543,10 +543,12 @@ Objective-C and Objective-C++ Dialects}.
 -single_module  -static  -sub_library  -sub_umbrella @gol
 -twolevel_namespace  -umbrella  -undefined @gol
 -unexported_symbols_list  -weak_reference_mismatches @gol
-@c APPLE LOCAL begin mainline
+@c APPLE LOCAL mainline
 -whatsloaded -F -gused -gfull -mmacosx-version-min=@var{version} @gol
+@c APPLE LOCAL ARM 5905142
+-miphoneos-version-min=@var{version} @gol
+@c APPLE LOCAL mainline
 -mkernel -mone-byte-bool @gol
-@c APPLE LOCAL end mainline
 @c APPLE LOCAL fat builds
 -Xarch_@var{arch}}
 
@@ -8241,12 +8243,35 @@ is @var{version}.  Typical values of @var{version} include @code{10.1},
 @code{10.2}, and @code{10.3.9}.
 
 @c APPLE LOCAL end mainline 2005-09-01 3449986
+@c APPLE LOCAL begin ARM 5905142
+This value can also be set with the @env{MACOSX_DEPLOYMENT_TARGET}
+environment variable.  If both the command-line option is specified
+and the environment variable is set, the command-line option will
+take precedence.
+
+@c APPLE LOCAL end ARM 5905142
 @c APPLE LOCAL begin 4697325
 If the compiler was built to use the system's headers by default,
 then the default for this option is the system version on which the
 compiler is running, otherwise the default is to make choices which
 are compatible with as many systems and code bases as possible.
 @c APPLE LOCAL end 4697325
+
+@c APPLE LOCAL begin ARM 5905142
+This value is not set by default for ARM targets.
+
+@item -miphoneos-version-min=@var{version}
+The earliest version of iPhone OS that this executable will run on
+is @var{version}.
+
+This value can also be set with the @env{IPHONEOS_DEPLOYMENT_TARGET}
+environment variable.  If both the command-line option is specified
+and the environment variable is set, the command-line option will
+take precedence.
+
+On ARM targets, if not specified by the command-line option or
+environment variable, this value defaults to 2.0.
+@c APPLE LOCAL end ARM 5905142
 
 @c APPLE LOCAL begin mainline 4468818
 @item -mkernel
@@ -13621,6 +13646,21 @@ Recognize EUCJP characters.
 If @env{LANG} is not defined, or if it has some other value, then the
 compiler will use mblen and mbtowc as defined by the default locale to
 recognize and translate multibyte characters.
+
+@c APPLE LOCAL begin ARM 5905142
+@item MACOSX_DEPLOYMENT_TARGET
+@itemx IPHONEOS_DEPLOYMENT_TARGET
+These variables are used to set the target OS version, as described
+for command-line options @option{-mmacosx-version-min} and
+@option{-miphoneos-version-min}.  Only one OS version can be specified
+per architecture, with @env{MACOSX_DEPLOYMENT_TARGET} taking precedence
+on non-ARM targets and @env{IPHONEOS_DEPLOYMENT_TARGET} taking
+precedence on ARM targets.
+
+If either command-line option @option{-mmacosx-version-min} or
+@option{-miphoneos-version-min} is specified, both of these
+environment variables are ignored.
+@c APPLE LOCAL end ARM 5905142
 @end table
 
 @noindent
