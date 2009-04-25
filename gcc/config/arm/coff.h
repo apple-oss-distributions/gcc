@@ -1,6 +1,6 @@
 /* Definitions of target machine for GNU compiler.
    For ARM with COFF object format.
-   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2002, 2003, 2004
+   Copyright (C) 1995, 1996, 1997, 1998, 1999, 2000, 2002, 2003, 2004, 2005
    Free Software Foundation, Inc.
    Contributed by Doug Evans (devans@cygnus.com).
    
@@ -18,8 +18,8 @@
 
    You should have received a copy of the GNU General Public License
    along with GCC; see the file COPYING.  If not, write to
-   the Free Software Foundation, 59 Temple Place - Suite 330,
-   Boston, MA 02111-1307, USA.  */
+   the Free Software Foundation, 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.  */
 
 /* Note - it is important that this definition matches the one in tcoff.h.  */
 #undef  USER_LABEL_PREFIX
@@ -34,7 +34,7 @@
 #define TARGET_DEFAULT_FLOAT_ABI ARM_FLOAT_ABI_SOFT
 
 #undef  TARGET_DEFAULT
-#define TARGET_DEFAULT (ARM_FLAG_APCS_FRAME)
+#define TARGET_DEFAULT (MASK_APCS_FRAME)
 
 #ifndef MULTILIB_DEFAULTS
 #define MULTILIB_DEFAULTS \
@@ -59,9 +59,12 @@
 /* Define this macro if jump tables (for `tablejump' insns) should be
    output in the text section, along with the assembler instructions.
    Otherwise, the readonly data section is used.  */
-/* We put ARM jump tables in the text section, because it makes the code
-   more efficient, but for Thumb it's better to put them out of band.  */
-#define JUMP_TABLES_IN_TEXT_SECTION (TARGET_ARM)
+/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
+/* We put ARM and Thumb-2 jump tables in the text section, because it makes
+   the code more efficient, but for Thumb-1 it's better to put them out of
+   band.  */
+#define JUMP_TABLES_IN_TEXT_SECTION (TARGET_32BIT)
+/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
 
 #undef  READONLY_DATA_SECTION_ASM_OP
 #define READONLY_DATA_SECTION_ASM_OP	"\t.section .rdata"

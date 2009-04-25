@@ -1,4 +1,3 @@
-/* APPLE LOCAL file mainline */
 /* bf-ms-layout.c */
 
 /* Test for MS bitfield layout */

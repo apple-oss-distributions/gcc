@@ -18,8 +18,8 @@
 
    You should have received a copy of the GNU General Public License
    along with GCC; see the file COPYING.  If not, write to
-   the Free Software Foundation, 59 Temple Place - Suite 330,
-   Boston, MA 02111-1307, USA.  */
+   the Free Software Foundation, 51 Franklin Street, Fifth Floor,
+   Boston, MA 02110-1301, USA.  */
    
 
 
@@ -43,48 +43,6 @@
 #endif
 
 #define LIBGCC_SPEC "libgcc.a%s"
-
-/* Dividing the Output into Sections (Text, Data, ...) */
-/* AOF Assembler syntax is a nightmare when it comes to areas, since once
-   we change from one area to another, we can't go back again.  Instead,
-   we must create a new area with the same attributes and add the new output
-   to that.  Unfortunately, there is nothing we can do here to guarantee that
-   two areas with the same attributes will be linked adjacently in the
-   resulting executable, so we have to be careful not to do pc-relative 
-   addressing across such boundaries.  */
-#define TEXT_SECTION_ASM_OP aof_text_section ()
-
-#define DATA_SECTION_ASM_OP aof_data_section ()
-
-#define EXTRA_SECTIONS in_zero_init, in_common
-
-#define EXTRA_SECTION_FUNCTIONS	\
-  ZERO_INIT_SECTION		\
-  COMMON_SECTION
-
-#define ZERO_INIT_SECTION					\
-  void								\
-  zero_init_section ()						\
-  {								\
-    static int zero_init_count = 1;				\
-								\
-    if (in_section != in_zero_init)				\
-      {								\
-        fprintf (asm_out_file, "\tAREA |C$$zidata%d|,NOINIT\n",	\
-	         zero_init_count++);				\
-        in_section = in_zero_init;				\
-      }								\
-  }
-
-/* Used by ASM_OUTPUT_COMMON (below) to tell varasm.c that we've
-   changed areas.  */
-#define COMMON_SECTION						\
-  void								\
-  common_section ()						\
-  {								\
-    if (in_section != in_common)				\
-      in_section = in_common;					\
-  }
 
 #define CTOR_LIST_BEGIN				\
   asm (CTORS_SECTION_ASM_OP);			\
@@ -130,6 +88,8 @@
    whole table generation until the end of the function.  */
 #define JUMP_TABLES_IN_TEXT_SECTION 1
 
+#define TARGET_ASM_INIT_SECTIONS aof_asm_init_sections
+
 /* Some systems use __main in a way incompatible with its use in gcc, in these
    cases use the macros NAME__MAIN to give a quoted symbol and SYMBOL__MAIN to
    give the same symbol without quotes for an alternative entry point.  You
@@ -159,7 +119,7 @@
 /* Output of Uninitialized Variables.  */
 
 #define ASM_OUTPUT_COMMON(STREAM, NAME, SIZE, ROUNDED)		\
-  (common_section (),						\
+  (in_section = NULL,						\
    fprintf ((STREAM), "\tAREA "),				\
    assemble_name ((STREAM), (NAME)),				\
    fprintf ((STREAM), ", DATA, COMMON\n\t%% %d\t%s size=%d\n",	\
@@ -227,7 +187,12 @@ do {					\
 #define CTORS_SECTION_ASM_OP "\tAREA\t|C$$gnu_ctorsvec|, DATA, READONLY"
 #define DTORS_SECTION_ASM_OP "\tAREA\t|C$$gnu_dtorsvec|, DATA, READONLY"
 
-/* Output of Assembler Instructions.  */
+/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
+/* Output of Assembler Instructions.  Note that the ?xx registers are
+   there so that VFPv3/NEON registers D16-D31 have the same spacing as D0-D15
+   (each of which is overlaid on two S registers), although there are no
+   actual single-precision registers which correspond to D16-D31.  */
+/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
 
 #define REGISTER_NAMES				\
 {						\
@@ -250,8 +215,14 @@ do {					\
   "s0",  "s1",  "s2",  "s3",  "s4",  "s5",  "s6",  "s7",  \
   "s8",  "s9",  "s10", "s11", "s12", "s13", "s14", "s15", \
   "s16", "s17", "s18", "s19", "s20", "s21", "s22", "s23", \
-  "s24", "s25", "s26", "s27", "s28", "s29", "s30", "s31",  \
-  "vfpcc"
+/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
+  "s24", "s25", "s26", "s27", "s28", "s29", "s30", "s31", \
+  "d16", "?16", "d17", "?17", "d18", "?18", "d19", "?19", \
+  "d20", "?20", "d21", "?21", "d22", "?22", "d23", "?23", \
+  "d24", "?24", "d25", "?25", "d26", "?26", "d27", "?27", \
+  "d28", "?28", "d29", "?29", "d30", "?30", "d31", "?31", \
+/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
+  "vfpcc"					\
 }
 
 #define ADDITIONAL_REGISTER_NAMES		\
@@ -271,23 +242,33 @@ do {					\
   {"r12", 12}, {"ip", 12}, 			\
   {"r13", 13}, {"sp", 13}, 			\
   {"r14", 14}, {"lr", 14},			\
-  {"r15", 15}, {"pc", 15}			\
-  {"d0", 63},					\
+  {"r15", 15}, {"pc", 15},			\
+  /* ALQAAHIRA LOCAL begin v7 support. Merge from Codesourcery */
+  {"d0", 63}, {"q0", 63},			\
   {"d1", 65},					\
-  {"d2", 67},					\
+  {"d2", 67}, {"q1", 67},			\
   {"d3", 69},					\
-  {"d4", 71},					\
+  {"d4", 71}, {"q2", 71},			\
   {"d5", 73},					\
-  {"d6", 75},					\
+  {"d6", 75}, {"q3", 75},			\
   {"d7", 77},					\
-  {"d8", 79},					\
+  {"d8", 79}, {"q4", 79},			\
   {"d9", 81},					\
-  {"d10", 83},					\
+  {"d10", 83}, {"q5", 83},			\
   {"d11", 85},					\
-  {"d12", 87},					\
+  {"d12", 87}, {"q6", 87},			\
   {"d13", 89},					\
-  {"d14", 91},					\
+  {"d14", 91}, {"q7", 91},			\
   {"d15", 93},					\
+  {"q8", 95},					\
+  {"q9", 99},					\
+  {"q10", 103},					\
+  {"q11", 107},					\
+  {"q12", 111},					\
+  {"q13", 115},					\
+  {"q14", 119},					\
+  {"q15", 123}					\
+  /* ALQAAHIRA LOCAL end v7 support. Merge from Codesourcery */
 }
 
 #define REGISTER_PREFIX "__"
@@ -298,18 +279,49 @@ do {					\
 #define ARM_MCOUNT_NAME "_mcount"
 
 /* Output of Dispatch Tables.  */
-#define ASM_OUTPUT_ADDR_DIFF_ELT(STREAM, BODY, VALUE, REL)			\
-  do										\
-    {										\
-      if (TARGET_ARM)								\
-        fprintf ((STREAM), "\tb\t|L..%d|\n", (VALUE));				\
-      else									\
-        fprintf ((STREAM), "\tDCD\t|L..%d| - |L..%d|\n", (VALUE), (REL));	\
-    }										\
+/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
+#define ASM_OUTPUT_ADDR_DIFF_ELT(STREAM, BODY, VALUE, REL)		\
+  do									\
+    {									\
+      if (TARGET_ARM)							\
+        fprintf ((STREAM), "\tb\t|L..%d|\n", (VALUE));			\
+      else if (TARGET_THUMB1)						\
+        fprintf ((STREAM), "\tDCD\t|L..%d| - |L..%d|\n", (VALUE), (REL)); \
+      else /* Thumb-2 */						\
+	{								\
+	  switch (GET_MODE(body))					\
+	    {								\
+	    case QImode: /* TBB */					\
+	      asm_fprintf (STREAM, "\tDCB\t(|L..%d| - |L..%d|)/2\n",	\
+			   VALUE, REL);					\
+	      break;							\
+	    case HImode: /* TBH */					\
+	      asm_fprintf (STREAM, "\tDCW\t|L..%d| - |L..%d|)/2\n",	\
+			   VALUE, REL);					\
+	      break;							\
+	    case SImode:						\
+	      if (flag_pic)						\
+		asm_fprintf (STREAM, "\tDCD\t|L..%d| + 1 - |L..%d|\n",	\
+			     VALUE, REL);				\
+	      else							\
+		asm_fprintf (STREAM, "\tDCD\t|L..%d| + 1\n", VALUE);	\
+	      break;							\
+	    default:							\
+	      gcc_unreachable();					\
+	    }								\
+	}								\
+    }									\
   while (0)
 
-#define ASM_OUTPUT_ADDR_VEC_ELT(STREAM, VALUE)	\
-  fprintf ((STREAM), "\tDCD\t|L..%d|\n", (VALUE))
+#define ASM_OUTPUT_ADDR_VEC_ELT(STREAM, VALUE)			\
+  do								\
+    {								\
+      gcc_assert (!TARGET_THUMB2)				\
+      fprintf ((STREAM), "\tDCD\t|L..%d|\n", (VALUE))		\
+    }								\
+  while (0)
+
+/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
 
 /* A label marking the start of a jump table is a data label.  */
 #define ASM_OUTPUT_CASE_LABEL(STREAM, PREFIX, NUM, TABLE)	\

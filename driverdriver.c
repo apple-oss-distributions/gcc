@@ -38,7 +38,9 @@ Software Foundation, 59 Temple Place - Suite 330, Boston, MA
 /* Hack!.
    Pay the price for including darwin.h.  */
 typedef int tree;
+typedef int rtx;
 #define GTY(x) /* nothing */
+#define USED_FOR_TARGET 1
 /* Include darwin.h for SWITCH_TAKES_ARG and
    WORD_SWIATCH_TAKES_ARG. */
 
@@ -117,13 +119,13 @@ struct arch_config_guess_map arch_config_map [] =
   {"i386", "i686"},
   {"ppc", "powerpc"},
   {"ppc64", "powerpc"},
-  /* APPLE LOCAL x86_64 support 2006-02-02 */
   {"x86_64", "i686"},
   {"arm", "arm"},
   {"armv4t", "arm"},
   {"armv5", "arm"},
   {"xscale", "arm"},
   {"armv6", "arm"},
+  {"armv7", "arm"},
   {NULL, NULL}
 };
 
@@ -170,11 +172,12 @@ static char * strip_path_and_suffix (const char *, const char *);
 static void initialize (void);
 static void final_cleanup (void);
 static int do_wait (int, const char *);
-static int do_lipo (int, const char *);
-static int do_compile (const char **, int);
-static int do_compile_separately (void);
-static int do_lipo_separately (void);
-static int filter_args_for_arch (const char **, int, const char **, const char *);
+static void do_lipo (int, const char *);
+static void do_compile (const char **, int);
+static void do_compile_separately (void);
+static void do_lipo_separately (void);
+static int filter_args_for_arch (const char **, int, const char **,
+				 const char *);
 static int add_arch_options (int, const char **, int);
 static int remove_arch_options (const char**, int);
 static void add_arch (const char *);
@@ -322,7 +325,7 @@ pfatal_pexecute (const char *errmsg_fmt, const char *errmsg_arg)
       errno = save_errno;
     }
 
-  fprintf (stderr,"%s: %s: %s", progname, errmsg_fmt, xstrerror (errno));
+  fprintf (stderr,"%s: %s: %s\n", progname, errmsg_fmt, xstrerror (errno));
   delete_out_files ();
   exit (1);
 }
@@ -498,7 +501,7 @@ do_wait (int pid, const char *prog)
 
 /* Invoke 'lipo' and combine and all output files.  */
 
-static int
+static void
 do_lipo (int start_outfile_index, const char *out_file)
 {
   int i, j, pid;
@@ -529,22 +532,21 @@ do_lipo (int start_outfile_index, const char *out_file)
       fprintf (stderr, "\n");
     }
   pid = pexecute (lipo_argv[0], (char *const *)lipo_argv, progname, NULL, &errmsg_fmt,
-		  &errmsg_arg, PEXECUTE_SEARCH | PEXECUTE_LAST);
+		  &errmsg_arg, PEXECUTE_SEARCH | PEXECUTE_ONE);
 
   if (pid == -1)
     pfatal_pexecute (errmsg_fmt, errmsg_arg);
 
-  return do_wait (pid, lipo_argv[0]);
+  do_wait (pid, lipo_argv[0]);
 }
 
 /* Invoke compiler for all architectures.  */
 
-static int
+static void
 do_compile (const char **current_argv, int current_argc)
 {
   char *errmsg_fmt, *errmsg_arg;
   int index = 0;
-  int ret = 0;
 
   int dash_o_index = current_argc;
   int of_index = current_argc + 1;
@@ -592,10 +594,13 @@ do_compile (const char **current_argv, int current_argc)
 				      progname, NULL,
 				      &errmsg_fmt,
 				      &errmsg_arg,
-				      PEXECUTE_SEARCH | PEXECUTE_LAST);
+				      PEXECUTE_SEARCH | PEXECUTE_ONE);
 
       if (commands[index].pid == -1)
 	pfatal_pexecute (errmsg_fmt, errmsg_arg);
+
+      do_wait (commands[index].pid, commands[index].prog);
+      fflush (stdout);
 
       /* Remove the last arch option added in the current_argv list.  */
       if (additional_arch_options)
@@ -603,21 +608,12 @@ do_compile (const char **current_argv, int current_argc)
       index++;
       free (arch_specific_argv);
     }
-
-  index = 0;
-  while (index < num_arches)
-    {
-      ret = do_wait (commands[index].pid, commands[index].prog);
-      fflush (stdout);
-      index++;
-    }
-  return ret;
 }
 
 /* Invoke compiler for each input file separately.
    Construct command line for each invocation with one input file.  */
 
-static int
+static void
 do_compile_separately (void)
 {
   const char **new_new_argv;
@@ -640,6 +636,7 @@ do_compile_separately (void)
       struct input_filename *ifn = in_files;
       int go_back = 0;
       new_new_argc = 1;
+      bool ifn_found = false;
 
       for (i = 1; i < new_argc; i++)
 	{
@@ -650,11 +647,15 @@ do_compile_separately (void)
 
  	      if (!strcmp (new_argv[i], current_ifn->name))
 		{
+		  if (ifn_found)
+		    fatal ("file %s specified more than once on the command line", current_ifn->name);
+
 		  /* If it is current input file name then add it in the new
 		     list.  */
 		  new_new_argv[new_new_argc] = new_argv[i];
 		  arch_conditional[new_new_argc] = arch_conditional[i];
 		  new_new_argc++;
+		  ifn_found = true;
 		}
 	      /* This input file can  not appear in
 		 again on the command line so next time look for next input
@@ -678,7 +679,7 @@ do_compile_separately (void)
 
 /* Invoke 'lipo' on set of output files and create multile FAT binaries.  */
 
-static int
+static void
 do_lipo_separately (void)
 {
   int ifn_index;
@@ -716,7 +717,6 @@ filter_args_for_arch (const char **orig_argv, int orig_argc,
 static int
 add_arch_options (int index, const char **current_argv, int arch_index)
 {
-
   int count;
 
   /* We are adding 1 argument for selected arches.  */
@@ -758,10 +758,8 @@ add_arch_options (int index, const char **current_argv, int arch_index)
     current_argv[arch_index] = "-march=pentiumpro";
   else if (!strcmp (arches[index], "pentIIm3"))
     current_argv[arch_index] = "-march=pentium2";
-  /* APPLE LOCAL begin x86_64 support 2006-02-02 */
   else if (!strcmp (arches[index], "x86_64"))
     current_argv[arch_index] = "-m64";
-  /* APPLE LOCAL end x86_64 support 2006-02-02 */
   else if (!strcmp (arches[index], "arm"))
     current_argv[arch_index] = "-march=armv4t";
   else if (!strcmp (arches[index], "armv4t"))
@@ -772,6 +770,8 @@ add_arch_options (int index, const char **current_argv, int arch_index)
     current_argv[arch_index] = "-march=xscale";
   else if (!strcmp (arches[index], "armv6"))
     current_argv[arch_index] = "-march=armv6k";
+  else if (!strcmp (arches[index], "armv7"))
+    current_argv[arch_index] = "-march=armv7a";
   else
     count = 0;
 
@@ -1264,7 +1264,7 @@ int
 main (int argc, const char **argv)
 {
   size_t i;
-  int l, pid, ret, argv_0_len, prog_len;
+  int l, pid, argv_0_len, prog_len;
   char *errmsg_fmt, *errmsg_arg;
   char *override_option_str = NULL;
   char path_buffer[2*PATH_MAX+1];
@@ -1385,7 +1385,7 @@ main (int argc, const char **argv)
       else if (!strcmp (argv[i], "-o"))
 	{
 	  if (i + 1 >= argc)
-	    abort ();
+	    fatal ("argument to '-o' is missing");
 
 	  output_filename = argv[i+1];
 	  i++;
@@ -1550,23 +1550,24 @@ main (int argc, const char **argv)
       new_argv[new_argc] = NULL;
 
       arch_specific_argv =
-	  (const char **) malloc ((new_argc + 1) * sizeof (const char *));
+	(const char **) malloc ((new_argc + 1) * sizeof (const char *));
       arch_specific_argc = filter_args_for_arch (new_argv,
 						 new_argc,
 						 arch_specific_argv,
 						 get_arch_name (arches[0]));
+
 #ifdef DEBUG
       debug_command_line (arch_specific_argv, arch_specific_argc);
 #endif
 
       pid = pexecute (arch_specific_argv[0], (char *const *)arch_specific_argv,
 		      progname, NULL, &errmsg_fmt, &errmsg_arg,
-		      PEXECUTE_SEARCH | PEXECUTE_LAST);
+		      PEXECUTE_SEARCH | PEXECUTE_ONE);
 
       if (pid == -1)
 	pfatal_pexecute (errmsg_fmt, errmsg_arg);
 
-      ret = do_wait (pid, arch_specific_argv[0]);
+      do_wait (pid, arch_specific_argv[0]);
     }
   else
     {
@@ -1608,18 +1609,18 @@ main (int argc, const char **argv)
 	    }
 
 	  /* Compile file(s) for each arch and lipo 'em together.  */
-	  ret = do_compile (new_argv, new_argc);
+	  do_compile (new_argv, new_argc);
 
 	  /* Make FAT binary by combining individual output files for each
 	     architecture, using 'lipo'.  */
-	  ret = do_lipo (0, out_file);
+	  do_lipo (0, out_file);
 	}
       else
 	{
 	  /* Multiple input files are present and IMA is not used.
 	     Which means need to generate multiple FAT files.  */
-	  ret = do_compile_separately ();
-	  ret = do_lipo_separately ();
+	  do_compile_separately ();
+	  do_lipo_separately ();
 	}
     }
 

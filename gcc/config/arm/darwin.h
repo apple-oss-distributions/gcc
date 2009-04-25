@@ -1,17 +1,12 @@
 /* APPLE LOCAL file ARM darwin target */
 
+/* Size of the Obj-C jump buffer.  */
+#define OBJC_JBLEN 28
+
 #define SUBTARGET_CPU_DEFAULT arm920
 
 #undef SUBTARGET_EXTRA_ASM_SPEC
 #define SUBTARGET_EXTRA_ASM_SPEC ""
-
-#define rs6000_alignment_flags target_flags
-#define MASK_ALIGN_MAC68K       (1 << 30)
-#define TARGET_ALIGN_MAC68K     (target_flags & MASK_ALIGN_MAC68K)
-#define MASK_ALIGN_NATURAL	(1 << 29)
-#define TARGET_ALIGN_NATURAL	(target_flags & MASK_ALIGN_NATURAL)
-#define MASK_MACHO_DYNAMIC_NO_PIC (1 << 28)
-#define TARGET_DYNAMIC_NO_PIC	(target_flags & MASK_MACHO_DYNAMIC_NO_PIC)
 
 #define DEFAULT_TARGET_ARCH "arm"
 
@@ -40,7 +35,8 @@
 %{!fbuiltin-strcat:-fno-builtin-strcat} \
 %{!fbuiltin-strcpy:-fno-builtin-strcpy} \
 %<fbuiltin-strcat \
-%<fbuiltin-strcpy"
+%<fbuiltin-strcpy \
+%<pg"
 
 #undef LIB_SPEC
 #define LIB_SPEC "%{!static:-lSystem}"
@@ -52,7 +48,9 @@
 
 #define REGISTER_PREFIX 	""
 
-/* The assembler's names for the registers.  */
+/* The assembler's names for the registers.  Note that the ?xx registers are * there so that VFPv3/NEON registers D16-D31 have the same spacing as D0-D15
+ * (each of which is overlaid on two S registers), although there are no
+ * actual single-precision registers which correspond to D16-D31.  */
 #ifndef REGISTER_NAMES
 #define REGISTER_NAMES				   \
 {				                   \
@@ -73,6 +71,10 @@
   "s8",  "s9",  "s10", "s11", "s12", "s13", "s14", "s15", \
   "s16", "s17", "s18", "s19", "s20", "s21", "s22", "s23", \
   "s24", "s25", "s26", "s27", "s28", "s29", "s30", "s31", \
+  "d16", "?16", "d17", "?17", "d18", "?18", "d19", "?19", \
+  "d20", "?20", "d21", "?21", "d22", "?22", "d23", "?23", \
+  "d24", "?24", "d25", "?25", "d26", "?26", "d27", "?27", \
+  "d28", "?28", "d29", "?29", "d30", "?30", "d31", "?31", \
   "vfpcc"					   \
 }
 #endif
@@ -162,22 +164,30 @@
   {"mvdx13", 40},				\
   {"mvdx14", 41},				\
   {"mvdx15", 42},				\
-  {"d0", 63},					\
-  {"d1", 65},					\
-  {"d2", 67},					\
-  {"d3", 69},					\
-  {"d4", 71},					\
-  {"d5", 73},					\
-  {"d6", 75},					\
-  {"d7", 77},					\
-  {"d8", 79},					\
-  {"d9", 81},					\
-  {"d10", 83},					\
-  {"d11", 85},					\
-  {"d12", 87},					\
-  {"d13", 89},					\
-  {"d14", 91},					\
-  {"d15", 93},					\
+  {"d0", 63}, {"q0", 63},                       \
+  {"d1", 65},                                   \
+  {"d2", 67}, {"q1", 67},                       \
+  {"d3", 69},                                   \
+  {"d4", 71}, {"q2", 71},                       \
+  {"d5", 73},                                   \
+  {"d6", 75}, {"q3", 75},                       \
+  {"d7", 77},                                   \
+  {"d8", 79}, {"q4", 79},                       \
+  {"d9", 81},                                   \
+  {"d10", 83}, {"q5", 83},                      \
+  {"d11", 85},                                  \
+  {"d12", 87}, {"q6", 87},                      \
+  {"d13", 89},                                  \
+  {"d14", 91}, {"q7", 91},                      \
+  {"d15", 93},                                  \
+  {"q8", 95},                                   \
+  {"q9", 99},                                   \
+  {"q10", 103},                                 \
+  {"q11", 107},                                 \
+  {"q12", 111},                                 \
+  {"q13", 115},                                 \
+  {"q14", 119},                                 \
+  {"q15", 123}                                  \
 }
 #endif
 
@@ -200,6 +210,13 @@
    march=armv5tej:armv5;			\
    march=xscale:xscale;				\
    march=armv4t:armv4t;				\
+   march=armv7:armv7;                           \
+   march=armv7-a:armv7;                         \
+   march=armv7-r:armv7;                         \
+   march=armv7-m:armv7;                         \
+   march=armv7a:armv7;                          \
+   march=armv7r:armv7;                          \
+   march=armv7m:armv7;                          \
    mcpu=arm10tdmi:armv5;			\
    mcpu=arm1020t:armv5;				\
    mcpu=arm9e:armv5;				\
@@ -216,9 +233,12 @@
    mcpu=arm1136jf-s:armv6;			\
    mcpu=arm1176jz-s:armv6;			\
    mcpu=arm1176jzf-s:armv6;			\
+   mcpu=cortex-a8:armv7;			\
+   mcpu=cortex-r4:armv7;			\
+   mcpu=cortex-m3:armv7;			\
    :arm -force_cpusubtype_ALL}"
 
-#define DARWIN_MINVERSION_SPEC "2.0"
+#define DARWIN_MINVERSION_SPEC "3.0"
 
 /* Default cc1 option for specifying minimum version number.  */
 #define DARWIN_CC1_MINVERSION_SPEC "-miphoneos-version-min=%(darwin_minversion)"
@@ -227,7 +247,7 @@
 #define DARWIN_LD_MINVERSION_SPEC "-iphoneos_version_min %(darwin_minversion)"
 
 /* Use iPhone OS version numbers by default.  */
-#define DARWIN_DEFAULT_VERSION_TYPE DARWIN_VERSION_IPHONEOS
+#define DARWIN_DEFAULT_VERSION_TYPE  DARWIN_VERSION_IPHONEOS
 
 #define DARWIN_IPHONEOS_LIBGCC_SPEC "-lgcc_s.1 -lgcc"
 
@@ -235,52 +255,48 @@
 #define SUBTARGET_EXTRA_SPECS			\
   DARWIN_EXTRA_SPECS				\
   { "darwin_arch", DARWIN_SUBARCH_SPEC },	\
-  { "darwin_subarch", DARWIN_SUBARCH_SPEC },
+  { "darwin_subarch", DARWIN_SUBARCH_SPEC }
 
 /* This can go away once we can feature test the assembler correctly.  */
 #define ASM_DEBUG_SPEC ""
-
-#undef	SUBTARGET_SWITCHES
-#define SUBTARGET_SWITCHES						\
-  {"dynamic-no-pic",	MASK_MACHO_DYNAMIC_NO_PIC,			\
-      N_("Generate code suitable for executables (NOT shared libs)")},	\
-  {"no-dynamic-no-pic",	-MASK_MACHO_DYNAMIC_NO_PIC, ""},
 
 #define SUBTARGET_OVERRIDE_OPTIONS					\
 do {									\
   if (1)								\
   {									\
     if (!darwin_macosx_version_min && !darwin_iphoneos_version_min)	\
-      darwin_iphoneos_version_min = "2.0";				\
+      darwin_iphoneos_version_min = "3.0";				\
     if (MACHO_DYNAMIC_NO_PIC_P)						\
       {									\
         if (flag_pic)							\
-            warning ("-mdynamic-no-pic overrides -fpic or -fPIC");	\
+            warning (0, "-mdynamic-no-pic overrides -fpic or -fPIC");	\
         flag_pic = 0;							\
       }									\
     else if (flag_pic == 1)						\
       {									\
         /* Darwin doesn't support -fpic.  */				\
-        warning ("-fpic is not supported; -fPIC assumed");		\
+        warning (0, "-fpic is not supported; -fPIC assumed");		\
         flag_pic = 2;							\
       }									\
+    /* Remove when ld64 generates stubs for us. */			\
+    darwin_stubs = true;						\
+    if (profile_flag)							\
+      error ("function profiling not supported on this target");	\
+    /* Use -mlongcalls for kexts */					\
+    if (flag_mkernel || flag_apple_kext)				\
+      target_flags |= MASK_LONG_CALLS;					\
+    /* GCC 4.2+ only works with SDK 3.0+ */				\
+    if (darwin_iphoneos_version_min &&					\
+        strverscmp (darwin_iphoneos_version_min, "3.0") < 0)		\
+      darwin_reserve_r9_on_v6 = 1;					\
   }									\
 } while(0)
 
-/* We reserve r9 on darwin for thread local data.  */
+/* ALQAAHIRA LOCAL begin 5571707 Allow R9 as caller-saved register */
 #undef SUBTARGET_CONDITIONAL_REGISTER_USAGE
 #define SUBTARGET_CONDITIONAL_REGISTER_USAGE			\
-  if (1)							\
-    {								\
-      fixed_regs[9]     = 1;					\
-      call_used_regs[9] = 1;					\
-    }								\
-  if (TARGET_THUMB)						\
-    {								\
-      fixed_regs[THUMB_HARD_FRAME_POINTER_REGNUM] = 1;		\
-      call_used_regs[THUMB_HARD_FRAME_POINTER_REGNUM] = 1;	\
-      global_regs[THUMB_HARD_FRAME_POINTER_REGNUM] = 1;		\
-    }
+  arm_darwin_subtarget_conditional_register_usage();
+/* ALQAAHIRA LOCAL end 5571707 Allow R9 as caller-saved register */
 
 #undef TARGET_MACHO
 #define TARGET_MACHO 1
@@ -307,16 +323,13 @@ do {									\
 #undef SUBTARGET_ASM_DECLARE_FUNCTION_NAME
 #define SUBTARGET_ASM_DECLARE_FUNCTION_NAME ARM_DECLARE_FUNCTION_NAME
 
-/* We default to VFP */
-#define FPUTYPE_DEFAULT FPUTYPE_VFP
+/* ALQAAHIRA LOCAL begin 6093388 -mfpu=neon default for v7a */
+/* We default to VFP for v6, NEON for v7 */
+#define FPUTYPE_DEFAULT (arm_arch7a ? FPUTYPE_NEON : FPUTYPE_VFP)
 
 #undef TARGET_DEFAULT_FLOAT_ABI
-#define TARGET_DEFAULT_FLOAT_ABI (arm_arch6 ? ARM_FLOAT_ABI_SOFTFP : ARM_FLOAT_ABI_SOFT)
-
-/* Define this to change the optimizations performed by default.  */
-#define OPTIMIZATION_OPTIONS(LEVEL, SIZE) \
-  optimization_options ((LEVEL), (SIZE))
-
+#define TARGET_DEFAULT_FLOAT_ABI ((arm_arch6 || arm_arch7a) ? ARM_FLOAT_ABI_SOFTFP : ARM_FLOAT_ABI_SOFT)
+/* ALQAAHIRA LOCAL end 6093388 -mfpu=neon default for v7a */
 #undef REGISTER_TARGET_PRAGMAS
 #define REGISTER_TARGET_PRAGMAS DARWIN_REGISTER_TARGET_PRAGMAS
 
@@ -357,11 +370,12 @@ do {									\
 #undef MAX_CONDITIONAL_EXECUTE
 #define MAX_CONDITIONAL_EXECUTE	(optimize_size ? INT_MAX : (BRANCH_COST + 1))
 
-/* APPLE LOCAL KEXT */
-#define TARGET_SUPPORTS_KEXTABI1 1
+#undef TARGET_IASM_OP_CONSTRAINT
+#define TARGET_IASM_OP_CONSTRAINT	\
+  { "ldr", 2, "m" },
 
 #define OBJC_TARGET_FLAG_OBJC_ABI		\
-  do { 						\
+  do {						\
     if (flag_objc_abi == -1)			\
       flag_objc_abi = 2;			\
     if (flag_objc_legacy_dispatch == -1)	\

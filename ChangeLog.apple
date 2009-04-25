@@ -1,8 +1,100 @@
-2008-10-24  Mike Stump  <mrs@apple.com>
+2009-02-25  Jim Grosbach <grosbach@apple.com>
 
-	Radar 6310626
-	* configure.in (tentative_cc): Force initial x86 Darwin
-          compiler to be built -m32.
+	Radar 6611402
+	* build_gcc (ARM_MAKEFLAGS, ARM_MULTILIB_ARCHS): New.
+	* build_libgcc (ARM_MAKEFLAGS, ARM_MULTILIB_ARCHS): New.
+
+2008-09-22  Jon Ziegler  <jonz@apple.com>
+
+	Bring in Eugene's fix from the SnowLeopard compiler.
+	2008-08-06  Eugene Marinelli  <marinelli@apple.com>
+        Radar 6123671
+        * driverdriver.c (main): Instead of aborting, print a fatal error when
+        there is no argument after -o.
+
+2008-08-26  Josh Conner  <jconner@apple.com>
+
+        Radar 6162685
+        * build_libgcc: Strip libgcc.
+
+        Radar 6175043
+        * build_libgcc: Disable bootstrap if BOOTSTRAP is empty.
+
+2008-08-07  Jim Grosbach <grosbach@apple.com>
+
+	* build_libgcc: enable building fat for v4/v6/v7
+
+2008-06-27  Josh Conner  <jconner@apple.com>
+
+	* build_libgcc: s/[^-]-enable-werror/--enable-werror/
+	Also, strip out --enable-werror for ARM builds.
+
+2008-06-19  Josh Conner  <jconner@apple.com>
+
+	* build_gcc: s/[^-]-enable-werror/--enable-werror/g
+
+2008-06-19  Jim Grosbach <grosbach@apple.com>
+	* build_gcc: Merge to 4_2-opal r147018
+	* gcc/doc/invoke.texi: Likewise
+	* gcc/gcc.h: ...
+	* gcc/testsuite/ChangeLog.apple: ...
+	* gcc/testsuite/gcc.apple/utf-1.c: ...
+	* gcc/testsuite/gcc.apple/5799099.c: ...
+	* gcc/testsuite/gcc.apple/5774356.c: ...
+	* gcc/testsuite/objc.dg/property-id-proto-getter.m: ...
+	* gcc/testsuite/objc.dg/5938756.m: ...
+	* gcc/testsuite/objc.dg/newproperty-neg-ivar-check-1.m: ...
+	* gcc/testsuite/obj-c++.dg/property-id-proto-getter.mm: ...
+	* gcc/testsuite/obj-c++.dg/newproperty-neg-ivar-check-1.mm: ...
+	* gcc/testsuite/g++.apple/thunks4.C: ...
+	* gcc/testsuite/g++.apple/thunks1.C: ...
+	* gcc/testsuite/g++.apple/thunks2.C: ...
+	* gcc/testsuite/g++.apple/thunks3.C: ...
+	* gcc/cp/optimize.c: ...
+	* gcc/cp/ChangeLog.apple: ...
+	* gcc/dwarf2out.c: ...
+	* gcc/ChangeLog.apple: ...
+	* gcc/c.opt: ...
+	* gcc/c-opts.c: ...
+	* gcc/version.c: ...
+	* gcc/tree-ssa.c: ...
+	* gcc/combine.c: ...
+	* gcc/config/darwin-c.c: ...
+	* gcc/config/rs6000/rs6000.c: ...
+	* gcc/config/arm/t-darwin: ...
+	* gcc/config/arm/arm.c: ...
+	* gcc/config/arm/arm.h: ...
+	* gcc/config/arm/darwin.h: ...
+	* gcc/config/arm/arm.md: ...
+	* gcc/config/arm/cirrus.md: ...
+	* more-hdrs/stdint.h: ...
+	* build_libgcc: ...
+	* ChangeLog.apple: ...
+	* libcpp/ChangeLog.apple: ...
+	* libcpp/charset.c: ...
+
+2008-06-04  Josh Conner  <jconner@apple.com>
+
+	Radar 5961147
+	* build_gcc: Use 4.2.1 libstdcxx headers for ARM.
+
+2008-05-09  Josh Conner  <jconner@apple.com>
+
+	Radar 5925341
+	* build_libgcc (TRANSLATE_ARCH): Add s/armv6/arm/.
+
+2008-04-15  Josh Conner  <jconner@apple.com>
+
+	Radar 5866354
+	* build_gcc: Translate armv6->arm in HOSTS and TARGETS.  Also,
+	don't try to build libgomp for ARM.
+
+2008-02-07  Josh Conner  <jconner@apple.com>
+
+	Radar 5730761
+	* driverdriver.c (do_compile_separately): New variable
+	ifn_found, provide a fatal error if set twice for a single
+	invocation.
 
 2008-01-17  Josh Conner  <jconner@apple.com>
 
@@ -21,42 +113,64 @@
 	arch_specific_argc and arch_specific_argv.  Pass args through
 	filter_args_for_arch.
 
-2007-12-04  Josh Conner  <jconner@apple.com>
+2007-11-07  Josh Conner  <jconner@apple.com>
 
-	Radar 5625921
+	Radar 5585401
 	* GNUmakefile: Add install_libgcc target.
 	* build_libgcc: New file.
 
-2007-07-20  Josh Conner  <jconner@apple.com>
+2007-10-26  Josh Conner  <jconner@apple.com>
 
-	Radar 5341082
-	* Don't remove GNUmakefile with installopensource target.
-
-2007-07-20  Josh Conner  <jconner@apple.com>
-
-	Radar 5341082
-	* GNUmakefile: Add installopensource target.
-
-2007-07-20  Josh Conner  <jconner@apple.com>
-
-	Radar 5330742
-	* build_gcc (ARM_SYSROOT): Use /Developer/SDKs/Extra.
-
-2007-07-12  Josh Conner  <jconner@apple.com>
-
-	Radar 5330742
-	* build_gcc (ARM_SYSROOT): Use /Developer/SDKs/ARM.
-
-2007-06-21  Josh Conner  <jconner@apple.com>
-
-	Radar 5241048
+	Radar 5562046
+	* configure: Don't configure libgomp, libobjc, libstdc++-v3, or
+	libssp for arm-*-darwin*.
+	* configure.in: Likewise.
+	* driverdriver.c (arch_config_map): Add arm variants.
+	(add_arch_options): Likewise.
 	* build_gcc: For ARM, configure with sysroot.
 
-2007-06-06  Josh Conner  <jconner@apple.com>
+2007-08-30  Josh Conner  <jconner@apple.com> 
+	Radar 5448306
+	* build_gcc: Add and use CROSS_TARGETS.
+	Use intermediate compiler instead of destination compiler when
+	building driver-driver.
 
-	Radar 5241048
-	* driverdriver.c (arch_config_map): Add arm architectures.
-	(add_arch_options): Likewise.
+2007-07-31  Mike Stump  <mrs@apple.com>
+
+	Radar 5370764
+	* REMOVED: Document removed files.
+
+2007-06-20  Eric Christopher  <echristo@apple.com>
+
+	Radar 5279253
+	* order-files: Delete.
+
+2007-06-18  Eric Christopher  <echristo@apple.com>
+
+	* build_gcc (I386_CPU): Remove and remove all uses.
+
+2006-12-13  Geoffrey Keating  <geoffk@apple.com>
+
+	Radar 4697325
+	* driverdriver.c: New.
+	* build_gcc: Use driverdriver.c rather than
+	gcc/config/darwin-driver.c.
+
+2007-05-23  Eric Christopher  <echristo@apple.com>
+
+	Radar 5191899
+	* build_gcc: Build target libraries for all native compilers. Rewrite
+	libgomp install handling.
+
+2007-05-16  Eric Christopher  <echristo@apple.com>
+
+	Radar 5191899
+	* build_gcc: Copy over libgomp.a and libgomp.spec.
+
+2007-05-03  Mike Stump  <mrs@apple.com>
+
+	Radar 4929862
+	* build_gcc: Don't hardcode OS version number.
 
 2007-03-21  Mike Stump  <mrs@apple.com>
 
@@ -68,17 +182,6 @@
 
 	Radar 5020628
 	* build_gcc: Stubify libstdc++.dylib instead of symlinking.
-
-2007-03-15  Geoffrey Keating  <geoffk@apple.com>
-
-	* build_gcc: Unset RC_DEBUG_OPTIONS when bootstrapping.
-
-2006-12-13  Geoffrey Keating  <geoffk@apple.com>
-
-	Radar 4697325
-	* driverdriver.c: New.
-	* build_gcc: Use driverdriver.c rather than
-	gcc/config/darwin-driver.c.
 
 2007-02-27  Geoffrey Keating  <geoffk@apple.com>
 
@@ -93,10 +196,15 @@
 	* sdk: Remove.
 	* sdk-test: Remove.
 
-2007-01-26  Mike Stump  <mrs@apple.com>
+2007-01-19  Mike Stump  <mrs@apple.com>
 
-	Radar 4895582
-	* sdk: Build up liibstdcxx fixups for 10.4 SDKs.
+	Radar 4856823
+	* build_gcc: Add glue for libstdcxx.
+
+2007-01-17  Mike Stump  <mrs@apple.com>
+
+	Radar 4929541
+	* GNUmakefile (SRC): Use $(shell ) instead of ``.
 
 2007-01-05  Geoffrey Keating  <geoffk@apple.com>
 
@@ -124,19 +232,11 @@
 	Radar 4884923
 	* build_gcc (HTMLDIR): Update for Leopard.
 
-2006-12-13  Geoffrey Keating  <geoffk@apple.com>
+2006-12-07  Mike Stump  <mrs@apple.com>
 
-	Radar 4697325
-	* driverdriver.c: New.
-	* build_gcc: Use driverdriver.c rather than
-	gcc/config/darwin-driver.c.
-
-2006-11-13  Eric Christopher  <echristo@apple.com>
-
-	* build_gcc (TRANSLATE_TARGETS): New.
-	(TARGETS): use.
-	For cross compilers use HOSTS and TARGETS for cross-compilers
-	to build. Use newly built cross compilers to build driver-driver.
+	Radar 4856823
+	* build_gcc: Add glue for libstdcxx still being darwin8, but allow
+	for the day when they install as 9.
 
 2006-09-25  Geoffrey Keating  <geoffk@apple.com>
 

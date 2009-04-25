@@ -1,149 +1,257 @@
-2008-02-04  Josh Conner  <jconner@apple.com>
+2008-05-01  Josh Conner  <jconner@apple.com>
 
-	Radar 5712561
-	* semantics.c (note_decl_for_pch): Don't mess with linkage on
-	ARM targets.
+	* optimize.c: Rewrite of structor shrinkage.
+	(enum in_charge_use):  New.
+	(struct thunk_tree_walk_data):  New.
+	(struct clone_info):  New.
+	(maybe_alias_body):  Remove.
+	(examine_tree_for_in_charge_use):  New.
+	(compute_use_thunks):  New.
+	(maybe_thunk_body):  Rename to thunk_body.  Remove
+	explicit in-charge parameter.
+	(find_earlier_clone):  New.
+	(maybe_clone_body):  Remove most of old decloner
+	patch, replace with new algorithm.
+
+2008-03-20  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5802025
+	* typeck.c (finish_class_member_access_expr): Generate getter call
+	from an OBJC_PROPERTY_REFERENCE_EXPR.
+
+2008-03-19  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5733674
+        * decl.c (expand_static_init): Generate write barrier for
+        static initialization in objective-c++ mode.
 
 2007-11-29  Fariborz Jahanian <fjahanian@apple.com>
 
         Radar 5619052
-	* pt.c (value_dependent_expression_p): @encode expression is 
-	value-dependent if the operand is type-dependent.
-	(type_dependent_expression_p): Treat @encode same as 'sizeof'.
+        * pt.c (value_dependent_expression_p): @encode expression is 
+        value-dependent if the operand is type-dependent.
+        (type_dependent_expression_p): Treat @encode same as 'sizeof'.
 
-2007-07-06  Josh Conner  <jconner@apple.com>
+1007-10-26  Josh Conner  <jconner@apple.com>
 
-	Radar 5310796
-	* typeck.c (build_reinterpret_cast_1): Only call
-	strict_aliasing_warning for ARM.
-
-2007-06-27  Josh Conner  <jconner@apple.com>
-
-	Radar 5241048
+	Radar 5562046
 	* typeck.c (build_ptrmemfunc1): Add kext support for ARM.
 
-2007-06-27  Josh Conner  <jconner@apple.com>
+2007-08-23  Hui-May Chang <hm.chang@apple.com>
 
-	Radar 5241048
-	* typeck.c (build_reinterpret_cast_1): Use strict_aliasing
-	warning.
-	* optimize.c (enum in_charge_use, struct thunk_tree_walk_data,
-	struct clone_info): New data types.
-	(maybe_alias_body, maybe_thunk_body): Remove functions.
-	(thunk_body, examine_tree_for_in_charge_use, compute_use_thunks,
-	find_earlier_clone): New functions.
-	(maybe_clone_body):  Remove most of old decloner patch, replace
-	with new algorithm.
+        Radar 4869885
+	* class.c: Removed darwin_align_is_first_member_of_class.
 
-2007-06-24  Fariborz Jahanian <fjahanian@apple.com>
+2007-08-22  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 4947311
+	* parser.c (cp_parser_objc_protocol_declaration): Takes attribute list
+	as extra argument and passes it down to 
+	objc_declare_protocols/objc_start_protocol.
+	(cp_parser_objc_class_interface): Now receives attribute list as input.
+	(cp_parser_objc_declaration): Parses attribute list and passes it down 
+	to cp_parser_objc_class_interface/cp_parser_objc_protocol_declaration.
+	
+2007-08-20  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5422751
+	* parser.c (cp_parser_objc_class_implementation): Unused syntax recognition
+	removed.
+
+2007-07-27  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 3742561
+	* typeck.c (build_modify_expr): Call to generate write barrier
+	for class assignment only when assignment is not overloaded.
+
+2007-07-24  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5355344
+	* cp-tree.h (cp_objc_protocol_id_list): New declaration
+	* cp-lang.c (cp_objc_protocol_id_list): New stub
+	* parser.c (cp_parser_type_name): Added code to disambiguate
+	conditional from a protocol type.
+	(cp_parser_objc_tentative_protocol_refs_opt): New
+
+2007-07-13  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5277239
+	* parser.c (cp_parser_objc_reference_expression): New routine to
+	build a property reference expression.
+	(cp_objc_property_reference_prefix): New routine to recognize a 
+	property dot syntax.
+	(cp_parser_primary_expression): Build a property reference expression
+	when a property dot-syntax is recognized.
+	(cp_parser_type_name): Exclude property dot-syntax from being recognized
+	as a type name.
+	(cp_parser_class_name): Exclude property dot-syntax from being recognized
+	as a class name.
+
+2007-07-10  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5285911
+	* typeck.c (finish_class_member_access_expr): Call
+	objc_build_property_reference_expr instead of objc_build_getter_call.
+
+2007-06-29  Fariborz Jahanian <fjahanian@apple.com>
 
         Radar 5276085
 	* typeck.c (build_modify_expr): Call objc_weak_reference_expr
-	instead of objc_remove_weak_read.
-	* parser.c (cp_parser_cast_expression): Call
-	objc_build_weak_reference_tree instead of objc_generate_weak_read.
-	(cp_parser_cast_expression): Ditto.
+        instead of objc_remove_weak_read.
+        * parser.c (cp_parser_cast_expression): Call
+        objc_build_weak_reference_tree instead of objc_generate_weak_read.
+        (cp_parser_cast_expression): Ditto.
 
-2007-06-01  Eric Christopher  <echristo@apple.com>
+2007-06-20  Geoffrey Keating  <geoffk@apple.com>
 
-	Radar 5198645
-	* typeck.c (build_binary_op): Use cp_convert_and_check.
-	* decl.c (finish_enum): Use the location of the enumerators, not
-	the closing brace of the enumeration, when reporting
-	warnings about conversions.
-	* call.c (convert_like_real): Use convs->kind to determine conversion
-	type. Use cp_convert_and_check.
-	(cp_convert_and_check): New.
-	* cp-tree.h (cp_convert_and_check): Declare.
+	Radar 5281849
+	* decl2.c (determine_visibility_from_class): Remove old
+	'ms tinfo compat' change.
+	(determine_visibility): Rewrite here.
 
-2007-05-16  Josh Conner  <jconner@apple.com>
+2007-06-21  Eric Christopher  <echristo@apple.com>
 
-	Radar 5207358
-	Backport from mainline:
+	Radar 5283703
+	* typeck.c (build_binary_op): Call cp_convert_and_check
+	instead of cp_convert.
+	* cvt.c (cp_convert_and_check): New.
+	* cp-tree.h: Declare above.
 
-	2005-06-10  Aldy Hernandez  <aldyh@redhat.com>
-	PR c++/10611
-	* cp/typeck.c (build_binary_op): Handle vectors.
-	(common_type): Same.
-	(type_after_usual_arithmetic_conversions): Same.
-	* cp/cvt.c (build_expr_type_conversion): Same.
+2007-06-06  Fariborz Jahanian <fjahanian@apple.com>
 
-2007-04-20 Fariborz Jahanian <fjahanian@apple.com> 
-	Radar 5130983
-	* parser.c (cp_parser_parse_foreach_stmt): Parse selector expression
-	as an expression.
-	(objc_foreach_stmt): Issue diagnostic on non-lavlue selector 
-	expression.
+        Radar 5250860 (Remove old property)
+	* cp/lex: Remove lexer's tokens and recognition for old property 
+	syntax.
+	* cp/parser.c: Remove parsing of old property syntax.
+	
+2007-05-18  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5202926
+	* mangle.c (write_mangled_name): Removed suppression in last patch.
+
+2007-05-15  Geoffrey Keating  <geoffk@apple.com>
+
+	* mangle.c (write_mangled_name): Suppress static variable name
+	mangling for Objective-C.
+
+2007-05-07  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 4157812
+	* parser.c (cp_parser_objc_method_keyword_params): Recognize optional
+	method argument attribute.
+
+2007-05-03  Mike Stump  <mrs@apple.com>
+
+	Radar 5141790
+	* typeck2.c (process_init_constructor_array): Remove unneed APPLE
+	LOCAL code.
+
+2007-05-03  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 4874626
+	* decl2.c (emit_instantiate_pending_templates): Setting of 
+	current input location moved to caller site.
+
+2007-04-25 Fariborz Jahanian <fjahanian@apple.com>
+
+	Radar 4874613
+	* decl2.c (cp_finish_file): remove dump of pch file.
+	* parser.c (c_parse_file): Dump pch file if no parse errors.
+
+2007-04-20 Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 5130983
+        * parser.c (cp_parser_parse_foreach_stmt): Parse selector expression
+        as an expression.
+        (objc_foreach_stmt): Issue diagnostic on non-lavlue selector 
+        expression.
 
 2007-04-18 Fariborz Jahanian <fjahanian@apple.com>
 
         Radar 5128402
-	* parser.c (objc_finish_foreach_stmt): Set elem to nil at the else part 
-	of the outer if-stmt instead of at the begining.
+        * parser.c (objc_finish_foreach_stmt): Set elem to nil at the else part 
+        of the outer if-stmt instead of at the begining.
 
-2007-03-19  Fariborz Jahanian <fjahanian@apple.com>
+2007-04-11 Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 4872022
+	* parser.c (cp_parser_compound_statement): Return error_mark_node
+	on missing '{' (from mainline).
+
+2007-03-29  Fariborz Jahanian <fjahanian@apple.com>
 
         Radar 4947014 - objc atomic property
-	* lex.c (RID_NONATOMIC): Add
-	* parser.c (objc_cp_parser_at_property): Recognize 'nonatomic' as
-	new property attribute.
+        * lex.c (RID_NONATOMIC): Add
+        * parser.c (objc_cp_parser_at_property): Recognize 'nonatomic' as
+        new property attribute.
 
-2007-03-13 Fariborz Jahanian <fjahanian@apple.com>
-
+2007-03-29 Fariborz Jahanian <fjahanian@apple.com>
+        
         Radar 4564694
-	* lex.c (RID_AT_PACKAGE): Add
-	* parser.c (cp_lexer_get_preprocessor_token): Parse @package.
+        * lex.c (RID_AT_PACKAGE): Add
+        * parser.c (cp_lexer_get_preprocessor_token): Parse @package.
 
-2007-02-28  Geoffrey Keating  <geoffk@apple.com>
+2007-03-23  Fariborz Jahanian <fjahanian@apple.com> 
 
-	Radar 5027856
-	* g++spec.c (lang_specific_driver): Merge from FSF mainline.
+	Radar 5085245 - fall out from 4965989 merge.
+	* parser.c (cp_parser_objc_superclass_or_category): Initialize is_category.
 
-2007-02-15  Fariborz Jahanian <fjahanian@apple.com>
-
-	Radar 4995967
-	* parser.c (cp_parser_objc_try_catch_finally_stateme): Parse @catch (...) unconditionally.
-
-2007-02-12  Fariborz Jahanian <fjahanian@apple.com>
+2007-03-22  Fariborz Jahanian <fjahanian@apple.com> 
 
         Radar 4965989
-        * parser.c (cp_parser_objc_superclass_or_category):  Add supprt for 
-	anonymous category syntax.
-	(cp_parser_objc_superclass_or_category, cp_parser_objc_class_interface): Changed because
-	of change to cp_parser_objc_superclass_or_category API.
-	
-2007-01-22  Fariborz Jahanian <fjahanian@apple.com>
+        * parser.c (cp_parser_objc_superclass_or_category):  Add supprt for
+        anonymous category syntax.
+        (cp_parser_objc_superclass_or_category, cp_parser_objc_class_interface): Changed because
+        of change to cp_parser_objc_superclass_or_category API.
+
+2007-03-22  Fariborz Jahanian <fjahanian@apple.com>
+
+        Radar 4995967
+        * parser.c (cp_parser_objc_try_catch_finally_stateme): Parse @catch (...) unconditionally.
+
+2007-03-21  Fariborz Jahanian <fjahanian@apple.com>
 
         Radar 2848255
-	* except.c (do_begin_catch): Take a new argument to decide
-	to call objc_begin_catch for objc exceptions.
-	(objcp_build_eh_type_type): New.
-	(do_end_catch): Call objc_end_catch for objc type 
-	exceptions.
-	(expand_start_catch_block): Add new argument to do_begin_catch call.
-	(build_throw): Call objc_throw_exception for throwing objc type objects.
-	* cp-tree.h (objc2_valid_objc_catch_type, objcp_build_eh_type_type): 
-	New extern decl.
-	* parser.c (cp_parser_objc_try_catch_finally_stateme): Add syntax for
-	@catch(...).
-	
-2006-11-30  Fariborz Jahanian <fjahania@apple.com>
+        * except.c (do_begin_catch): Take a new argument to decide
+        to call objc_begin_catch for objc exceptions.
+        (objcp_build_eh_type_type): New.
+        (do_end_catch): Call objc_end_catch for objc type
+        exceptions.
+        (expand_start_catch_block): Add new argument to do_begin_catch call.
+        (build_throw): Call objc_throw_exception for throwing objc type objects.
+        * cp-tree.h (objc2_valid_objc_catch_type, objcp_build_eh_type_type):
+        New extern decl.
+        * parser.c (cp_parser_objc_try_catch_finally_stateme): Add syntax for
+        @catch(...).
+
+2007-01-10  Eric Christopher  <echristo@apple.com>
+
+	Radar 4869810
+	* decl.c (check_tag_decl): Remove code for 4168392.
+
+2006-12-19  Fariborz Jahanian <fjahania@apple.com>
+
+	Radar 4874632
+	* typeck.c (convert_for_assignment): Allow for attribute checking
+	with -Wmissing-format-attribute for objective-c++.
+
+2006-12-14  Fariborz Jahanian <fjahania@apple.com>
+   
+        Radar 4712415 
+        * parser.c (objc_cp_parse_property_decl): Parse attribute at end of
+        property decl.
+
+2006-12-14  Fariborz Jahanian <fjahania@apple.com>
 
         Radar 4854605
         * parser.c (objc_foreach_stmt): Set iterator 
         to nil.
 
-2006-11-29  Fariborz Jahanian <fjahania@apple.com>
-
-        Radar 4712415
-	* parser.c (objc_cp_parse_property_decl): Parse attribute at end of
-	property decl.
-
 2006-11-14  Fariborz Jahanian <fjahania@apple.com>
 
         Radar 4829851
-	* decl.c (duplicate_decls): Check for duplicate decl.
-	of objective-c @class.
+        * decl.c (duplicate_decls): Check for duplicate decl.
+        of objective-c @class.
 
 2006-11-01  Fariborz Jahanian <fjahania@apple.com>
 

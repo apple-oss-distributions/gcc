@@ -32,11 +32,9 @@ int main()
   /* Assigning to a 'MyClass *' variable should always generate a
      warning, unless done from an 'id'.  */
   obj_c = obj;    /* Ok */
-  /* APPLE LOCAL begin mainline */
   obj_c = obj_p;  /* { dg-warning "distinct Objective\\-C type" } */
   obj_c = obj_cp; /* { dg-warning "distinct Objective\\-C type" } */
   obj_c = obj_C;  /* { dg-warning "distinct Objective\\-C type" } */
-  /* APPLE LOCAL end mainline */
 
   /* Assigning to an 'id<MyProtocol>' variable should generate a
      warning if done from a 'MyClass *' (which doesn't implement
@@ -45,20 +43,15 @@ int main()
   obj_p = obj;    /* Ok */
   obj_p = obj_c;  /* { dg-warning "does not implement" } */
   obj_p = obj_cp; /* Ok  */
-  /* APPLE LOCAL mainline */
   obj_p = obj_C;  /* { dg-warning "distinct Objective\\-C type" } */
 
-  /* APPLE LOCAL begin mainline */
   /* Assigning to a 'MyOtherClass *' variable should always generate
      a warning, unless done from an 'id' or an 'id<MyProtocol>' (since
      MyOtherClass implements MyProtocol).  */
-  /* APPLE LOCAL end mainline */
   obj_cp = obj;    /* Ok */
-  /* APPLE LOCAL begin mainline */
   obj_cp = obj_c;  /* { dg-warning "distinct Objective\\-C type" } */
   obj_cp = obj_p;  /* Ok */
   obj_cp = obj_C;  /* { dg-warning "distinct Objective\\-C type" } */
-  /* APPLE LOCAL end mainline */
 
   /* Any comparison involving an 'id' must be without warnings.  */
   if (obj == obj_p) ;  /* Ok  */ /*Bogus warning here in 2.95.4*/
@@ -72,10 +65,8 @@ int main()
 
   /* Any comparison between 'MyClass *' and anything which is not an 'id'
      must generate a warning.  */
-  /* APPLE LOCAL begin mainline */
   if (obj_c == obj_p) ; /* { dg-warning "lacks a cast" } */
   if (obj_p == obj_c) ; /* { dg-warning "lacks a cast" } */
-  /* APPLE LOCAL end mainline */
   if (obj_c == obj_cp) ; /* { dg-warning "lacks a cast" } */
   if (obj_cp == obj_c) ; /* { dg-warning "lacks a cast" } */
   if (obj_c == obj_C) ;  /* { dg-warning "lacks a cast" } */

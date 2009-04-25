@@ -1,4 +1,3 @@
-/* APPLE LOCAL file mainline */
 /* Ensure that we do not get bizarre warnings referring to
    __attribute__((packed)) or some such.  */
 /* { dg-do compile } */

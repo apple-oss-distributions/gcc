@@ -3,6 +3,7 @@
 /* { dg-options "-fobjc-gc-only" } */
 /* { dg-do compile { target powerpc*-*-darwin* i?86*-*-darwin* } } */
 /* { dg-skip-if "" { *-*-darwin* } { "-m64" } { "" } } */
+/* { dg-require-effective-target objc_gc } */
 
 @interface INTF
 @end

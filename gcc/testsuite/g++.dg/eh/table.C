@@ -1,4 +1,3 @@
-// APPLE LOCAL file mainline
 // { dg-do compile { target *-*-darwin* } }
 // { dg-final { scan-assembler "GCC_except_table0" } }
 void needed();

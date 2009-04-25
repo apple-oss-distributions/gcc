@@ -5,7 +5,5 @@
 /* { dg-do preprocess } */
 
 #define __STDC__ 1	/* Stop complaints about non-ISO compilers.  */
-/* APPLE LOCAL begin Radar 6112293 */
-#define errno 1
-#include <errno.h>		/* { dg-bogus "o such file or directory" } */
-/* APPLE LOCAL end Radar 6112293 */
+#define stdio 1
+#include <stdio.h>		/* { dg-bogus "o such file or directory" } */

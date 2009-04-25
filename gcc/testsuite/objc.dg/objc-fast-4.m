@@ -6,6 +6,9 @@
 /* { dg-skip-if "" { powerpc*-*-darwin* } { "-m64" } { "" } } */
 /* Radar 4015820 */
 
+/* { dg-skip-if "" { powerpc*-*-darwin* } { "-m64" } { "" } } */
+/* Radar 4015820 */
+
 #include <objc/Object.h>
 
 void foo(void) {

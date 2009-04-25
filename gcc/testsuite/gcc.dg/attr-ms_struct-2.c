@@ -1,7 +1,5 @@
-/* APPLE LOCAL file mainline */
 /* Test for MS structure sizes.  */
 /* { dg-do run { target *-*-interix* *-*-mingw* *-*-cygwin* i?86-*-darwin* } } */
-/* APPLE LOCAL x86_64 */
 /* { dg-require-effective-target ilp32 } */
 /* { dg-options "-std=gnu99" } */
 

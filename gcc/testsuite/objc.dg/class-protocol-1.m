@@ -314,10 +314,8 @@ testComptypes(void)
     mc1 == objP1;
     objP1 == mc1;
 
-    /* APPLE LOCAL begin mainline */
     mc1 == objP2; /* { dg-warning "lacks a cast" } */
     objP2 == mc1; /* { dg-warning "lacks a cast" } */
-    /* APPLE LOCAL end mainline */
   }
   { /* id <protocol>, id  */
     obj == objP1;
@@ -373,11 +371,9 @@ testComptypes(void)
     objP5 = objP1; /* { dg-warning "does not conform" } */
   }
   { /* id <protocol>, SomeClass *  */
-    /* APPLE LOCAL mainline */
     mc1 = objP1;
     objP1 = mc1;
-    
-    /* APPLE LOCAL mainline */
+
     mc1 = objP2; /* { dg-warning "does not conform" } */
     objP2 = mc1; /* { dg-warning "does not implement" } */
   }
@@ -386,10 +382,8 @@ testComptypes(void)
     objP1 = obj;
   }
   { /* id <protocol>, Class  */
-    /* APPLE LOCAL begin mainline */
     cls = objP1; /* { dg-warning "distinct Objective\\-C type" } */
     objP1 = cls; /* { dg-warning "distinct Objective\\-C type" } */
-    /* APPLE LOCAL end mainline */
   }
   { /* id <protocol>, non-ObjC  */
     num = objP1; /* { dg-warning "makes integer" } */
@@ -407,13 +401,11 @@ testComptypes(void)
   }
   { /* Class <protocol>, SomeClass * */
     /* These combinations should always elicit a warning.  */
-    /* APPLE LOCAL begin mainline */
     mc1 = clsP1; /* { dg-warning "distinct Objective\\-C type" } */
     clsP1 = mc1; /* { dg-warning "distinct Objective\\-C type" } */
     
     mc1 = clsP2; /* { dg-warning "distinct Objective\\-C type" } */
     clsP2 = mc1; /* { dg-warning "distinct Objective\\-C type" } */
-    /* APPLE LOCAL end mainline */
   }
   { /* Class <protocol>, id */
     obj = clsP1;
@@ -431,10 +423,8 @@ testComptypes(void)
     clsP1 = ptr;
   }
   { /* Class <protocol>, id <protocol> */
-    /* APPLE LOCAL begin mainline */
     clsP1 = objP1; /* { dg-warning "distinct Objective\\-C type" } */
     objP1 = clsP1; /* { dg-warning "distinct Objective\\-C type" } */
-    /* APPLE LOCAL end mainline */
   }
 }
 
