@@ -148,7 +148,8 @@ extern GTY(()) int darwin_ms_struct;
   { "-seg_addr_table_filename", "-Zfn_seg_addr_table_filename" }, \
   /* APPLE LOCAL mainline */ \
   { "-umbrella", "-Zumbrella" }, \
-  { "-fapple-kext", "-fapple-kext -static -Wa,-static" }, \
+  /* APPLE LOCAL kext weak_import 5935650 */ \
+  { "-fapple-kext", "-fapple-kext -static" }, \
   { "-filelist", "-Xlinker -filelist -Xlinker" },  \
   { "-findirect-virtual-calls", "-fapple-kext" }, \
   { "-flat_namespace", "-Zflat_namespace" },  \
@@ -159,17 +160,20 @@ extern GTY(()) int darwin_ms_struct;
   { "-image_base", "-Zimage_base" },  \
   { "-init", "-Zinit" },  \
   { "-install_name", "-Zinstall_name" },  \
-  { "-mkernel", "-mkernel -static -Wa,-static" }, \
+  /* APPLE LOCAL kext weak_import 5935650 */ \
+  { "-mkernel", "-mkernel -static" }, \
   { "-multiply_defined_unused", "-Zmultiplydefinedunused" },  \
   { "-multiply_defined", "-Zmultiply_defined" },  \
   { "-multi_module", "-Zmulti_module" },  \
-  { "-static", "-static -Wa,-static" },  \
+  /* APPLE LOCAL begin kext weak_import 5935650 */ \
+  /* Removed -static */ \
+  /* APPLE LOCAL end kext weak_import 5935650 */ \
   /* APPLE LOCAL mainline */ \
   { "-shared", "-Zdynamiclib" }, \
   { "-single_module", "-Zsingle_module" },  \
   { "-unexported_symbols_list", "-Zunexported_symbols_list" }, \
-  /* APPLE LOCAL ObjC GC */ \
-  { "-fobjc-gc", "-fobjc-gc -Wno-non-lvalue-assign" }, \
+  /* APPLE LOCAL radar 6269491 */ \
+  /* code removed. */ \
   /* APPLE LOCAL begin constant cfstrings */	\
   { "-fconstant-cfstrings", "-mconstant-cfstrings" }, \
   { "-fno-constant-cfstrings", "-mno-constant-cfstrings" }, \
@@ -290,6 +294,8 @@ do {					\
 	if (flag_mkernel)						\
 	  flag_no_builtin = 1;						\
 	/* APPLE LOCAL end 5731065 */					\
+	/* APPLE LOCAL xmmintrin.h for kernel 4123064 */					\
+	flag_hosted = 0;						\
       }									\
   } while (0)
 
@@ -325,7 +331,8 @@ do {					\
     %(link_libgcc) %o %{fprofile-arcs|fprofile-generate|fcreate-profile|coverage:-lgcov} \
 "/* APPLE LOCAL nested functions 4357979  */"\
     %{fnested-functions: -allow_stack_execute} \
-    %{!nostdlib:%{!nodefaultlibs:%(link_ssp) %G %L}} \
+"/* APPLE LOCAL prefer -lSystem 6645902 */"\
+    %{!nostdlib:%{!nodefaultlibs:%(link_ssp) %(link_gcc_c_sequence)}} \
 "/* APPLE LOCAL begin mainline 4.3 2006-10-31 4370146 */"\
     %{!A:%{!nostdlib:%{!nostartfiles:%E}}} %{T*} %{F*} }}}}}}}}\n\
 %{!fdump=*:%{!fsyntax-only:%{!c:%{!M:%{!MM:%{!E:%{!S:\
@@ -400,9 +407,8 @@ do {					\
    %{nomultidefs} \
    %{Zmulti_module:-multi_module} %{Zsingle_module:-single_module} \
    %{Zmultiply_defined*:-multiply_defined %*} \
-   %{!Zmultiply_defined*:%{shared-libgcc: \
-     %:version-compare(< 10.5 mmacosx-version-min= -multiply_defined) \
-     %:version-compare(< 10.5 mmacosx-version-min= suppress)}} \
+   "/* APPLE LOCAL begin deletion 5023884 */" \
+   "/* APPLE LOCAL end deletion 5023884 */" \
    %{Zmultiplydefinedunused*:-multiply_defined_unused %*} \
    "/* APPLE LOCAL mainline 2007-06-01 5238485 */" \
    %{fpie:-pie} \
@@ -456,10 +462,12 @@ do {					\
       miphoneos-version-min=*: %(darwin_iphoneos_libgcc);		   \
       shared-libgcc|fexceptions|fgnu-runtime:				   \
        %:version-compare(!> 10.5 mmacosx-version-min= -lgcc_s.10.4)	   \
-       %:version-compare(>= 10.5 mmacosx-version-min= -lgcc_s.10.5)	   \
+       "/* APPLE LOCAL link optimizations 6499452 */"			   \
+       %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5)   \
        -lgcc;								   \
       :%:version-compare(>< 10.3.9 10.5 mmacosx-version-min= -lgcc_s.10.4) \
-       %:version-compare(>= 10.5 mmacosx-version-min= -lgcc_s.10.5)	   \
+       "/* APPLE LOCAL link optimizations 6499452 */"			   \
+       %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lgcc_s.10.5)   \
        -lgcc}"
 
 /* We specify crt0.o as -lcrt0.o so that ld will search the library path.
@@ -473,7 +481,8 @@ do {					\
 #undef  STARTFILE_SPEC
 #define STARTFILE_SPEC							    \
   "%{Zdynamiclib: %(darwin_dylib1) }					    \
-   %{!Zdynamiclib:%{Zbundle:%{!static:-lbundle1.o}}			    \
+   "/* APPLE LOCAL link optimizations 6499452 */"			    \
+   %{!Zdynamiclib:%{Zbundle:%{!static: %(darwin_bundle1)}}		    \
      %{!Zbundle:%{pg:%{static:-lgcrt0.o}				    \
                      %{!static:%{object:-lgcrt0.o}			    \
                                %{!object:%{preload:-lgcrt0.o}		    \
@@ -497,6 +506,8 @@ do {					\
 #define DARWIN_EXTRA_SPECS						\
   { "darwin_crt1", DARWIN_CRT1_SPEC },					\
   { "darwin_dylib1", DARWIN_DYLIB1_SPEC },				\
+  /* APPLE LOCAL link optimizations 6499452 */				\
+  { "darwin_bundle1", DARWIN_BUNDLE1_SPEC },				\
   { "darwin_minversion", DARWIN_MINVERSION_SPEC },			\
 /* APPLE LOCAL end mainline */						\
 /* APPLE LOCAL begin ARM 5683689 */					\
@@ -513,6 +524,11 @@ do {					\
      %:version-compare(!> 10.5 mmacosx-version-min= -ldylib1.o)		\
      %:version-compare(>= 10.5 mmacosx-version-min= -ldylib1.10.5.o)}"
 
+/* APPLE LOCAL begin link optimizations 6499452 */
+#define DARWIN_BUNDLE1_SPEC						\
+  "-lbundle1.o"
+/* APPLE LOCAL end link optimizations 6499452 */
+
 #define DARWIN_CRT1_SPEC						\
 /* APPLE LOCAL ARM 5823776 iphoneos should use crt1.o */		\
   "%{miphoneos-version-min=*: -lcrt1.o}					\
@@ -521,12 +537,19 @@ do {					\
      %:version-compare(>= 10.5 mmacosx-version-min= -lcrt1.10.5.o)}"
 /* APPLE LOCAL end ARM 5683689 */
 
+/* APPLE LOCAL begin prefer -lSystem 6645902 */
+#define LINK_GCC_C_SEQUENCE_SPEC "%G %L"
+/* APPLE LOCAL end prefer -lSystem 6645902 */
+
 /* Default Darwin ASM_SPEC, very simple.  */
+/* APPLE LOCAL begin kext weak_import 5935650 */
 /* APPLE LOCAL begin radar 4161346 */
 #define ASM_SPEC "-arch %(darwin_arch) \
   %{Zforce_cpusubtype_ALL:-force_cpusubtype_ALL} \
-  %{!Zforce_cpusubtype_ALL:%{faltivec:-force_cpusubtype_ALL}}"
+  %{!Zforce_cpusubtype_ALL:%{faltivec:-force_cpusubtype_ALL}} \
+  %{mkernel|static|fapple-kext:%{!Zdynamic:-static}}"
 /* APPLE LOCAL end radar 4161346 */
+/* APPLE LOCAL end kext weak_import 5935650 */
 /* APPLE LOCAL begin mainline 4.3 2006-10-31 4370143 */
 /* We still allow output of STABS.  */
 
@@ -548,6 +571,8 @@ do {					\
 /* APPLE LOCAL begin pubtypes, approved for 4.3  4535968 */
 #define DEBUG_PUBTYPES_SECTION  "__DWARF,__debug_pubtypes,regular,debug"
 /* APPLE LOCAL end pubtypes, approved for 4.3 4535968 */
+/* APPLE LOCAL radar 6275985 debug inlined section */
+#define DEBUG_INLINED_SECTION   "__DWARF,__debug_inlined,regular,debug"
 #define DEBUG_STR_SECTION	"__DWARF,__debug_str,regular,debug"
 #define DEBUG_RANGES_SECTION	"__DWARF,__debug_ranges,regular,debug"
 
@@ -755,6 +780,13 @@ do {					\
 	       MESSAGE);						\
   } while (0)
 /* APPLE LOCAL end radar 4531086 */
+
+/* APPLE LOCAL begin radar 6307941 */
+#undef OBJC2_ABI_DISPATCH
+#define OBJC2_ABI_DISPATCH						\
+(darwin_macosx_version_min						\
+ && strverscmp (darwin_macosx_version_min, "10.6") < 0)
+/* APPLE LOCAL end radar 6307941 */
 
 /* The RTTI data (e.g., __ti4name) is common and public (and static),
    but it does need to be referenced via indirect PIC data pointers.
@@ -977,6 +1009,8 @@ extern GTY(()) section * darwin_sections[NUM_DARWIN_SECTIONS];
     darwin_handle_kext_attribute },					     \
   /* APPLE LOCAL ObjC GC */						     \
   { "objc_gc", 1, 1, false, true, false, darwin_handle_objc_gc_attribute },  \
+  /* APPLE LOCAL radar 5595352 */					     \
+  { "NSObject", 0, 0, false, true, false, darwin_handle_nsobject_attribute },\
   { "weak_import", 0, 0, true, false, false,				     \
     darwin_handle_weak_import_attribute }
 
@@ -1101,7 +1135,8 @@ enum machopic_addr_class {
 
 #undef ASM_PREFERRED_EH_DATA_FORMAT
 #define ASM_PREFERRED_EH_DATA_FORMAT(CODE,GLOBAL)  \
-  (((CODE) == 2 && (GLOBAL) == 1) \
+  /* APPLE LOCAL EH __TEXT __gcc_except_tab 5819051 */	      \
+  ((((CODE) == 2 || (CODE) == 0) && (GLOBAL) == 1)	      \
    ? (DW_EH_PE_pcrel | DW_EH_PE_indirect | DW_EH_PE_sdata4) : \
      ((CODE) == 1 || (GLOBAL) == 0) ? DW_EH_PE_pcrel : DW_EH_PE_absptr)
 

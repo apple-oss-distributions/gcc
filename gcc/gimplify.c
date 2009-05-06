@@ -1135,6 +1135,8 @@ gimplify_return_expr (tree stmt, tree *pre_p)
   tree result_decl, result;
 
   if (!ret_expr || TREE_CODE (ret_expr) == RESULT_DECL
+      /* APPLE LOCAL radar 6261552 */
+      /* code to check for cur_block is removed. */
       || ret_expr == error_mark_node)
     return GS_ALL_DONE;
 

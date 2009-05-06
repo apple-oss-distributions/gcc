@@ -280,7 +280,8 @@ machopic_classify_symbol (rtx sym_ref)
    permit the runtime to rebind new instances of the translation unit
    to the original instance of the data.  */
 
-static int
+/* APPLE LOCAL fix-and-continue 6227434 */
+int
 indirect_data (rtx sym_ref)
 {
   int lprefix;
@@ -298,8 +299,14 @@ indirect_data (rtx sym_ref)
   name = XSTR (sym_ref, 0);
 
   lprefix = (((name[0] == '*' || name[0] == '&')
-              && (name[1] == 'L' || (name[1] == '"' && name[2] == 'L')))
-             || (strncmp (name, "_OBJC_", 6) == 0));
+	      /* APPLE LOCAL begin fix-and-continue 6227434 */
+              && (name[1] == 'L'
+		  || (name[1] == '"' && name[2] == 'L')
+		  /* Don't indirect writable strings.  */
+		  || (name[1] == 'l' && name[2] == 'C')))
+             || (strncmp (name, "_OBJC_", 6) == 0)
+	     || objc_anonymous_local_objc_name (name));
+	      /* APPLE LOCAL end fix-and-continue 6227434 */
 
   return ! lprefix;
 }
@@ -1528,7 +1535,8 @@ machopic_select_section (tree exp, int reloc,
             return darwin_sections[objc_v2_classrefs_section];
           else if (!strncmp (name, "_OBJC_CLASSLIST_SUP_REFS_", 25))
             return darwin_sections[objc_v2_super_classrefs_section];
-          else if (!strncmp (name, "_OBJC_MESSAGE_REF", 17))
+          /* APPLE LOCAL radar 5575115 - radar 6252174 */
+          else if (!strncmp (name, "l_objc_msgSend", 14))
             return darwin_sections[objc_v2_message_refs_section];
           else if (!strncmp (name, "_OBJC_LABEL_CLASS_", 18))
             return darwin_sections[objc_v2_classlist_section];
@@ -1694,6 +1702,40 @@ darwin_handle_objc_gc_attribute (tree *node,
   return NULL_TREE;
 }
 /* APPLE LOCAL end ObjC GC */
+
+/* APPLE LOCAL begin radar 5595352 */
+tree
+darwin_handle_nsobject_attribute (tree *node,
+                                  tree name,
+                                  tree args ATTRIBUTE_UNUSED,
+                                  int flags ATTRIBUTE_UNUSED,
+                                  bool *no_add_attrs)
+{
+  tree orig = *node, type;
+  if (!POINTER_TYPE_P (orig) || TREE_CODE (TREE_TYPE (orig)) != RECORD_TYPE)
+    {
+      error ("__attribute ((NSObject)) is for pointer types only");
+      return NULL_TREE;
+    }
+  type = build_type_attribute_variant (orig,
+				       tree_cons (name, NULL_TREE,
+				       TYPE_ATTRIBUTES (orig)));
+  /* The main variant must be preserved no matter what. What ever
+     main variant comes out of the call to build_type_attribute_variant
+     is bogus here. */
+  if (TYPE_MAIN_VARIANT (orig) != TYPE_MAIN_VARIANT (type))
+    {
+      TYPE_MAIN_VARIANT (type) = TYPE_MAIN_VARIANT (orig);
+      TYPE_NEXT_VARIANT (type) = TYPE_NEXT_VARIANT (orig);
+      TYPE_NEXT_VARIANT (orig) = type;
+    }
+
+  *node = type;
+  /* No need to hang on to the attribute any longer.  */
+  *no_add_attrs = true;
+  return NULL_TREE;
+}
+/* APPLE LOCAL end radar 5595352 */
 
 /* APPLE LOCAL begin darwin_set_section_for_var_p  20020226 --turly  */
 
@@ -2005,6 +2047,8 @@ darwin_file_start (void)
 	  /* APPLE LOCAL begin pubtypes, approved for 4.3 4535968  */
 	  DEBUG_PUBTYPES_SECTION,
 	  /* APPLE LOCAL end pubtypes, approved for 4.3 4535968  */
+	  /* APPLE LOCAL radar 6275985 debug inlined section  */
+	  DEBUG_INLINED_SECTION,
 	  DEBUG_STR_SECTION,
 	  DEBUG_RANGES_SECTION
 	};
@@ -2333,7 +2377,7 @@ darwin_build_constant_cfstring (tree str)
         {
           size_t numUniChars;
           const unsigned char *inbuf = (unsigned char *)TREE_STRING_POINTER (str);
-          utf16_str = objc_create_init_utf16_var (inbuf, length, &numUniChars);
+          utf16_str = create_init_utf16_var (inbuf, length, &numUniChars);
           if (!utf16_str)
             {
               warning (0, "input conversion stopped due to an input byte "
@@ -2499,6 +2543,16 @@ darwin_override_options (void)
     darwin_stubs = true;
   /* APPLE LOCAL end ARM 5683689 */
   /* APPLE LOCAL end axe stubs 5571540 */
+  /* APPLE LOCAL begin stack-protector default 5095227 */
+  /* Default flag_stack_protect to 1 if on 10.5 or later for user code,
+     or 10.6 or later for code identified as part of the kernel.  */
+  if (flag_stack_protect == -1
+      && darwin_macosx_version_min
+      && ((! flag_mkernel && ! flag_apple_kext
+	   && strverscmp (darwin_macosx_version_min, "10.5") >= 0)
+	  || strverscmp (darwin_macosx_version_min, "10.6") >= 0))
+    flag_stack_protect = 1;
+  /* APPLE LOCAL end stack-protector default 5095227 */
 /* APPLE LOCAL diff confuses me */
 }
 /* APPLE LOCAL begin radar 4985544 */

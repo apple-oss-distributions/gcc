@@ -386,9 +386,9 @@ int align_labels_log;
 int align_labels_max_skip;
 int align_functions_log;
 
-/* Like align_functions_log above, but used by front-ends to force the
-   minimum function alignment.  Zero means no alignment is forced.  */
-int force_align_functions_log;
+/* APPLE LOCAL begin mainline aligned functions 5933878 */
+/* Removed force_align_functions_log.  */
+/* APPLE LOCAL end mainline aligned functions 5933878 */
 
 typedef struct
 {
@@ -926,6 +926,11 @@ warn_deprecated_use (tree node)
 {
   if (node == 0 || !warn_deprecated_decl)
     return;
+
+  /* APPLE LOCAL begin radar 4746503 */
+  if (current_function_decl && TREE_DEPRECATED (current_function_decl))
+    return;
+  /* APPLE LOCAL end radar 4746503 */
 
   if (DECL_P (node))
     {
@@ -1670,8 +1675,19 @@ general_init (const char *argv0)
   /* Register the language-independent parameters.  */
   add_params (lang_independent_params, LAST_PARAM);
 
-  /* This must be done after add_params but before argument processing.  */
-  init_ggc_heuristics();
+  /* APPLE LOCAL begin retune gc params 6124839 */
+  { int i = 0;
+    bool opt = false;
+    while (save_argv[++i])
+      {
+	if (strncmp (save_argv[i], "-O", 2) == 0
+	    && strcmp (save_argv[i], "-O0") != 0)
+	  opt = true;
+      }
+    /* This must be done after add_params but before argument processing.  */
+    init_ggc_heuristics(opt);
+  }
+  /* APPLE LOCAL end retune gc params 6124839 */
   init_optimization_passes ();
 }
 
@@ -1970,6 +1986,12 @@ process_options (void)
   /* With -fcx-limited-range, we do cheap and quick complex arithmetic.  */
   if (flag_cx_limited_range)
     flag_complex_method = 0;
+
+  /* APPLE LOCAL begin stack-protector default 5095227 */
+  /* Unless the target chooses otherwise, default stack protection to off.  */
+  if (flag_stack_protect == -1)
+    flag_stack_protect = 0;
+  /* APPLE LOCAL end stack-protector default 5095227 */
 
   /* APPLE LOCAL begin optimization pragmas 3124235/3420242 */
   cl_pf_opts_cooked = cl_pf_opts;

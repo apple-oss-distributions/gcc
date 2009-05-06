@@ -108,7 +108,10 @@ Boston, MA 02110-1301, USA.  */
 
 /* APPLE LOCAL begin mainline */
 #undef ASM_SPEC
-#define ASM_SPEC "-arch %(darwin_arch) -force_cpusubtype_ALL"
+/* APPLE LOCAL begin kext weak_import 5935650 */
+#define ASM_SPEC "-arch %(darwin_arch) -force_cpusubtype_ALL \
+  %{mkernel|static|fapple-kext:%{!m64:-static}}"
+/* APPLE LOCAL end kext weak_import 5935650 */
 
 #define DARWIN_ARCH_SPEC "%{m64:x86_64;:i386}"
 #define DARWIN_SUBARCH_SPEC DARWIN_ARCH_SPEC
@@ -138,6 +141,23 @@ Boston, MA 02110-1301, USA.  */
 /* APPLE LOCAL ARM 5681645 */
 #define DARWIN_IPHONEOS_LIBGCC_SPEC "-lgcc_s.10.5 -lgcc"
 
+/* APPLE LOCAL begin link optimizations 6499452 */
+#undef DARWIN_CRT1_SPEC
+#define DARWIN_CRT1_SPEC						\
+  "%:version-compare(!> 10.5 mmacosx-version-min= -lcrt1.o)		\
+   %:version-compare(>< 10.5 10.6 mmacosx-version-min= -lcrt1.10.5.o)	\
+   %:version-compare(>= 10.6 mmacosx-version-min= -lcrt1.10.6.o)"
+
+#undef DARWIN_DYLIB1_SPEC
+#define DARWIN_DYLIB1_SPEC						\
+  "%:version-compare(!> 10.5 mmacosx-version-min= -ldylib1.o)		\
+   %:version-compare(>< 10.5 10.6 mmacosx-version-min= -ldylib1.10.5.o)"
+
+#undef DARWIN_BUNDLE1_SPEC
+#define DARWIN_BUNDLE1_SPEC						\
+  "%:version-compare(!> 10.6 mmacosx-version-min= -lbundle1.o)"
+/* APPLE LOCAL end link optimizations 6499452 */
+
 #undef SUBTARGET_EXTRA_SPECS
 #define SUBTARGET_EXTRA_SPECS                                   \
   DARWIN_EXTRA_SPECS                                            \
@@ -145,6 +165,14 @@ Boston, MA 02110-1301, USA.  */
   { "darwin_crt2", "" },                                        \
   { "darwin_subarch", DARWIN_SUBARCH_SPEC },
 /* APPLE LOCAL end mainline */
+
+/* APPLE LOCAL begin prefer -lSystem 6645902 */
+#undef LINK_GCC_C_SEQUENCE_SPEC
+#define LINK_GCC_C_SEQUENCE_SPEC					\
+  "%{miphoneos-version-min=*: %G %L}					\
+   %{!miphoneos-version-min=*:						\
+     %{!static:%:version-compare(>= 10.6 mmacosx-version-min= -lSystem)} %G %L}"
+/* APPLE LOCAL end prefer -lSystem 6645902 */
 
 /* Use the following macro for any Darwin/x86-specific command-line option
    translation.  */
@@ -367,9 +395,11 @@ extern void ix86_darwin_init_expanders (void);
 /* APPLE LOCAL begin CW asm blocks */
 #define IASM_VALID_PIC(DECL, E)						\
   do {									\
-    if (E->as_immediate && ! MACHO_DYNAMIC_NO_PIC_P && flag_pic)	\
+    if (! TARGET_64BIT							\
+	&& E->as_immediate && ! MACHO_DYNAMIC_NO_PIC_P && flag_pic)	\
       warning (0, "non-pic addressing form not suitible for pic code");	\
   } while (0)
+#define IASM_RIP(X) do { if (TARGET_64BIT) strcat (X, "(%%rip)"); } while (0)
 /* APPLE LOCAL end cw asm blocks */
 
 /* APPLE LOCAL KEXT */

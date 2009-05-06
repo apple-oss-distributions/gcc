@@ -1468,6 +1468,10 @@ discriminator_for_local_entity (tree entity)
 	  tree type = VEC_index (tree, local_classes, ix);
 	  if (type == entity)
 	    break;
+	  /* APPLE LOCAL begin anon types 6822746 */
+	  if (TYPE_MAIN_DECL (type) == TYPE_MAIN_DECL (entity))
+	    break;
+	  /* APPLE LOCAL end anon types 6822746 */
 	  if (TYPE_IDENTIFIER (type) == TYPE_IDENTIFIER (entity)
 	      && TYPE_CONTEXT (type) == TYPE_CONTEXT (entity))
 	    ++discriminator;
@@ -1648,6 +1652,13 @@ write_type (tree type)
 	  write_char ('P');
 	  write_type (TREE_TYPE (type));
 	  break;
+
+	  /* APPLE LOCAL begin blocks 6040305 */
+	case BLOCK_POINTER_TYPE:
+	  write_string ("U13block_pointer");
+	  write_type (TREE_TYPE (type));
+	  break;
+	  /* APPLE LOCAL end blocks 6040305 */
 
 	case REFERENCE_TYPE:
 	  write_char ('R');

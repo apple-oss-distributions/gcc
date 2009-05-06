@@ -282,9 +282,11 @@ Objective-C and Objective-C++ Dialects}.
 -Wconversion  -Wno-deprecated-declarations @gol
 -Wdisabled-optimization  -Wno-div-by-zero  -Wno-endif-labels @gol
 -Werror  -Werror=* -Werror-implicit-function-declaration @gol
--Wfatal-errors  -Wfloat-equal  -Wformat  -Wformat=2 @gol
+@c APPLE LOCAL default to Wformat-security 5764921
+-Wfatal-errors  -Wfloat-equal  -Wno-format  -Wformat=2 @gol
 -Wno-format-extra-args -Wformat-nonliteral @gol
--Wformat-security  -Wformat-y2k @gol
+@c APPLE LOCAL default to Wformat-security 5764921
+-Wno-format-security  -Wformat-y2k @gol
 @c APPLE LOCAL Wglobal-constructors 6324584
 -Wglobal-constructors @gol
 -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int @gol
@@ -295,6 +297,8 @@ Objective-C and Objective-C++ Dialects}.
 -Wmain  -Wmissing-braces  -Wmissing-field-initializers @gol
 -Wmissing-format-attribute  -Wmissing-include-dirs @gol
 -Wmissing-noreturn @gol
+@c APPLE LOCAL warn missing prototype 6261539
+-Wmissing-prototypes @gol
 @c APPLE LOCAL -Wmost
 -Wmost (APPLE ONLY) @gol
 -Wno-multichar  -Wnonnull  -Wno-overflow @gol
@@ -315,7 +319,8 @@ Objective-C and Objective-C++ Dialects}.
 @c APPLE LOCAL begin -Wdiscard-qual 4086969
 @item C-only Warning Options
 @gccoptlist{-Wbad-function-cast  -Wmissing-declarations @gol
--Wmissing-prototypes  -Wnested-externs  -Wold-style-definition @gol
+@c APPLE LOCAL warn missing prototype 6261539
+-Wnested-externs  -Wold-style-definition @gol
 -Wstrict-prototypes  -Wtraditional @gol
 -Wdeclaration-after-statement -Wno-discard-qual -Wno-pointer-sign}
 @c APPLE LOCAL end -Wdiscard-qual 4086969
@@ -502,7 +507,10 @@ Objective-C and Objective-C++ Dialects}.
 -mthumb  -marm @gol
 -mtpcs-frame  -mtpcs-leaf-frame @gol
 -mcaller-super-interworking  -mcallee-super-interworking @gol
--mtp=@var{name}}
+@c APPLE LOCAL begin 5946347 ms_struct support
+-mtp=@var{name} @gol
+-mms-bitfields -mno-ms-bitfields}
+@c APPLE LOCAL end 5946347 ms_struct support
 
 @c APPLE LOCAL ARM prune man page
 @ignore
@@ -640,7 +648,10 @@ Objective-C and Objective-C++ Dialects}.
 -mstackrealign @gol
 -momit-leaf-frame-pointer  -mno-red-zone -mno-tls-direct-seg-refs @gol
 -mcmodel=@var{code-model} @gol
--m32  -m64 -mlarge-data-threshold=@var{num}}
+@c APPLE LOCAL begin 5946347 ms_struct support
+-m32  -m64 -mlarge-data-threshold=@var{num} @gol
+-mms-bitfields -mno-ms-bitfields}
+@c APPLE LOCAL end 5946347 ms_struct support
 
 @c APPLE LOCAL prune man page
 @ignore
@@ -789,7 +800,10 @@ See RS/6000 and PowerPC Options.
 -mfloat-gprs=yes  -mfloat-gprs=no -mfloat-gprs=single -mfloat-gprs=double @gol
 -mprototype  -mno-prototype @gol
 -msim  -mmvme  -mads  -myellowknife  -memb  -msdata @gol
--msdata=@var{opt}  -mvxworks  -mwindiss  -G @var{num}  -pthread}
+@c APPLE LOCAL begin 5946347 ms_struct support
+-msdata=@var{opt}  -mvxworks  -mwindiss  -G @var{num}  -pthread @gol
+-mms-bitfields -mno-ms-bitfields}
+@c APPLE LOCAL end 5946347 ms_struct support
 
 @c APPLE LOCAL prune man page
 @ignore
@@ -895,7 +909,10 @@ See S/390 and zSeries Options.
 -fargument-alias  -fargument-noalias @gol
 -fargument-noalias-global  -fargument-noalias-anything
 -fleading-underscore  -ftls-model=@var{model} @gol
--ftrapv  -fwrapv  -fbounds-check @gol
+@c APPLE LOCAL begin prune man page 5547358
+@c -ftrapv
+-fwrapv  -fbounds-check @gol
+@c APPLE LOCAL end prune man page
 -fvisibility}
 @end table
 
@@ -978,12 +995,9 @@ C++ source code which must be preprocessed.  Note that in @samp{.cxx},
 the last two letters must both be literally @samp{x}.  Likewise,
 @samp{.C} refers to a literal capital C@.
 
-@item @var{file}.mm
-@itemx @var{file}.M
-Objective-C++ source code which must be preprocessed.
-
-@item @var{file}.mii
-Objective-C++ source code which should not be preprocessed.
+@c APPLE LOCAL begin Objective-C++
+@c Delete duplicate @var{file}.mm, @var{file}.M, @var{file}.mii.
+@c APPLE LOCAL end Objective-C++
 
 @item @var{file}.hh
 @itemx @var{file}.H
@@ -2431,33 +2445,43 @@ to be unlocked properly.
 @item -fobjc-gc
 @opindex fobjc-gc
 Enable garbage collection (GC) in Objective-C and Objective-C++ programs.
-@c APPLE LOCAL begin ObjC GC
-The resulting binary requires additional runtime support which is not
-present in any released version of Mac OS X.
+@c APPLE LOCAL begin radar 5780114  - ObjC GC
+The resulting binary requires additional runtime support which is present on 
+Mac OS X Version 10.5 (Leopard) and later.  All Objective-C objects are presumed 
+to be garbage collected. To aid in this effort, compiler implements assignments 
+of Objective-C object pointers via runtime support functions. These functions work 
+correctly in non-GC environments as well, in case this code is used as part of a 
+library.  Assignments of objects into instance variables of other objects are 
+intercepted, so are assignments to global object variables. In general, assignments 
+through pointers to objects are intercepted. Additionally, assignments of objects 
+as fields within structures are intercepted.
 
-When the @option{-fobjc-gc} switch is specified, the compiler will replace
-assignments to instance variables (ivars) and to certain kinds of pointers to
-Objective-C object instances with calls to interceptor functions provided
-by the runtime garbage collector.  Two type qualifiers, @code{__strong} and
-@code{__weak}, also become available.  The @code{__strong} qualifier may be
-used to indicate that assignments to variables of this type should generate
-a GC interceptor call, e.g.:
+In addition, other pointer variables may be marked with the __strong storage class 
+modifier to indicate to the compiler that these assignments need to use the assignment 
+runtime functions as well, allowing the memory referenced by these pointers to be 
+allocated from the collector. A __weak storage class modifier for pointers is also 
+introduced to indicate a zero-ing weak reference. This is permitted only for instance 
+variables of an object or globals.  The compiler arranges for all reads as well as 
+writes to these variables to occur via runtime support functions.  Under garbage 
+collection these variables are not consulted when determining what is not garbage 
+and they are set to nil (zero) if the memory they reference is deemed garbage and is 
+collected.
 
 @smallexample
-  __strong void *p;  // assignments to 'p' will have interceptor calls
+  __strong void *p;  // assignments to 'p' will have runtime support calls
   int *q;            // assignments to 'q' ordinarly will not
     @dots{}
-  (__strong int *)q = 0;   // this assignment will call an interceptor
+  (__strong int *)q = 0;   // this assignment will call a runtime support function
 @end smallexample
 
-Conversely, the @code{__weak} type qualifier may be used to suppress
-interceptor call generation:
+Conversely, the @code{__weak} type qualifier may be used to call weak runtime 
+functions.
 
 @smallexample
-  __weak id q;      // assignments to 'q' will not have interceptor calls
-  id p;             // assignments to 'p' will have interceptor calls
+  __weak id q;      // assignments to 'q' will have the '__weak' semantics
+  id p;             // assignments to 'p' will have the "__strong' semantics
     @dots{}
-  (__weak id)p = 0;   // suppress interceptor call for this assignment
+  (__weak id)p = 0;   // Fall back to '__weak' semantics in this assignment.
 @end smallexample
 
 @item -fobjc-gc-only
@@ -2467,7 +2491,7 @@ collection (GC) only - that is, it does not contain retain/release logic.
 This flag implies @option{-fobjc-gc} as well. With this flag, framework
 is marked as not honoring retain/release.
 
-@c APPLE LOCAL end ObjC GC
+@c APPLE LOCAL end radar 5780114 - ObjC GC
 @item -freplace-objc-classes
 @opindex freplace-objc-classes
 Emit a special marker instructing @command{ld(1)} not to statically link in
@@ -2740,8 +2764,10 @@ This option causes the compiler to abort compilation on the first error
 occurred rather than trying to keep going and printing further error
 messages.
 
-@item -Wformat
-@opindex Wformat
+@c APPLE LOCAL begin default to Wformat-security 5764921
+@item -Wno-format
+@opindex Wno-format
+@c APPLE LOCAL end default to Wformat-security 5764921
 @opindex ffreestanding
 @opindex fno-builtin
 Check calls to @code{printf} and @code{scanf}, etc., to make sure that
@@ -2806,8 +2832,10 @@ If @option{-Wformat} is specified, also warn if the format string is not a
 string literal and so cannot be checked, unless the format function
 takes its format arguments as a @code{va_list}.
 
-@item -Wformat-security
-@opindex Wformat-security
+@c APPLE LOCAL begin default to Wformat-security 5764921
+@item -Wno-format-security
+@opindex Wno-format-security
+@c APPLE LOCAL end default to Wformat-security 5764921
 If @option{-Wformat} is specified, also warn about uses of format
 functions that represent possible security problems.  At present, this
 warns about calls to @code{printf} and @code{scanf} functions where the
@@ -3227,7 +3255,8 @@ undefined signed overflow when estimating how many iterations a loop
 will require, in particular when determining whether a loop will be
 executed at all.
 
-@table @option
+@c APPLE LOCAL mainline man page 6365204
+@table @gcctabopt
 @item -Wstrict-overflow=1
 Warn about cases which are both questionable and easy to avoid.  For
 example: @code{x + 1 > x}; with @option{-fstrict-overflow}, the
@@ -3353,8 +3382,10 @@ void foo(bar) @{ @}
 An empty body occurs in an @samp{if} or @samp{else} statement.
 
 @c APPLE LOCAL begin mainline
-@item @r{(C++ only)}
-An empty body occurs in a @samp{while} or @samp{for} statement with no
+@c APPLE LOCAL begin pod error 6089368
+@item
+(C++ only) An empty body occurs in a @samp{while} or @samp{for} statement with no
+@c APPLE LOCAL end pod error 6089368
 whitespacing before the semicolon. This warning can be independently
 controlled by @option{-Wempty-body}.
 @c APPLE LOCAL end mainline
@@ -3366,24 +3397,26 @@ A pointer is compared against integer zero with @samp{<}, @samp{<=},
 @item
 A variable might be changed by @samp{longjmp} or @samp{vfork}.
 
-@item @r{(C++ only)}
-An enumerator and a non-enumerator both appear in a conditional expression.
+@c APPLE LOCAL begin pod error 6089368
+@item
+(C++ only) An enumerator and a non-enumerator both appear in a conditional expression.
 
-@item @r{(C++ only)}
-A non-static reference or non-static @samp{const} member appears in a
+@item
+(C++ only) A non-static reference or non-static @samp{const} member appears in a
 class without constructors.
 
-@item @r{(C++ only)}
-Ambiguous virtual bases.
+@item
+(C++ only) Ambiguous virtual bases.
 
-@item @r{(C++ only)}
-Subscripting an array which has been declared @samp{register}.
+@item
+(C++ only) Subscripting an array which has been declared @samp{register}.
 
-@item @r{(C++ only)}
-Taking the address of a variable which has been declared @samp{register}.
+@item
+(C++ only) Taking the address of a variable which has been declared @samp{register}.
 
-@item @r{(C++ only)}
-A base class is not initialized in a derived class' copy constructor.
+@item
+(C++ only) A base class is not initialized in a derived class' copy constructor.
+@c APPLE LOCAL end pod error 6089368
 @end itemize
 
 @item -Wno-div-by-zero
@@ -3617,8 +3650,6 @@ casts like @code{(unsigned) -1}.
 @item -Wshorten-64-to-32
 @opindex Wshorten-64-to-32
 Warn if a value is implicitly converted from a 64 bit type to a 32 bit type.
-This option is deprecated in favor of the -Wconversion option in future
-releases.
 @c APPLE LOCAL end mainline
 
 @c APPLE LOCAL begin mainline
@@ -3681,7 +3712,8 @@ types.)
 Warn if an old-style function definition is used.  A warning is given
 even if there is a previous prototype.
 
-@item -Wmissing-prototypes @r{(C only)}
+@c APPLE LOCAL warn missing prototype 6261539
+@item -Wmissing-prototypes
 @opindex Wmissing-prototypes
 Warn if a global function is defined without a previous prototype
 declaration.  This warning is issued even if the definition itself
@@ -7064,6 +7096,8 @@ they cause the preprocessor output to be unsuitable for actual
 compilation.
 
 @table @gcctabopt
+@c APPLE LOCAL pod error 6089368
+@item -Wp,@var{option}
 @opindex Wp
 You can use @option{-Wp,@var{option}} to bypass the compiler driver
 and pass @var{option} directly through to the preprocessor.  If
@@ -8457,10 +8491,8 @@ and has length @code{((pc[-3]) & 0xff000000)}.
 
 @item -mthumb
 @opindex mthumb
-Generate code for the 16-bit Thumb instruction set.  For ARMv7, the default
-is to use the THUMB2 instruction set. For all other architectures, the default
-is to use the 32-bit ARM instruction set. The ARM instruction set may be
-explicitly selected via @option{-mno-thumb} or @option{-marm}.
+Generate code for the 16-bit Thumb instruction set.  The default is to
+use the 32-bit ARM instruction set.
 
 @item -mtpcs-frame
 @opindex mtpcs-frame
@@ -8496,6 +8528,15 @@ models are @option{soft}, which generates calls to @code{__aeabi_read_tp},
 (supported in the arm6k architecture), and @option{auto}, which uses the
 best available method for the selected processor.  The default setting is
 @option{auto}.
+
+@c APPLE LOCAL begin  5946347 ms_struct support
+@item -mms-bitfields
+@opindex mms-bitfields
+Set the default structure layout to be compatible with the Microsoft
+compiler standard. This is equivalent to adding an @code{ms_struct}
+attribute to each structure and union tag definition. The default is
+@option{mno-ms-bitfields}.
+@c APPLE LOCAL end 5946347 ms_struct support
 
 @end table
 
@@ -8937,6 +8978,10 @@ applicable.  This mode also sets @option{-mno-altivec},
 targets.  Of these, only -msoft-float can be changed which is useful in
 a kext that wishes to use the hardware floating point unit.
 @c APPLE LOCAL end 5731065 6268204
+@c APPLE LOCAL begin kext weak_import 5935650
+@option{-dynamic} can be used to override the effects of -static on
+the assembler to enable the use of weak_import.
+@c APPLE LOCAL end kext weak_import 5935650
 
 @item -mone-byte-bool
 @opindex mone-byte-bool
@@ -10611,6 +10656,16 @@ building of shared libraries are not supported with the medium model.
 Generate code for the large model: This model makes no assumptions
 about addresses and sizes of sections.  Currently GCC does not implement
 this model.
+
+@c APPLE LOCAL begin 5946347 ms_struct support
+@item -mms-bitfields
+@opindex mms-bitfields
+Set the default structure layout to be compatible with the Microsoft
+compiler standard. This is equivalent to adding an @code{ms_struct}
+attribute to each structure and union tag definition. The default is
+@option{mno-ms-bitfields}.
+@c APPLE LOCAL end 5946347 ms_struct support
+
 @end table
 
 @c APPLE LOCAL prune man page
@@ -12948,6 +13003,15 @@ when the linker is known to generate glue.
 Adds support for multithreading with the @dfn{pthreads} library.
 This option sets flags for both the preprocessor and linker.
 
+@c APPLE LOCAL begin 5946347 ms_struct support
+@item -mms-bitfields
+@opindex mms-bitfields
+Set the default structure layout to be compatible with the Microsoft
+compiler standard. This is equivalent to adding an @code{ms_struct}
+attribute to each structure and union tag definition. The default is
+@option{mno-ms-bitfields}.
+@c APPLE LOCAL end 5946347 ms_struct support
+
 @end table
 
 @c APPLE LOCAL prune man page
@@ -14149,10 +14213,14 @@ indices used to access arrays are within the declared range.  This is
 currently only supported by the Java and Fortran front-ends, where
 this option defaults to true and false respectively.
 
+@c APPLE LOCAL prune man page 5547358
+@ignore
 @item -ftrapv
 @opindex ftrapv
 This option generates traps for signed overflow on addition, subtraction,
 multiplication operations.
+@c APPLE LOCAL prune man page 5547358
+@end ignore
 
 @item -fwrapv
 @opindex fwrapv

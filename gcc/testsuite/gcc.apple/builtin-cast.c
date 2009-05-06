@@ -1,5 +1,5 @@
 /* APPLE LOCAL file radar 4629695 */
-/* { dg-do compile { target i?86*-*-darwin* } } */
+/* { dg-do compile } */
 /* { dg-options "-m64" } */
 /* { dg-final { scan-assembler "_memcmp" } } */
 extern void abort (void);

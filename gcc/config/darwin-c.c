@@ -338,10 +338,12 @@ darwin_pragma_unused (cpp_reader *pfile ATTRIBUTE_UNUSED)
   tree decl, x;
   int tok;
 
-  if (pragma_lex (&x) != CPP_OPEN_PAREN)
+  /* APPLE LOCAL 5979888 */
+  if ((tok=pragma_lex (&x)) != CPP_OPEN_PAREN)
     BAD ("missing '(' after '#pragma unused', ignoring");
 
-  while (1)
+  /* APPLE LOCAL 5979888 */
+  while (tok != CPP_EOF && tok != CPP_CLOSE_PAREN)
     {
       tok = pragma_lex (&decl);
       if (tok == CPP_NAME && decl)
@@ -1079,9 +1081,18 @@ darwin_cpp_builtins (cpp_reader *pfile)
   else
     {
       builtin_define ("__strong=");
-      builtin_define ("__weak=");
+      /* APPLE LOCAL radar 5847976 */
+      builtin_define ("__weak=__attribute__((objc_gc(weak)))");
     }
   /* APPLE LOCAL end ObjC GC */
+  /* APPLE LOCAL begin radar 5932809 - copyable byref blocks */
+  if (flag_blocks) {
+    builtin_define ("__block=__attribute__((__blocks__(byref)))");
+  }
+  /* APPLE LOCAL radar 6230656 */
+  /* code removed */
+  /* APPLE LOCAL end radar 5932809 - copyable byref blocks */
+
   /* APPLE LOCAL begin C* warnings to easy porting to new abi */
   if (flag_objc_abi == 2)
     builtin_define ("__OBJC2__");
@@ -1136,6 +1147,13 @@ objc_check_format_cfstring (tree argument,
                             bool *no_add_attrs)
 {
   unsigned HOST_WIDE_INT i;
+  /* APPLE LOCAL begin 6212507 */
+  if (format_num < 1)
+    {
+      error ("argument number of CFString format cannot be less than one");
+      return false;
+    }
+  /* APPLE LOCAL end 6212507 */
   for (i = 1; i != format_num; i++)
     {
       if (argument == 0)
@@ -1153,12 +1171,64 @@ objc_check_format_cfstring (tree argument,
 }
 /* APPLE LOCAL end radar 4985544 - radar 5096648 - radar 5195402 */
 
-/* APPLE LOCAL begin radar 2996215 */
-/* Objc wrapper to call libcpp's conversion routine. */
+/* APPLE LOCAL begin radar 2996215 - 6068877 */
+/* wrapper to call libcpp's conversion routine. */
 bool
-objc_cvt_utf8_utf16 (const unsigned char *inbuf, size_t length, 
+cvt_utf8_utf16 (const unsigned char *inbuf, size_t length, 
 		     unsigned char **uniCharBuf, size_t *numUniChars)
 {
   return cpp_utf8_utf16 (parse_in, inbuf, length, uniCharBuf, numUniChars);
 }
-/* APPLE LOCAL end radar 2996215 */
+/* This routine declares static char __utf16_string [numUniChars] in __TEXT,__ustring
+   section and initializes it with uniCharBuf[numUniChars] characters.
+*/ 
+tree
+create_init_utf16_var (const unsigned char *inbuf, size_t length, size_t *numUniChars)
+{
+  size_t l;
+  tree decl, type, init;
+  tree initlist = NULL_TREE;
+  tree attribute; 
+  const char *section_name = "__TEXT,__ustring";
+  int len = strlen (section_name);
+  unsigned char *uniCharBuf;
+  static int num;
+  const char *name_prefix = "__utf16_string_";
+  char *name;
+
+  if (!cvt_utf8_utf16 (inbuf, length, &uniCharBuf, numUniChars))
+    return NULL_TREE;
+
+  for (l = 0; l < *numUniChars; l++)
+    initlist = tree_cons (NULL_TREE, build_int_cst (char_type_node, uniCharBuf[l]), initlist);
+  type = build_array_type (char_type_node,
+                           build_index_type (build_int_cst (NULL_TREE, *numUniChars)));
+  name = (char *)alloca (strlen (name_prefix) + 10);
+  sprintf (name, "%s%d", name_prefix, ++num);
+  decl = build_decl (VAR_DECL, get_identifier (name), type);
+  TREE_STATIC (decl) = 1;
+  DECL_INITIAL (decl) = error_mark_node;  /* A real initializer is coming... */
+  DECL_IGNORED_P (decl) = 1;
+  DECL_ARTIFICIAL (decl) = 1;
+  DECL_CONTEXT (decl) = NULL_TREE;
+
+  attribute = tree_cons (NULL_TREE, build_string (len, section_name), NULL_TREE);
+  attribute = tree_cons (get_identifier ("section"), attribute, NULL_TREE);
+  decl_attributes (&decl, attribute, 0);
+  attribute = tree_cons (NULL_TREE, build_int_cst (NULL_TREE, 2), NULL_TREE);
+  attribute = tree_cons (get_identifier ("aligned"), attribute, NULL_TREE);
+  decl_attributes (&decl, attribute, 0);
+  init = build_constructor_from_list (type, nreverse (initlist));
+  TREE_CONSTANT (init) = 1;
+  TREE_STATIC (init) = 1;
+  TREE_READONLY (init) = 1;
+  if (c_dialect_cxx ())
+    TREE_TYPE (init) = NULL_TREE;
+  finish_decl (decl, init, NULL_TREE);
+  /* Ensure that the variable actually gets output.  */
+  mark_decl_referenced (decl);
+  /* Mark the decl to avoid "defined but not used" warning.  */
+  TREE_USED (decl) = 1;
+  return decl;
+}
+/* APPLE LOCAL end radar 2996215 - 6068877 */

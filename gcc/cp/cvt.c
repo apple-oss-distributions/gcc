@@ -578,14 +578,9 @@ convert_from_reference (tree val)
 tree
 force_rvalue (tree expr)
 {
-  /* APPLE LOCAL begin radar 6936421 */
-  if (IS_AGGR_TYPE (TREE_TYPE (expr)) && TREE_CODE (expr) != TARGET_EXPR) {
-    if (objc_property_reference_expr (expr))
-      expr = objc_build_property_getter_func_call (expr);
+  if (IS_AGGR_TYPE (TREE_TYPE (expr)) && TREE_CODE (expr) != TARGET_EXPR)
     expr = ocp_convert (TREE_TYPE (expr), expr,
 			CONV_IMPLICIT|CONV_FORCE_TEMP, LOOKUP_NORMAL);
-  }
-  /* APPLE LOCAL end radar 6936421 */
   else
     expr = decay_conversion (expr);
 
@@ -645,7 +640,8 @@ ocp_convert (tree type, tree expr, int convtype, int flags)
   if ((invalid_conv_diag
        = targetm.invalid_conversion (TREE_TYPE (expr), type)))
     {
-      error (invalid_conv_diag);
+      /* APPLE LOCAL default to Wformat-security 5764921 */
+      error (invalid_conv_diag, "");
       return error_mark_node;
     }
 

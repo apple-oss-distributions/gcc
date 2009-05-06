@@ -6,7 +6,7 @@
 /* APPLE LOCAL axe stubs 5571540 */
 /* { dg-options "-mdynamic-no-pic -fdump-rtl-jump -mmacosx-version-min=10.4" } */
 /* APPLE LOCAL radar 4894756 */
-/* { dg-skip-if "" { *-*-darwin* } { "-m64" } { "" } } */
+/* { dg-require-effective-target ilp32 } */
 
 typedef struct objc_object { } *id ;
 int x = 41 ;

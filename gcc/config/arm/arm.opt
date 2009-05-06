@@ -49,10 +49,8 @@ march=
 Target RejectNegative Joined
 Specify the name of the target architecture
 
-; ALQAAHIRA LOCAL begin 6150882 use thumb2 by default for v7
 marm
-Target RejectNegative VarExists Var(thumb_option, 0) Undocumented
-; ALQAAHIRA LOCAL end 6150882 use thumb2 by default for v7
+Target RejectNegative InverseMask(THUMB) Undocumented
 
 mbig-endian
 Target Report RejectNegative Mask(BIG_END)
@@ -142,11 +140,9 @@ mstructure-size-boundary=
 Target RejectNegative Joined Var(structure_size_string)
 Specify the minimum bit alignment of structures
 
-; ALQAAHIRA LOCAL begin 6150882 use thumb2 by default for v7
 mthumb
-Target Report Var(thumb_option) Init(-1)
+Target Report Mask(THUMB)
 Compile for the Thumb not the ARM
-; ALQAAHIRA LOCAL end 6150882 use thumb2 by default for v7
 
 ; APPLE LOCAL begin ARM interworking
 mthumb-interwork
@@ -173,9 +169,9 @@ Tune code for the given processor
 mwords-little-endian
 Target Report RejectNegative Mask(LITTLE_WORDS)
 Assume big endian bytes, little endian words
-; ALQAAHIRA LOCAL begin v7 support. Merge from Codesourcery
 
-mvectorize-with-neon-quad
-Target Report Mask(NEON_VECTORIZE_QUAD)
-Use Neon quad-word (rather than double-word) registers for vectorization
-; ALQAAHIRA LOCAL end v7 support. Merge from Codesourcery
+; APPLE LOCAL begin 5946347 ms_struct support
+mms-bitfields
+Target Report Mask(MS_BITFIELD_LAYOUT)
+Use Microsoft structure layout
+; APPLE LOCAL end 5946347 ms_struct support

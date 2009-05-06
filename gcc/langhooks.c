@@ -522,7 +522,8 @@ lhd_print_error_function (diagnostic_context *context, const char *file)
       pp_set_prefix (context->printer, new_prefix);
 
       if (current_function_decl == NULL)
-	pp_printf (context->printer, _("At top level:"));
+	/* APPLE LOCAL default to Wformat-security 5764921 */
+	pp_printf (context->printer, "%s", _("At top level:"));
       else
 	{
 	  if (TREE_CODE (TREE_TYPE (current_function_decl)) == METHOD_TYPE)
@@ -612,3 +613,19 @@ lhd_omp_firstprivatize_type_sizes (struct gimplify_omp_ctx *c ATTRIBUTE_UNUSED,
 				   tree t ATTRIBUTE_UNUSED)
 {
 }
+
+/* APPLE LOCAL begin radar 6353006  */
+tree 
+lhd_build_generic_block_struct_type (void)
+{
+  return NULL_TREE;
+}
+/* APPLE LOCAL end radar 6353006  */
+
+/* APPLE LOCAL begin radar 6386976  */
+bool
+lhd_is_runtime_specific_type (tree type ATTRIBUTE_UNUSED)
+{
+  return false;
+}
+/* APPLE LOCAL end radar 6386976  */

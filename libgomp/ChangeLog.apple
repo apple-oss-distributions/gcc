@@ -1,3 +1,14 @@
+2007-01-14  Eric Christopher  <echristo@pple.com>
+
+        Radar 5674196
+	* libgomp/configure.tgt: Build ppc64 for 10.4.0.
+
+2007-01-08  Eric Christopher  <echristo@apple.com>
+
+	Radar 5674196
+	* libgomp/configure.tgt: Build for 10.3.9 for ppc/ppc64.
+	10.4.0 for x86 processors.
+
 2007-12-03  Eric Christopher  <echristo@apple.com>
 
 	Radar 5602977

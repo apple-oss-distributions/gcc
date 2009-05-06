@@ -69,6 +69,10 @@ const char *const tree_code_class_strings[] =
   "expression",
 };
 
+/* APPLE LOCAL begin 6353006  */
+tree generic_block_literal_struct_type;
+/* APPLE LOCAL end 6353006  */
+
 /* obstack.[ch] explicitly declined to prototype this.  */
 extern int _obstack_allocated_p (struct obstack *h, void *obj);
 
@@ -5067,6 +5071,31 @@ build_pointer_type (tree to_type)
   return build_pointer_type_for_mode (to_type, ptr_mode, false);
 }
 
+/* APPLE LOCAL begin radar 5732232 - blocks */
+tree
+build_block_pointer_type (tree to_type)
+{
+  tree t;
+  
+  /* APPLE LOCAL begin radar 6300081 & 6353006 */
+  if (!generic_block_literal_struct_type)
+    generic_block_literal_struct_type = 
+                                 lang_hooks.build_generic_block_struct_type ();
+  /* APPLE LOCAL end radar 6300081 & 6353006 */
+
+  t = make_node (BLOCK_POINTER_TYPE);
+
+  TREE_TYPE (t) = to_type;
+  TYPE_MODE (t) = ptr_mode;
+
+  /* Lay out the type.  This function has many callers that are concerned
+     with expression-construction, and this simplifies them all.  */
+  layout_type (t);
+
+  return t;
+}
+/* APPLE LOCAL end radar 5732232 - blocks */
+
 /* Same as build_pointer_type_for_mode, but for REFERENCE_TYPE.  */
 
 tree
@@ -6889,7 +6918,12 @@ reconstruct_complex_type (tree type, tree bottom)
       /* APPLE LOCAL begin AltiVec */
       outer = (TREE_CODE (type) == REFERENCE_TYPE
 	       ? build_reference_type (inner)
-	       : build_pointer_type (inner));
+               /* APPLE LOCAL begin blocks 5882266 */
+	       : (TREE_CODE (type) == BLOCK_POINTER_TYPE ? 
+                  build_block_pointer_type (inner) : 
+                  build_pointer_type (inner))
+               );
+               /* APPLE LOCAL end blocks 5882266 */
       /* APPLE LOCAL end AltiVec */
     }
   else if (TREE_CODE (type) == ARRAY_TYPE)

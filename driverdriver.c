@@ -1,4 +1,5 @@
 /* APPLE LOCAL file driver driver */
+
 /* Darwin driver program that handles -arch commands and invokes
    appropriate compiler driver.
    Copyright (C) 2004, 2005 Free Software Foundation, Inc.
@@ -76,6 +77,8 @@ int ima_is_used = 0;
 int dash_dynamiclib_seen = 0;
 int verbose_flag = 0;
 int save_temps_seen = 0;
+int dash_m32_seen = 0;
+int dash_m64_seen = 0;
 
 /* Support at the max 10 arch. at a time. This is historical limit.  */
 #define MAX_ARCHES 10
@@ -125,7 +128,6 @@ struct arch_config_guess_map arch_config_map [] =
   {"armv5", "arm"},
   {"xscale", "arm"},
   {"armv6", "arm"},
-  {"armv7", "arm"},
   {NULL, NULL}
 };
 
@@ -191,27 +193,35 @@ static int get_prog_name_len (const char *prog);
 static const char *
 get_arch_name (const char *name)
 {
-  const NXArchInfo * a_info;
+  NXArchInfo * a_info;
   const NXArchInfo * all_info;
   cpu_type_t cputype;
   struct arch_config_guess_map *map;
   const char *aname;
 
-  if (name)
-    {
-      /* Find config name based on arch name.  */
-      aname = NULL;
-      map = arch_config_map;
-      while (map->arch_name)
-	{
-	  if (!strcmp (map->arch_name, name))
-	    return name;
-	  else map++;
-	}
-      a_info = NXGetArchInfoFromName (name);
+  if (name) {
+    /* Find config name based on arch name.  */
+    aname = NULL;
+    map = arch_config_map;
+    while (map->arch_name) {
+      if (!strcmp (map->arch_name, name))
+	return name;
+      else map++;
     }
-  else
-    a_info = NXGetLocalArchInfo ();
+    a_info = (NXArchInfo *) NXGetArchInfoFromName (name);
+  } else {
+    a_info = (NXArchInfo *) NXGetLocalArchInfo();
+    if (a_info) {
+      if (dash_m32_seen) {
+        /* If -m32 is seen then do not change cpu type.  */
+      } else if (dash_m64_seen) {
+        /* If -m64 is seen then enable CPU_ARCH_ABI64.  */
+	a_info->cputype |= CPU_ARCH_ABI64;
+      } else if (sizeof (long) == 8)
+	/* On x86, by default (name is NULL here) enable 64 bit code.  */
+	a_info->cputype |= CPU_ARCH_ABI64;
+    }
+  }
 
   if (!a_info)
     fatal ("Invalid arch name : %s", name);
@@ -625,8 +635,8 @@ do_compile_separately (void)
 
   /* Total number of arguments in separate compiler invocation is :
      total number of original arguments - total no input files + one input
-     file + "-o" + output file .  */
-  new_new_argv = (const char **) malloc ((new_argc - num_infiles + 4) * sizeof (const char *));
+     file + "-o" + output file + arch specific options + NULL .  */
+  new_new_argv = (const char **) malloc ((new_argc - num_infiles + 5) * sizeof (const char *));
   if (!new_new_argv)
     abort ();
 
@@ -640,7 +650,6 @@ do_compile_separately (void)
 
       for (i = 1; i < new_argc; i++)
 	{
-
 	  if (ifn && ifn->name && !strcmp (new_argv[i], ifn->name))
 	    {
 	      /* This argument is one of the input file.  */
@@ -712,7 +721,9 @@ filter_args_for_arch (const char **orig_argv, int orig_argc,
 }
 
 /* Replace -arch <blah> options with appropriate "-mcpu=<blah>" OR
-   "-march=<blah>".  INDEX is the index in arches[] table. */
+   "-march=<blah>".  INDEX is the index in arches[] table.  We cannot
+   return more than 1 as do_compile_separately only allocated one
+   extra slot for us.  */
 
 static int
 add_arch_options (int index, const char **current_argv, int arch_index)
@@ -770,8 +781,6 @@ add_arch_options (int index, const char **current_argv, int arch_index)
     current_argv[arch_index] = "-march=xscale";
   else if (!strcmp (arches[index], "armv6"))
     current_argv[arch_index] = "-march=armv6k";
-  else if (!strcmp (arches[index], "armv7"))
-    current_argv[arch_index] = "-march=armv7a";
   else
     count = 0;
 
@@ -1372,6 +1381,16 @@ main (int argc, const char **argv)
 	  new_argv[new_argc++] = argv[i];
 	  dash_capital_m_seen = 1;
 	}
+      else if (!strcmp (argv[i], "-m32"))
+	{
+	  new_argv[new_argc++] = argv[i];
+	  dash_m32_seen = 1;
+	}
+      else if (!strcmp (argv[i], "-m64"))
+	{
+	  new_argv[new_argc++] = argv[i];
+	  dash_m64_seen = 1;
+	}
       else if (!strcmp (argv[i], "-dynamiclib"))
 	{
 	  new_argv[new_argc++] = argv[i];
@@ -1506,6 +1525,9 @@ main (int argc, const char **argv)
     fatal ("no input files");
 #endif
 
+  if (num_arches == 0)
+    add_arch(get_arch_name(NULL));
+
   if (num_arches > 1)
     {
       if (preprocessed_output_request
@@ -1518,22 +1540,15 @@ main (int argc, const char **argv)
      Invoke appropriate compiler driver.  FAT build is not required in this
      case.  */
 
-  if (num_arches == 0 || num_arches == 1)
+  if (num_arches == 1)
     {
       int arch_specific_argc;
       const char **arch_specific_argv;
 
-      /* If no -arch is specified than use host compiler driver.  */
-      if (num_arches == 0)
-	new_argv[0] = get_driver_name (get_arch_name (NULL));
-      else if (num_arches == 1)
-	{
-	  /* Find compiler driver based on -arch <foo> and add approriate
-	     -m* argument.  */
-	  new_argv[0] = get_driver_name (get_arch_name (arches[0]));
-	  new_argc = new_argc + add_arch_options (0, new_argv, new_argc);
-	}
-
+      /* Find compiler driver based on -arch <foo> and add approriate
+	 -m* argument.  */
+      new_argv[0] = get_driver_name (get_arch_name (arches[0]));
+      new_argc = new_argc + add_arch_options (0, new_argv, new_argc);
 
 #ifdef DEBUG
       printf ("%s: invoking single driver name = %s\n", progname, new_argv[0]);

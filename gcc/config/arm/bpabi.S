@@ -1,6 +1,6 @@
 /* Miscellaneous BPABI functions.
 
-   Copyright (C) 2003, 2004 Free Software Foundation, Inc.
+   Copyright (C) 2003, 2004  Free Software Foundation, Inc.
    Contributed by CodeSourcery, LLC.
 
    This file is free software; you can redistribute it and/or modify it
@@ -44,10 +44,7 @@
 ARM_FUNC_START aeabi_lcmp
 	subs	ip, xxl, yyl
 	sbcs	ip, xxh, yyh
-/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
-	do_it	eq
-	COND(sub,s,eq)  ip, xxl, yyl
-/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
+	subeqs  ip, xxl, yyl
 	mov	r0, ip
 	RET
 	FUNC_END aeabi_lcmp
@@ -58,20 +55,12 @@ ARM_FUNC_START aeabi_lcmp
 
 ARM_FUNC_START aeabi_ulcmp
 	cmp	xxh, yyh
-/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
-	do_it	lo
 	movlo	r0, #-1
-	do_it	hi
 	movhi	r0, #1
-	do_it	ne
 	RETc(ne)
 	cmp	xxl, yyl
-	do_it	lo
 	movlo	r0, #-1
-	do_it	hi
 	movhi	r0, #1
-	do_it	eq
-/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
 	moveq	r0, #0
 	RET
 	FUNC_END aeabi_ulcmp
@@ -82,18 +71,11 @@ ARM_FUNC_START aeabi_ulcmp
 
 ARM_FUNC_START aeabi_ldivmod
 	sub sp, sp, #8
-/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
-#if defined(__thumb2__)
-	mov ip, sp
-	push {ip, lr}
-#else
-	do_push {sp, lr}
-#endif
+	stmfd sp!, {sp, lr}
 	bl SYM(__gnu_ldivmod_helper) __PLT__
 	ldr lr, [sp, #4]
 	add sp, sp, #8
-	do_pop {r2, r3}
-/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
+	ldmfd sp!, {r2, r3}
 	RET
 	
 #endif /* L_aeabi_ldivmod */
@@ -102,18 +84,11 @@ ARM_FUNC_START aeabi_ldivmod
 
 ARM_FUNC_START aeabi_uldivmod
 	sub sp, sp, #8
-/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
-#if defined(__thumb2__)
-	mov ip, sp
-	push {ip, lr}
-#else
-	do_push {sp, lr}
-#endif
+	stmfd sp!, {sp, lr}
 	bl SYM(__gnu_uldivmod_helper) __PLT__
 	ldr lr, [sp, #4]
 	add sp, sp, #8
-	do_pop {r2, r3}
-/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
+	ldmfd sp!, {r2, r3}
 	RET
 	
 #endif /* L_aeabi_divmod */

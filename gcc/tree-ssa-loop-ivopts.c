@@ -1489,8 +1489,12 @@ may_be_nonaddressable_p (tree expr)
 	 and make them look addressable.  After some processing the
 	 non-addressability may be uncovered again, causing ADDR_EXPRs
 	 of inappropriate objects to be built.  */
-      return AGGREGATE_TYPE_P (TREE_TYPE (expr))
-	     && !AGGREGATE_TYPE_P (TREE_TYPE (TREE_OPERAND (expr, 0)));
+      /* APPLE LOCAL begin 6187262 */
+      return ((AGGREGATE_TYPE_P (TREE_TYPE (expr))
+	       || TREE_CODE (TREE_TYPE (expr)) == VECTOR_TYPE)
+	      && !(AGGREGATE_TYPE_P (TREE_TYPE (TREE_OPERAND (expr, 0)))
+		   || TREE_CODE (TREE_TYPE (TREE_OPERAND (expr, 0))) == VECTOR_TYPE));
+      /* APPLE LOCAL end 6187262 */
 
     default:
       break;
@@ -2955,7 +2959,10 @@ aff_combination_to_tree (struct affine_tree_combination *comb)
     expr = add_elt_to_tree (expr, type, comb->elts[i], comb->coefs[i],
 			    comb->mask);
 
-  if ((comb->offset | (comb->mask >> 1)) == comb->mask)
+  /* APPLE LOCAL begin 6755006 */
+  if (( ! TYPE_UNSIGNED (comb->type))
+      && ((comb->offset | (comb->mask >> 1)) == comb->mask))
+  /* APPLE LOCAL end 6755006 */
     {
       /* Offset is negative.  */
       off = (-comb->offset) & comb->mask;

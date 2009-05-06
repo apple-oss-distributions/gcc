@@ -74,7 +74,8 @@ free_path (struct cpp_dir *path, int reason)
     case REASON_DUP_SYS:
       fprintf (stderr, _("ignoring duplicate directory \"%s\"\n"), path->name);
       if (reason == REASON_DUP_SYS)
-	fprintf (stderr,
+	/* APPLE LOCAL default to Wformat-security 5764921 */
+	fprintf (stderr, "%s",
  _("  as it is a non-system directory that duplicates a system directory\n"));
       break;
 
@@ -178,11 +179,13 @@ add_standard_paths (const char *sysroot, const char *iprefix,
 
 
 /* APPLE LOCAL begin headermaps 3871393 */ 
+#include <stdint.h>
+
 /* Private function that hashes the contents of the null-terminated
    string in a case-insensitive way.  For use by headermaps only.  */
 
 static inline 
-uint32 hmap_hash_string (const char *str)
+uint32_t hmap_hash_string (const char *str)
 {
   const char *sp;
   unsigned hash_code = 0;
@@ -294,9 +297,9 @@ hmap_construct_pathname (const char *filename, cpp_dir *dir)
       struct hmap_header_map *headermap;
       const char *strings;
       struct hmap_bucket *buckets;
-      uint32 bucket_mask;
-      uint32 i;
-      uint32 key_offset;
+      uint32_t bucket_mask;
+      uint32_t i;
+      uint32_t key_offset;
 
       headermap = (struct hmap_header_map *)dir->header_map;
       strings = ((const char *)headermap) + headermap->strings_offset;
@@ -479,11 +482,13 @@ merge_include_chains (cpp_reader *pfile, int verbose)
     {
       struct cpp_dir *p;
 
-      fprintf (stderr, _("#include \"...\" search starts here:\n"));
+      /* APPLE LOCAL default to Wformat-security 5764921 */
+      fprintf (stderr, "%s", _("#include \"...\" search starts here:\n"));
       for (p = heads[QUOTE];; p = p->next)
 	{
 	  if (p == heads[BRACKET])
-	    fprintf (stderr, _("#include <...> search starts here:\n"));
+	    /* APPLE LOCAL default to Wformat-security 5764921 */
+	    fprintf (stderr, "%s", _("#include <...> search starts here:\n"));
 	  if (!p)
 	    break;
 	  /* APPLE LOCAL begin 5033355 */
@@ -495,7 +500,8 @@ merge_include_chains (cpp_reader *pfile, int verbose)
 	    fprintf (stderr, " %s (framework directory)\n", p->name);
 	  /* APPLE LOCAL end 5033355 */
 	}
-      fprintf (stderr, _("End of search list.\n"));
+      /* APPLE LOCAL default to Wformat-security 5764921 */
+      fprintf (stderr, "%s", _("End of search list.\n"));
     }
 }
 

@@ -282,25 +282,13 @@ __gnu_unwind_execute (_Unwind_Context * context, __gnu_unwind_state * uws)
 	    }
 	  if (op == 0xc8)
 	    {
-/* ALQAAHIRA LOCAL begin v7 support. Merge from mainline */
-#ifndef __VFP_FP__
- 	      /* Pop FPA registers.  */
- 	      op = next_unwind_byte (uws);
+	      /* Pop FPA registers.  */
+	      op = next_unwind_byte (uws);
 	      op = ((op & 0xf0) << 12) | ((op & 0xf) + 1);
- 	      if (_Unwind_VRS_Pop (context, _UVRSC_FPA, op, _UVRSD_FPAX)
- 		  != _UVRSR_OK)
- 		return _URC_FAILURE;
- 	      continue;
-#else
-              /* Pop VFPv3 registers D[16+ssss]-D[16+ssss+cccc] with vldm.  */
-              op = next_unwind_byte (uws);
-              op = (((op & 0xf0) + 16) << 12) | ((op & 0xf) + 1);
-              if (_Unwind_VRS_Pop (context, _UVRSC_VFP, op, _UVRSD_DOUBLE)
-                  != _UVRSR_OK)
-                return _URC_FAILURE;
-              continue;
-#endif
-/* ALQAAHIRA LOCAL end v7 support. Merge from mainline */
+	      if (_Unwind_VRS_Pop (context, _UVRSC_FPA, op, _UVRSD_FPAX)
+		  != _UVRSR_OK)
+		return _URC_FAILURE;
+	      continue;
 	    }
 	  if (op == 0xc9)
 	    {
@@ -391,19 +379,3 @@ _Unwind_GetLanguageSpecificData (_Unwind_Context * context)
   return ptr;
 }
 
-/* ALQAAHIRA LOCAL begin v7 support. Merge from Codesourcery */
-
-/* These two should never be used.  */
-
-_Unwind_Ptr
-_Unwind_GetDataRelBase (_Unwind_Context *context __attribute__ ((unused)))
-{
-  abort ();
-}
-
-_Unwind_Ptr
-_Unwind_GetTextRelBase (_Unwind_Context *context __attribute__ ((unused)))
-{
-  abort ();
-}
-/* ALQAAHIRA LOCAL end v7 support. Merge from Codesourcery */

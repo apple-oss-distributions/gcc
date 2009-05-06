@@ -2015,8 +2015,10 @@ expand_call_inline (basic_block bb, tree stmt, tree *tp, void *data)
 	  /* Avoid warnings during early inline pass. */
 	  && (!flag_unit_at_a_time || cgraph_global_info_ready))
 	{
-	  sorry ("inlining failed in call to %q+F: %s", fn, reason);
-	  sorry ("called from here");
+	  /* APPLE LOCAL begin wording 4598393 */
+	  error ("%<always_inline%> function could not be inlined in call to %q+F: %s", fn, reason);
+	  error ("called from here");
+	  /* APPLE LOCAL end wording 4598393 */
 	}
       else if (warn_inline && DECL_DECLARED_INLINE_P (fn)
 	       && !DECL_IN_SYSTEM_HEADER (fn)

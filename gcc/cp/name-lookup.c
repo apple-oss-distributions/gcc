@@ -366,6 +366,8 @@ push_binding (tree id, tree decl, cxx_scope* level)
     {
       binding = cxx_binding_make (decl, NULL_TREE);
       binding->scope = level;
+      /* APPLE LOCAL blocks 6040305 (ch) */
+      binding->declared_in_block = cur_block != 0;
     }
   else
     binding = new_class_binding (id, decl, /*type=*/NULL_TREE, level);
@@ -811,7 +813,12 @@ pushdecl_maybe_friend (tree x, bool is_friend)
 	      if (TYPE_NAME (type) == 0)
 		TYPE_NAME (type) = x;
 	    }
-	  else if (type != error_mark_node && TYPE_NAME (type) != x
+	  /* APPLE LOCAL begin radar 6007135, typedef of anonymous struct  */
+	  /* Make sure to do the copying if the type was anonymous  */
+	  else if (type != error_mark_node 
+		   && ((TYPE_NAME (type) != x) 
+		       || (TYPE_LANG_SPECIFIC (type) && TYPE_WAS_ANONYMOUS (type)))
+	  /* APPLE LOCAL end radar 6007135, typedef of anonymous struct  */
 		   /* We don't want to copy the type when all we're
 		      doing is making a TYPE_DECL for the purposes of
 		      inlining.  */
@@ -1823,6 +1830,8 @@ binding_for_name (cxx_scope *scope, tree name)
   result->scope = scope;
   result->is_local = false;
   result->value_is_inherited = false;
+  /* APPLE LOCAL blocks 6040305 (ch) */
+  result->declared_in_block = 0;
   IDENTIFIER_NAMESPACE_BINDINGS (name) = result;
   return result;
 }
@@ -3401,7 +3410,10 @@ parse_using_directive (tree namespace, tree attribs)
 	    error ("strong using only meaningful at namespace scope");
 	  else if (namespace != error_mark_node)
 	    {
-	      if (!is_ancestor (current_namespace, namespace))
+	      /* APPLE LOCAL begin 10.5 debug mode 6621704 */
+	      if (! in_system_header
+		  && !is_ancestor (current_namespace, namespace))
+	      /* APPLE LOCAL end 10.5 debug mode 6621704 */
 		error ("current namespace %qD does not enclose strongly used namespace %qD",
 		       current_namespace, namespace);
 	      DECL_NAMESPACE_ASSOCIATIONS (namespace)
@@ -4035,8 +4047,13 @@ lookup_name_real (tree name, int prefer_type, int nonclass, bool block_p,
 
 	if (binding)
 	  {
-	    /* Only namespace-scope bindings can be hidden.  */
-	    gcc_assert (!hidden_name_p (binding));
+	    /* APPLE LOCAL begin 6322334 */
+	    /* Ick, we don't want to find a hidden friend inside a
+	       local class!  */ 
+	    if (hidden_name_p (binding))
+	      POP_TIMEVAR_AND_RETURN (TV_NAME_LOOKUP, NULL_TREE);
+	    /* APPLE LOCAL end 6322334 */
+
 	    val = binding;
 	    break;
 	  }
@@ -4565,6 +4582,8 @@ arg_assoc_type (struct arg_lookup *k, tree type)
 	return arg_assoc_type (k, TYPE_PTRMEMFUNC_FN_TYPE (type));
       return arg_assoc_class (k, type);
     case POINTER_TYPE:
+      /* APPLE LOCAL blocks 6040305 */
+    case BLOCK_POINTER_TYPE:
     case REFERENCE_TYPE:
     case ARRAY_TYPE:
       return arg_assoc_type (k, TREE_TYPE (type));

@@ -105,9 +105,24 @@ case "${target}" in
 	XLDFLAGS="${XLDFLAGS} -lposix4"
 	;;
 # APPLE LOCAL begin mainline candidate
-  *-*-darwin[89])
-	XCFLAGS="${XCFLAGS} -mmacosx-version-min=10.3.9"
+  i[456]86-*-darwin[891]*)
+	XCFLAGS="${XCFLAGS} -mmacosx-version-min=10.4.0"
 	;;
+
+  x86_64-*-darwin*)
+	XCFLAGS="${XCFLAGS} -mmacosx-version-min=10.4.0"
+	;;
+
+  powerpc*-*-darwin[891]*)
+        case " ${CC} ${CFLAGS}" in
+            *" -m64"*)
+            XCFLAGS="${XCFLAGS} -mmacosx-version-min=10.4.0"
+                  ;;
+            *)                                                              
+            XCFLAGS="${XCFLAGS} -mmacosx-version-min=10.3.9"
+                  ;;
+         esac
+	 ;;
 # APPLE LOCAL end mainline candidate
   *)
 	;;

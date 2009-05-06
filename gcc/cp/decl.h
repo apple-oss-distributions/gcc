@@ -27,6 +27,8 @@ enum decl_context
   FIELD,			/* Declaration inside struct or union */
   BITFIELD,			/* Likewise but with specified width */
   TYPENAME,			/* Typename (inside cast or sizeof)  */
+  /* APPLE LOCAL blocks 6339747 */
+  BLOCKDEF,			/* Declaratin of block literal */
   MEMFUNCDEF			/* Member function definition */
 };
 
@@ -36,3 +38,5 @@ extern tree grokdeclarator (const cp_declarator *,
 			    enum decl_context, int, tree*);
 /* APPLE LOCAL radar 4721858 */
 extern void emit_instantiate_pending_templates (location_t *);
+/* APPLE LOCAL blocks 6040305 (ce) */
+extern tree grokparms (cp_parameter_declarator *first_parm, tree *parms);

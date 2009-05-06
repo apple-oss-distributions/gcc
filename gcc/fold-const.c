@@ -992,7 +992,8 @@ fold_overflow_warning (const char* gmsgid, enum warn_strict_overflow_code wc)
 	}
     }
   else if (issue_strict_overflow_warning (wc))
-    warning (OPT_Wstrict_overflow, gmsgid);
+    /* APPLE LOCAL default to Wformat-security 5764921 */
+    warning (OPT_Wstrict_overflow, "%s", gmsgid);
 }
 
 /* Return true if the built-in mathematical function specified by CODE
@@ -2150,6 +2151,8 @@ fold_convert (tree type, tree arg)
     {
     case INTEGER_TYPE: case ENUMERAL_TYPE: case BOOLEAN_TYPE:
     case POINTER_TYPE: case REFERENCE_TYPE:
+      /* APPLE LOCAL blocks 5862465 */
+    case BLOCK_POINTER_TYPE:
     case OFFSET_TYPE:
       if (TREE_CODE (arg) == INTEGER_CST)
 	{
@@ -5810,9 +5813,11 @@ extract_muldiv_1 (tree t, tree c, enum tree_code code, tree wide_type,
 	 (C * 8) % 4 since we know that's zero.  */
       if ((code == TRUNC_MOD_EXPR || code == CEIL_MOD_EXPR
 	   || code == FLOOR_MOD_EXPR || code == ROUND_MOD_EXPR)
+	  /* APPLE LOCAL begin mod overflow 6486153 */
 	  && (TYPE_OVERFLOW_UNDEFINED (TREE_TYPE (t))
 	      || (TREE_CODE (TREE_TYPE (t)) == INTEGER_TYPE
 		  && TYPE_IS_SIZETYPE (TREE_TYPE (t))))
+	  /* APPLE LOCAL end mod overflow 6486153 */
 	  && TREE_CODE (TREE_OPERAND (t, 1)) == INTEGER_CST
 	  && integer_zerop (const_binop (TRUNC_MOD_EXPR, op1, c, 0)))
 	return omit_one_operand (type, integer_zero_node, op0);
@@ -10531,12 +10536,14 @@ fold_binary (enum tree_code code, tree type, tree op0, tree op1)
       /* bool_var != 1 becomes !bool_var. */
       if (TREE_CODE (TREE_TYPE (arg0)) == BOOLEAN_TYPE && integer_onep (arg1)
           && code == NE_EXPR)
-        return fold_build1 (TRUTH_NOT_EXPR, type, arg0);
+        /* APPLE LOCAL radar 6286881 */
+        return fold_build1 (TRUTH_NOT_EXPR, type, fold_convert (type, arg0));
 
       /* bool_var == 0 becomes !bool_var. */
       if (TREE_CODE (TREE_TYPE (arg0)) == BOOLEAN_TYPE && integer_zerop (arg1)
           && code == EQ_EXPR)
-        return fold_build1 (TRUTH_NOT_EXPR, type, arg0);
+        /* APPLE LOCAL radar 6286881 */
+        return fold_build1 (TRUTH_NOT_EXPR, type, fold_convert (type, arg0));
 
       /*  ~a != C becomes a != ~C where C is a constant.  Likewise for ==.  */
       if (TREE_CODE (arg0) == BIT_NOT_EXPR

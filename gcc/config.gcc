@@ -252,8 +252,7 @@ strongarm*-*-*)
 	;;
 arm*-*-*)
 	cpu_type=arm
-        # ALQAAHIRA LOCAL ARM v7 support, merge from Codesourcery.
-	extra_headers="mmintrin.h arm_neon.h"
+	extra_headers="mmintrin.h"
 	;;
 bfin*-*)
 	cpu_type=bfin
@@ -377,10 +376,14 @@ case ${target} in
 *-*-darwin*)
   tm_file="${tm_file} darwin.h"
   case ${target} in
-  # APPLE LOCAL darwin10 5810054
-  *-*-darwin[912]*)
+  *-*-darwin9*)
     tm_file="${tm_file} darwin9.h"
     ;;
+    # APPLE LOCAL begin .file/.loc 6349436
+  *-*-darwin[12][0-9]*)
+    tm_file="${tm_file} darwin9.h darwin10.h"
+    ;;
+    # APPLE LOCAL end .file/.loc 6349436
   esac
   tm_file="${tm_file} ${cpu_type}/darwin.h"
   tm_p_file="${tm_p_file} darwin-protos.h"
@@ -778,7 +781,7 @@ arm*-*-darwin*)
 	extra_options="${extra_options} arm/darwin.opt"
         tm_file="${tm_file} arm/darwin.h"
         tmake_file="${tmake_file} arm/t-darwin arm/t-slibgcc-iphoneos"
-	extra_headers="arm_neon.h"
+	extra_headers=
         ;;
 # APPLE LOCAL end ARM darwin target
 arm*-wince-pe*)
@@ -1052,6 +1055,8 @@ x86_64-*-darwin*)
 	# Deleted with_arch
 	# APPLE LOCAL mainline
 	with_cpu=${with_cpu:-core2}
+	# APPLE LOCAL Macintosh alignment 2002-2-19 --ff
+	extra_options="${extra_options} i386/darwin.opt"
 	tmake_file="t-darwin ${cpu_type}/t-darwin64 t-slibgcc-darwin"
 	tm_file="${tm_file} ${cpu_type}/darwin64.h"
 	;;
@@ -2726,10 +2731,8 @@ case "${target}" in
 		esac
 
 		case "$with_fpu" in
-                # ALQAAHIRA LOCAL begin ARM v7 support, merge from Codesourcery.
 		"" \
-		| fpa | fpe2 | fpe3 | maverick | vfp | vfp3 | neon)
-                # ALQAAHIRA LOCAL end ARM v7 support, merge from Codesourcery.
+		| fpa | fpe2 | fpe3 | maverick | vfp )
 			# OK
 			;;
 		*)

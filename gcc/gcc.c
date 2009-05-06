@@ -3031,7 +3031,8 @@ execute (void)
       if (errmsg != NULL)
 	{
 	  if (err == 0)
-	    fatal (errmsg);
+	    /* APPLE LOCAL default to Wformat-security 5764921 */
+	    fatal ("%s", errmsg);
 	  else
 	    {
 	      errno = err;
@@ -3679,7 +3680,7 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n"
 	  if (is_cpp_driver)
 	    add_preprocessor_option ("--help", 6);
           /* APPLE LOCAL begin verbose help 2920964 */
-#if 0
+#if !TARGET_MACHO
 	  /* Our assembler and linkder do not support --help.  */
           /* APPLE LOCAL end verbose help 2920964 */
 	  add_assembler_option ("--help", 6);
@@ -6810,7 +6811,8 @@ main (int argc, char **argv)
 
       if (! verbose_flag)
 	{
-	  printf (_("\nFor bug reporting instructions, please see:\n"));
+	  /* APPLE LOCAL default to Wformat-security 5764921 */
+	  printf ("%s", _("\nFor bug reporting instructions, please see:\n"));
 	  printf ("%s.\n", bug_report_url);
 
 	  return (0);

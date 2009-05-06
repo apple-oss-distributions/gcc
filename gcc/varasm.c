@@ -1428,19 +1428,19 @@ assemble_start_function (tree decl, const char *fnname)
       && !hot_label_written)
     ASM_OUTPUT_LABEL (asm_out_file, cfun->hot_section_label);
 
+  /* APPLE LOCAL begin mainline aligned functions 5933878 */
   /* Tell assembler to move to target machine's alignment for functions.  */
-  align = floor_log2 (FUNCTION_BOUNDARY / BITS_PER_UNIT);
-  if (align < force_align_functions_log)
-    align = force_align_functions_log;
+  align = floor_log2 (DECL_ALIGN (decl) / BITS_PER_UNIT);
   if (align > 0)
     {
       ASM_OUTPUT_ALIGN (asm_out_file, align);
     }
 
   /* Handle a user-specified function alignment.
-     Note that we still need to align to FUNCTION_BOUNDARY, as above,
+     Note that we still need to align to DECL_ALIGN, as above,
      because ASM_OUTPUT_MAX_SKIP_ALIGN might not do any alignment at all.  */
-  if (align_functions_log > align
+  if (! DECL_USER_ALIGN (decl)
+      && align_functions_log > align
       && cfun->function_frequency != FUNCTION_FREQUENCY_UNLIKELY_EXECUTED)
     {
 #ifdef ASM_OUTPUT_MAX_SKIP_ALIGN
@@ -1450,6 +1450,7 @@ assemble_start_function (tree decl, const char *fnname)
       ASM_OUTPUT_ALIGN (asm_out_file, align_functions_log);
 #endif
     }
+  /* APPLE LOCAL end mainline aligned functions 5933878 */
 
 #ifdef ASM_OUTPUT_FUNCTION_PREFIX
   ASM_OUTPUT_FUNCTION_PREFIX (asm_out_file, fnname);
@@ -2882,7 +2883,12 @@ build_constant_desc (tree exp)
 
   /* Create a string containing the label name, in LABEL.  */
   labelno = const_labelno++;
-  ASM_GENERATE_INTERNAL_LABEL (label, "LC", labelno);
+  /* APPLE LOCAL begin radar 6243961 */
+  if (flag_writable_strings && TREE_CODE (exp) == STRING_CST)
+    ASM_GENERATE_INTERNAL_LABEL (label, "lC", labelno);
+  else
+    ASM_GENERATE_INTERNAL_LABEL (label, "LC", labelno);
+  /* APPLE LOCAL end radar 6243961 */
 
   /* We have a symbol name; construct the SYMBOL_REF and the MEM.  */
   if (use_object_blocks_p ())
@@ -2935,6 +2941,12 @@ output_constant_def (tree exp, int defer)
   struct constant_descriptor_tree key;
   void **loc;
 
+  /* APPLE LOCAL begin radar 6243961 */
+  int save_flag_writable_strings = flag_writable_strings;
+  if (flag_writable_strings && TREE_CODE (exp) == STRING_CST 
+      && darwin_constant_cfstring_p (exp))
+    flag_writable_strings = 0;
+  /* APPLE LOCAL end radar 6243961 */
   /* Look up EXP in the table of constant descriptors.  If we didn't find
      it, create a new one.  */
   key.value = exp;
@@ -2950,6 +2962,8 @@ output_constant_def (tree exp, int defer)
     }
 
   maybe_output_constant_def_contents (desc, defer);
+  /* APPLE LOCAL radar 6243961 */
+  flag_writable_strings = save_flag_writable_strings;
   return desc->rtl;
 }
 
@@ -4147,6 +4161,8 @@ output_constant (tree exp, unsigned HOST_WIDE_INT size, unsigned int align)
     case ENUMERAL_TYPE:
     case POINTER_TYPE:
     case REFERENCE_TYPE:
+    /* APPLE LOCAL radar 5822844 */
+    case BLOCK_POINTER_TYPE:
     case OFFSET_TYPE:
       if (! assemble_integer (expand_expr (exp, NULL_RTX, VOIDmode,
 					   EXPAND_INITIALIZER),

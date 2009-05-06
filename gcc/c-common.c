@@ -297,7 +297,8 @@ int warn_unknown_pragmas; /* Tri state variable.  */
 /* Warn about format/argument anomalies in calls to formatted I/O functions
    (*printf, *scanf, strftime, strfmon, etc.).  */
 
-int warn_format;
+/* APPLE LOCAL default to Wformat-security 5764921 */
+int warn_format = 1;
 
 /* Warn about using __null (as NULL in C++) as sentinel.  For code compiled
    with GCC this doesn't matter as __null is guaranteed to have the right
@@ -626,6 +627,8 @@ static tree handle_cleanup_attribute (tree *, tree, tree, int, bool *);
 static tree handle_warn_unused_result_attribute (tree *, tree, tree, int,
 						 bool *);
 static tree handle_sentinel_attribute (tree *, tree, tree, int, bool *);
+/* APPLE LOCAL radar 5932809 - copyable byref blocks */
+static tree handle_blocks_attribute (tree *, tree, tree, int, bool *);
 
 static void check_function_nonnull (tree, tree);
 static void check_nonnull_arg (void *, tree, unsigned HOST_WIDE_INT);
@@ -730,6 +733,8 @@ const struct attribute_spec c_common_attribute_table[] =
   /* APPLE LOCAL two arg sentinel 5631180 */
   { "sentinel",               0, 2, false, true, true,
 			      handle_sentinel_attribute },
+  /* APPLE LOCAL radar 5932809 - copyable byref blocks */
+  { "blocks", 1, 1, true, false, false, handle_blocks_attribute },
   { NULL,                     0, 0, false, false, false, NULL }
 };
 
@@ -1204,7 +1209,20 @@ warnings_for_convert_and_check (tree type, tree expr, tree result ATTRIBUTE_UNUS
   if (warn_shorten_64_to_32
       && TYPE_PRECISION (TREE_TYPE (expr)) == 64
       && TYPE_PRECISION (type) == 32)
-    warning (0, "implicit conversion shortens 64-bit value into a 32-bit value");
+    /* APPLE LOCAL begin 64bit shorten warning 5429810 */
+    {
+      /* As a special case, don't warn when we are working with small
+	 constants as the enum forming code shortens them into smaller
+	 types.  */
+      if (TREE_CODE (expr) == INTEGER_CST)
+	{
+	  bool unsignedp = tree_int_cst_sgn (expr) >= 0;
+	  if (min_precision (expr, unsignedp) <= TYPE_PRECISION (type))
+	    return;
+	}
+      warning (0, "implicit conversion shortens 64-bit value into a 32-bit value");
+    }
+    /* APPLE LOCAL end 64bit shorten warning 5429810 */
 }
 
 /* Convert EXPR to TYPE, warning about conversion problems with constants.
@@ -3173,19 +3191,20 @@ c_sizeof_or_alignof_type (tree type, bool is_sizeof, int complain)
   return value;
 }
 
+/* APPLE LOCAL begin mainline aligned functions 5933878 */
 /* Implement the __alignof keyword: Return the minimum required
-   alignment of EXPR, measured in bytes.  For VAR_DECL's and
-   FIELD_DECL's return DECL_ALIGN (which can be set from an
-   "aligned" __attribute__ specification).  */
+   alignment of EXPR, measured in bytes.  For VAR_DECLs,
+   FUNCTION_DECLs and FIELD_DECLs return DECL_ALIGN (which can be set
+   from an "aligned" __attribute__ specification).  */
 
 tree
 c_alignof_expr (tree expr)
 {
   tree t;
 
-  if (TREE_CODE (expr) == VAR_DECL)
+  if (VAR_OR_FUNCTION_DECL_P (expr))
     t = size_int (DECL_ALIGN_UNIT (expr));
-
+/* APPLE LOCAL end mainline aligned functions 5933878 */
   else if (TREE_CODE (expr) == COMPONENT_REF
 	   && DECL_C_BIT_FIELD (TREE_OPERAND (expr, 1)))
     {
@@ -4408,6 +4427,14 @@ handle_noreturn_attribute (tree *node, tree name, tree ARG_UNUSED (args),
       = build_pointer_type
 	(build_type_variant (TREE_TYPE (type),
 			     TYPE_READONLY (TREE_TYPE (type)), 1));
+  /* APPLE LOCAL begin radar 6237713 */
+  else if (TREE_CODE (type) == BLOCK_POINTER_TYPE
+	   && TREE_CODE (TREE_TYPE (type)) == FUNCTION_TYPE)
+    TREE_TYPE (*node)
+      = build_block_pointer_type
+	(build_type_variant (TREE_TYPE (type),
+			     TYPE_READONLY (TREE_TYPE (type)), 1));
+  /* APPLE LOCAL end radar 6237713 */
   else
     {
       warning (OPT_Wattributes, "%qE attribute ignored", name);
@@ -5014,7 +5041,8 @@ handle_aligned_attribute (tree *node, tree ARG_UNUSED (name), tree args,
       TYPE_ALIGN (*type) = (1 << i) * BITS_PER_UNIT;
       TYPE_USER_ALIGN (*type) = 1;
     }
-  else if (TREE_CODE (decl) != VAR_DECL
+  /* APPLE LOCAL mainline aligned functions 5933878 */
+  else if (! VAR_OR_FUNCTION_DECL_P (decl)
 /* APPLE LOCAL begin for-fsf-4_4 3274130 5295549 */ \
 	   && TREE_CODE (decl) != FIELD_DECL
 	   && TREE_CODE (decl) != LABEL_DECL)
@@ -5023,6 +5051,20 @@ handle_aligned_attribute (tree *node, tree ARG_UNUSED (name), tree args,
       error ("alignment may not be specified for %q+D", decl);
       *no_add_attrs = true;
     }
+  /* APPLE LOCAL begin mainline aligned functions 5933878 */
+  else if (TREE_CODE (decl) == FUNCTION_DECL
+	   && DECL_ALIGN (decl) > (1 << i) * BITS_PER_UNIT)
+    {
+      if (DECL_USER_ALIGN (decl))
+	error ("alignment for %q+D was previously specified as %d "
+	       "and may not be decreased", decl,
+	       DECL_ALIGN (decl) / BITS_PER_UNIT);
+      else
+	error ("alignment for %q+D must be at least %d", decl,
+	       DECL_ALIGN (decl) / BITS_PER_UNIT);
+	*no_add_attrs = true;
+    }
+  /* APPLE LOCAL end mainline aligned functions 5933878 */
   else
     {
       DECL_ALIGN (decl) = (1 << i) * BITS_PER_UNIT;
@@ -5731,7 +5773,10 @@ handle_nonnull_attribute (tree *node, tree ARG_UNUSED (name),
 	      return NULL_TREE;
 	    }
 
-	  if (TREE_CODE (TREE_VALUE (argument)) != POINTER_TYPE)
+	  /* APPLE LOCAL begin blocks 5925781 */
+	  if (TREE_CODE (TREE_VALUE (argument)) != POINTER_TYPE &&
+	      TREE_CODE (TREE_VALUE (argument)) != BLOCK_POINTER_TYPE)
+	  /* APPLE LOCAL end blocks 5925781 */
 	    {
 	      error ("nonnull argument references non-pointer operand (argument %lu, operand %lu)",
 		   (unsigned long) attr_arg_num, (unsigned long) arg_num);
@@ -5899,7 +5944,10 @@ check_nonnull_arg (void * ARG_UNUSED (ctx), tree param,
      happen if the "nonnull" attribute was given without an operand
      list (which means to check every pointer argument).  */
 
-  if (TREE_CODE (TREE_TYPE (param)) != POINTER_TYPE)
+  /* APPLE LOCAL begin blocks 5925781 */
+  if (TREE_CODE (TREE_TYPE (param)) != POINTER_TYPE &&
+      TREE_CODE (TREE_TYPE (param)) != BLOCK_POINTER_TYPE)
+  /* APPLE LOCAL end blocks 5925781 */
     return;
 
   if (integer_zerop (param))
@@ -6002,6 +6050,168 @@ handle_warn_unused_result_attribute (tree *node, tree name,
 
   return NULL_TREE;
 }
+
+/* APPLE LOCAL begin radar 5932809 - copyable byref blocks */
+/* Handle "blocks" attribute. */
+static tree
+handle_blocks_attribute (tree *node, tree name, 
+                           tree args,
+                           int ARG_UNUSED (flags), bool *no_add_attrs)
+{
+  tree arg_ident;
+  /* APPLE LOCAL radar 6217257 */
+  tree type;
+  *no_add_attrs = true;
+  if (!(*node) || TREE_CODE (*node) != VAR_DECL)
+    {
+      error ("__block attribute can be specified on variables only");
+      return NULL_TREE;
+    }
+  arg_ident = TREE_VALUE (args);
+  gcc_assert (TREE_CODE (arg_ident) == IDENTIFIER_NODE);
+  /* APPLE LOCAL radar 6096219 */
+  if (strcmp (IDENTIFIER_POINTER (arg_ident), "byref"))
+    {
+      /* APPLE LOCAL radar 6096219 */
+      warning (OPT_Wattributes, "Only \"byref\" is allowed - %qE attribute ignored", 
+               name);
+      return NULL_TREE;
+    }
+  /* APPLE LOCAL begin radar 6217257 */
+  type = TREE_TYPE (*node);
+  if (TREE_CODE (type) == ERROR_MARK)
+    return NULL_TREE;
+  if (TREE_CODE (type) == ARRAY_TYPE)
+  {
+    if (!TYPE_SIZE (type) || TREE_CODE (TYPE_SIZE (type)) != INTEGER_CST)
+    {
+      error ("__block not allowed on a variable length array declaration");
+      return NULL_TREE;
+    }
+  }
+  /* APPLE LOCAL end radar 6217257 */
+  COPYABLE_BYREF_LOCAL_VAR (*node) = 1;
+  COPYABLE_BYREF_LOCAL_NONPOD (*node) = block_requires_copying (*node);
+  return NULL_TREE;
+}
+/* APPLE LOCAL end radar 5932809 - copyable byref blocks */
+
+/* APPLE LOCAL begin blocks 6040305 */
+
+/* This routine builds:
+   *(void **)(EXP+20) expression which references the object pointer.
+*/
+tree
+build_indirect_object_id_exp (tree exp)
+{
+  tree dst_obj;
+  int  int_size = int_cst_value (TYPE_SIZE_UNIT (unsigned_type_node));
+  int offset;
+  /* dst->object In thid case 'object' is the field
+   of the object passed offset by: void * + void* + int + int + void* + void *
+   This must match definition of Block_byref structs. */
+  /* APPLE LOCAL radar 6244520 */
+  offset = GET_MODE_SIZE (Pmode) + GET_MODE_SIZE (Pmode) 
+           + int_size + int_size + GET_MODE_SIZE (Pmode) +
+           GET_MODE_SIZE (Pmode);
+  dst_obj = build2 (PLUS_EXPR, ptr_type_node, exp,
+                    build_int_cst (NULL_TREE, offset));
+  /* APPLE LOCAL begin radar 6180456 */
+  /* Type case to: 'void **' */
+  dst_obj = build_c_cast (build_pointer_type (ptr_type_node), dst_obj);
+  dst_obj = build_indirect_ref (dst_obj, "unary *");
+  /* APPLE LOCAL end radar 6180456 */
+  return dst_obj;
+}
+
+/* This routine builds call to:
+ _Block_object_dispose(VAR_DECL.__forwarding, BLOCK_FIELD_IS_BYREF);
+ and adds it to the statement list.
+ */
+tree
+build_block_byref_release_exp (tree var_decl)
+{
+  tree exp = var_decl, call_exp;
+  tree type = TREE_TYPE (var_decl);
+  /* __block variables imported into Blocks are not _Block_object_dispose()
+   from within the Block statement itself; otherwise, each envokation of
+   the block causes a release. Make sure to release __block variables declared 
+   and used locally in the block though. */
+  if (cur_block 
+      && (BLOCK_DECL_COPIED (var_decl) || BLOCK_DECL_BYREF (var_decl)))
+    return NULL_TREE;
+  if (BLOCK_DECL_BYREF (var_decl)) {
+    /* This is a "struct Block_byref_X *" type. Get its pointee. */
+    gcc_assert (POINTER_TYPE_P (type));
+    type = TREE_TYPE (type);
+    exp = build_indirect_ref (exp, "unary *");
+  }
+  TREE_USED (var_decl) = 1;
+
+  /* Declare: _Block_object_dispose(void*, BLOCK_FIELD_IS_BYREF) if not done already. */
+  exp = build_component_ref (exp, get_identifier ("__forwarding"));
+  call_exp = build_block_object_dispose_call_exp (exp, BLOCK_FIELD_IS_BYREF);
+  return call_exp;
+}
+/* APPLE LOCAL end blocks 6040305 */
+/* APPLE LOCAL begin radar 5803600 */
+/** add_block_global_byref_list - Adds global variable decl to the list of
+    byref global declarations in the current block.
+*/
+void add_block_global_byref_list (tree decl)
+{
+  cur_block->block_byref_global_decl_list = 
+    tree_cons (NULL_TREE, decl, cur_block->block_byref_global_decl_list);
+}
+
+/** in_block_global_byref_list - returns TRUE if global variable is
+    in the list of 'byref' declarations.
+*/
+bool in_block_global_byref_list (tree decl)
+{
+  tree chain;
+  if (TREE_STATIC (decl)) {
+    for (chain = cur_block->block_byref_global_decl_list; chain;
+         chain = TREE_CHAIN (chain))
+      if (TREE_VALUE (chain) == decl)
+        return true;
+  }
+  return false;
+}
+/* APPLE LOCAL end radar 5803600 */
+
+/* APPLE LOCAL begin radar 6160536 */
+tree
+build_block_helper_name (int unique_count)
+{
+  char *buf;
+  if (!current_function_decl)
+    {
+      /* APPLE LOCAL begin radar 6411649 */
+      static int global_count;
+      buf = (char *)alloca (32);
+      sprintf (buf, "__block_global_%d", ++global_count);
+      /* APPLE LOCAL end radar 6411649 */
+    }
+  else
+    {
+      tree outer_decl = current_function_decl;
+      /* APPLE LOCAL begin radar 6169580 */
+      while (outer_decl &&
+             DECL_CONTEXT (outer_decl) && TREE_CODE (DECL_CONTEXT (outer_decl)) == FUNCTION_DECL)
+      /* APPLE LOCAL end radar 6169580 */
+        outer_decl = DECL_CONTEXT (outer_decl);
+      /* APPLE LOCAL begin radar 6411649 */
+      if (!unique_count)
+        unique_count = ++DECL_STRUCT_FUNCTION(outer_decl)->unqiue_block_number;
+      /* APPLE LOCAL end radar 6411649 */
+      buf = (char *)alloca (IDENTIFIER_LENGTH (DECL_NAME (outer_decl)) + 32); 
+      sprintf (buf, "__%s_block_invoke_%d", 
+	       IDENTIFIER_POINTER (DECL_NAME (outer_decl)), unique_count);
+    }
+   return get_identifier (buf); 
+}
+/* APPLE LOCAL end radar 6160536 */
 
 /* Handle a "sentinel" attribute.  */
 
@@ -6284,11 +6494,13 @@ c_parse_error (const char *gmsgid, enum cpp_ttype token, tree value)
       message = NULL;
     }
   else
-    error (gmsgid);
+    /* APPLE LOCAL default to Wformat-security 5764921 */
+    error (gmsgid, "");
 
   if (message)
     {
-      error (message);
+      /* APPLE LOCAL default to Wformat-security 5764921 */
+      error (message, "");
       free (message);
     }
 #undef catenate_messages
@@ -6934,6 +7146,13 @@ iasm_op_comp (const void *a, const void *b)
 #define U(X) ""
 /* This is used to denote the size for testcase generation.  */
 #define S(X)
+#define X(X) X
+#define T(X) X
+/* Not for x86_64 mode */
+#define NX ""
+/* Not yet implemented by the 64-bit assembler, but is in 32-bit assembler. */
+#define NY ""
+#define C X(",")
 
 #define m8 "m" S("1")
 #define m16 "m" S("2")
@@ -6944,31 +7163,39 @@ iasm_op_comp (const void *a, const void *b)
 #define r8 "r" S("1")
 #define r16 "r" S("2")
 #define r32 "r" S("4")
-#define r64 U("r" S("8"))
+#define R64 X("r" S("8"))
 #define a8 "a" S("1")
 #define a16 "a" S("2")
 #define a32 "a" S("4")
 #define r16r32 r16 r32
-#define r16r32r64 r16 r32 r64
 #define r8r16r32 r8 r16 r32
 #define rm8 r8 m8
 #define rm16 r16 m16
 #define rm32 r32 m32
-#define rm64 r64 m64
 #define rm8rm16 rm8 rm16
 #define rm8rm16rm32 rm8 rm16 rm32
-#define rm8rm16rm32rm64 rm8 rm16 rm32 rm64
 #define m8m16m32 m8 m16 m32
-#define r32r64 r32 r64
 #define ri8 r8 "i"
 #define ri16 r16 "i"
 #define ri32 r32 "i"
+#define rmi8 ri8 m8
+#define rmi16 ri16 m16
+#define rmi32 ri32 m32
 #define rel8 "s" S("1")
 #define m32fp "m" S("3")
 #define m64fp "m" S("6")
 #define m80fp "m" S("7")
 #define m32fpm64fp m32fp m64fp
 #define m32fpm64fpm80fp m32fp m64fp m80fp
+#define M64 X(m64)
+#define RM64 R64 M64
+#define RI64 X(R64 "i")
+#define RMI64 RI64 M64
+#define r32R64 r32 R64
+#define r16r32R64 r16 r32 R64
+#define rm32RM64 rm32 RM64
+#define rm8rm16rm32RM64 rm8 rm16 rm32 RM64
+#define m8m16m32M64 m8 m16 m32 M64
 #endif
 
 #ifndef TARGET_IASM_REORDER_ARG
@@ -7022,6 +7249,14 @@ iasm_constraint_for (const char *opcode, unsigned argnum, unsigned ARG_UNUSED (n
 }
 
 #if defined(TARGET_386)
+#undef U
+#undef S
+#undef X
+#undef T
+#undef NX
+#undef NY
+#undef C
+
 #undef m8
 #undef m16
 #undef m32
@@ -7031,34 +7266,39 @@ iasm_constraint_for (const char *opcode, unsigned argnum, unsigned ARG_UNUSED (n
 #undef r8
 #undef r16
 #undef r32
-#undef r64
+#undef R64
 #undef a8
 #undef a16
 #undef a32
 #undef r16r32
-#undef r16r32r64
 #undef r8r16r32
 #undef rm8
 #undef rm16
 #undef rm32
-#undef rm64
 #undef rm8rm16
 #undef rm8rm16rm32
-#undef rm8rm16rm32rm64
 #undef m8m16m32
-#undef r32r64
 #undef ri8
 #undef ri16
 #undef ri32
+#undef rmi8
+#undef rmi16
+#undef rmi32
 #undef rel8
 #undef m32fp
 #undef m64fp
 #undef m80fp
 #undef m32fpm64fp
 #undef m32fpm64fpm80fp
-
-#undef U
-#undef S
+#undef M64
+#undef RM64
+#undef RI64
+#undef RMI64
+#undef r32R64
+#undef r16r32R64
+#undef rm32RM64
+#undef rm8rm16rm32RM64
+#undef m8m16m32M64
 #endif
 
 static void
@@ -7576,14 +7816,18 @@ iasm_stmt (tree expr, tree args, int lineno)
     e.no_label_map = true;
 #ifdef TARGET_386
   else if (strcasecmp (opcodename, "call") == 0
-	   || strcasecmp (opcodename, "jmp") == 0)
+	   || strncasecmp (opcodename, "j", 1) == 0)
     {
       if (args
 	  && TREE_CODE (TREE_VALUE (args)) != LABEL_DECL
 	  && TREE_CODE (TREE_VALUE (args)) != FUNCTION_DECL)
 	e.modifier = "A";
       else
-	iasm_force_constraint ("X", &e);
+	{
+	  if (TARGET_64BIT)
+	    e.modifier = "l";
+	  iasm_force_constraint ("X", &e);
+	}
     }
 #endif
 
@@ -7812,6 +8056,9 @@ iasm_expr_val (tree arg)
 #ifndef IASM_VALID_PIC
 #define IASM_VALID_PIC(D,E)
 #endif
+#ifndef IASM_RIP
+#define IASM_RIP(X)
+#endif
 
 /* Force the last operand to have constraint C.  */
 
@@ -7903,6 +8150,10 @@ iasm_print_operand (char *buf, tree arg, unsigned argnum,
 	 :-( Hope this stays working.  */
       iasm_force_constraint ("X", e);
       modifier = "l";
+#ifdef TARGET_386
+      if (TARGET_64BIT)
+	modifier = "a";
+#endif
       if (e->modifier)
 	{
 	  modifier = e->modifier;
@@ -8012,6 +8263,7 @@ iasm_print_operand (char *buf, tree arg, unsigned argnum,
 	      sprintf (buf + strlen (buf), "%s", user_label_prefix);
 	      strcat (buf, IDENTIFIER_POINTER (DECL_ASSEMBLER_NAME (arg)));
 	    }
+	  IASM_RIP (buf);
 
 	  mark_decl_referenced (arg);
 	}
@@ -8730,5 +8982,132 @@ warn_array_subscript_with_type_char (tree index)
     warning (OPT_Wchar_subscripts, "array subscript has type %<char%>");
 }
 
+/* APPLE LOCAL begin radar 6246527 */
+/* This routine is called for a "format" attribute. It adds the number of
+ hidden argument ('1') to the format's 2nd and 3rd argument to compensate
+ for these two arguments. This is to make rest of the "format" attribute
+ processing done in the middle-end to work seemlessly. */
 
+static void
+block_delta_format_args (tree format)
+{
+  tree format_num_expr, first_arg_num_expr;
+  int val; 
+  tree args = TREE_VALUE (format);
+  gcc_assert (TREE_CHAIN (args) && TREE_CHAIN (TREE_CHAIN (args)));
+  format_num_expr = TREE_VALUE (TREE_CHAIN (args));
+  first_arg_num_expr = TREE_VALUE (TREE_CHAIN (TREE_CHAIN (args)));
+  if (format_num_expr && TREE_CODE (format_num_expr) == INTEGER_CST)
+  {
+    val = TREE_INT_CST_LOW (format_num_expr);
+    TREE_VALUE (TREE_CHAIN (args)) = build_int_cst (NULL_TREE, val+1);
+  }
+  if (first_arg_num_expr && TREE_CODE (first_arg_num_expr) == INTEGER_CST)
+  {
+    val = TREE_INT_CST_LOW (first_arg_num_expr);
+    if (val != 0)
+      TREE_VALUE (TREE_CHAIN (TREE_CHAIN (args))) = 
+                                              build_int_cst (NULL_TREE, val+1);
+  }
+}
+
+/* This routine recognizes legal block attributes. In case of block's "format" 
+ attribute, it calls block_delta_format_args to compensate for hidden 
+ argument _self getting passed to block's helper function. */
+bool
+any_recognized_block_attribute (tree attributes)
+{
+  tree chain;
+  bool res = false;
+  for (chain = attributes; chain; chain = TREE_CHAIN (chain))
+  {
+    if (is_attribute_p ("format", TREE_PURPOSE (chain)))
+    {
+      block_delta_format_args (chain);
+      res = true;
+    }
+    else if (is_attribute_p ("sentinel", TREE_PURPOSE (chain)))
+      res = true;	
+  }
+  return res;
+}
+/* APPLE LOCAL end radar 6246527 */
+
+/* APPLE LOCAL begin radar 5847976 */
+static GTY(()) tree block_object_assign_decl;
+static GTY(()) tree block_object_dispose_func_decl;
+/* This routine declares:
+   void _Block_object_assign (void *, void *, int) or uses an
+   existing one.
+*/
+static tree
+build_block_object_assign_decl (void)
+{
+  tree func_type;
+  if (block_object_assign_decl)
+    return block_object_assign_decl;
+  block_object_assign_decl = lookup_name (get_identifier ("_Block_object_assign"));
+  if (block_object_assign_decl)
+    return block_object_assign_decl;
+  func_type =
+            build_function_type (void_type_node,
+              tree_cons (NULL_TREE, ptr_type_node,
+                         tree_cons (NULL_TREE, ptr_type_node,
+                                    tree_cons (NULL_TREE, integer_type_node, void_list_node))));
+
+  block_object_assign_decl = builtin_function ("_Block_object_assign", func_type,
+                                               0, NOT_BUILT_IN, 0, NULL_TREE);
+  TREE_NOTHROW (block_object_assign_decl) = 0;
+  return block_object_assign_decl;
+}
+
+/* This routine builds:
+   _Block_object_assign(dest, src, flag)
+*/
+tree build_block_object_assign_call_exp (tree dst, tree src, int flag)
+{
+  tree func_params = tree_cons (NULL_TREE, dst,
+                               tree_cons (NULL_TREE, src,
+                                          tree_cons (NULL_TREE,
+                                                     build_int_cst (integer_type_node, flag),
+                                                     NULL_TREE)));
+  return build_function_call (build_block_object_assign_decl (), func_params);
+}
+
+/* This routine declares:
+   void _Block_object_dispose (void *, int) or uses an
+   existing one.
+*/
+static tree
+build_block_object_dispose_decl (void)
+{
+  tree func_type;
+  if (block_object_dispose_func_decl)
+    return block_object_dispose_func_decl;
+  block_object_dispose_func_decl = lookup_name (get_identifier ("_Block_object_dispose"));
+  if (block_object_dispose_func_decl)
+    return block_object_dispose_func_decl;
+  func_type =
+      build_function_type (void_type_node,
+                           tree_cons (NULL_TREE, ptr_type_node,
+                                      tree_cons (NULL_TREE, integer_type_node, void_list_node)));
+
+  block_object_dispose_func_decl = builtin_function ("_Block_object_dispose", func_type,
+                                       		     0, NOT_BUILT_IN, 0, NULL_TREE);
+  TREE_NOTHROW (block_object_dispose_func_decl) = 0;
+  return block_object_dispose_func_decl;
+}
+
+/* This routine builds the call tree:
+   _Block_object_dispose(src, flag)
+*/
+tree build_block_object_dispose_call_exp (tree src, int flag)
+{
+  tree func_params = tree_cons (NULL_TREE, src, 
+			        tree_cons (NULL_TREE,
+                                           build_int_cst (integer_type_node, flag),
+                                           NULL_TREE));
+  return build_function_call (build_block_object_dispose_decl (), func_params);
+}
+/* APPLE LOCAL end radar 5847976 */
 #include "gt-c-common.h"

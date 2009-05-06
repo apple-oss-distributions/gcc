@@ -4557,7 +4557,25 @@ recompute_reg_usage (void)
      REG_UNUSED notes to REG_DEAD notes.  This causes CHECK_DEAD_NOTES
      in sched1 to die.  To solve this update the DEATH_NOTES
      here.  */
-  update_life_info (NULL, UPDATE_LIFE_LOCAL, PROP_REG_INFO | PROP_DEATH_NOTES);
+  /* APPLE LOCAL begin 6102803 */
+#ifdef TARGET_POWERPC
+  if (flag_tree_pre)
+    {
+      basic_block bb;
+      /* Zap the life information from the last round.  If we don't
+	 do this, we can wind up with registers that no longer appear
+	 in the code being marked live at entry.  */
+      FOR_EACH_BB (bb)
+      {
+	CLEAR_REG_SET (bb->il.rtl->global_live_at_start);
+	CLEAR_REG_SET (bb->il.rtl->global_live_at_end);
+      }
+      update_life_info (NULL, UPDATE_LIFE_GLOBAL, PROP_FINAL);
+    }
+  else
+#endif
+    update_life_info (NULL, UPDATE_LIFE_LOCAL, PROP_REG_INFO | PROP_DEATH_NOTES);
+  /* APPLE LOCAL end 6102803 */
 
   if (dump_file)
     dump_flow_info (dump_file, dump_flags);

@@ -2667,6 +2667,21 @@ reg_inheritance_1 (rtx *px, void *data)
   unsigned int srcregno, dstregno;
 
   dstregno = (int)data;
+#ifdef TARGET_386
+  /* Ugly special case: When moving a DImode constant into an FP
+     register, GCC will use the movdf_nointeger pattern, pushing the
+     DImode constant into memory and loading into the '387.  It looks
+     like this: (set (reg:DF) (subreg:DF (reg:DI))).  We're choosing
+     to match the subreg; hope this is sufficient.
+  */
+  if (GET_CODE (x) == SUBREG
+      && GET_MODE (x) == DFmode
+      && GET_MODE (SUBREG_REG (x)) == DImode)
+    {
+      SET_BIT (reg_inheritance_matrix[dstregno], PIC_OFFSET_TABLE_REGNUM);
+      return 0;
+    }
+#endif
   if (GET_CODE (x) == SUBREG)
     x = SUBREG_REG (x);
   if (REG_P (x))

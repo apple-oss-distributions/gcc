@@ -102,19 +102,23 @@ objc_common_type (tree ARG_UNUSED (type1), tree ARG_UNUSED (type2))
 
 bool
 objc_compare_types (tree ARG_UNUSED (ltyp), tree ARG_UNUSED (rtyp),
-		    int ARG_UNUSED (argno), tree ARG_UNUSED (callee))
+		    /* APPLE LOCAL begin radar 6231433 */
+		    int ARG_UNUSED (argno), tree ARG_UNUSED (callee),
+		    const char * ARG_UNUSED (message))
+		    /* APPLE LOCAL end radar 6231433 */
 {
   return false;
 }
 
-/* APPLE LOCAL begin radar 4229905 */
+/* APPLE LOCAL begin radar 4229905 - radar 6231433 */
 bool
 objc_have_common_type (tree ARG_UNUSED (ltyp), tree ARG_UNUSED (rtyp),
-		       int ARG_UNUSED (argno), tree ARG_UNUSED (callee))
+		       int ARG_UNUSED (argno), tree ARG_UNUSED (callee),
+		       const char * ARG_UNUSED (message))
 {
   return false;
 }
-/* APPLE LOCAL end radar 4229905 */
+/* APPLE LOCAL end radar 4229905 - radar 6231433 */
 
 void
 objc_volatilize_decl (tree ARG_UNUSED (decl))
@@ -506,6 +510,13 @@ objc_finish_foreach_loop (location_t ARG_UNUSED (location), tree ARG_UNUSED (con
   return;
 }
 /* APPLE LOCAL end radar 4708210 (for_objc_collection in 4.2) */
+/* APPLE LOCAL begin radar 5847976 */
+int
+objc_is_gcable_type (tree ARG_UNUSED (type))
+{
+  return 0;
+}
+/* APPLE LOCAL end radar 5847976 */
 /* APPLE LOCAL begin radar 4592503 */
 void
 objc_checkon_weak_attribute (tree ARG_UNUSED (decl)) 
@@ -562,15 +573,6 @@ objc_check_format_nsstring (tree ARG_UNUSED (argument),
   return false;
 }
 /* APPLE LOCAL end radar 4985544 */
-/* APPLE LOCAL begin radar 2996215 */
-tree
-objc_create_init_utf16_var (const unsigned char * ARG_UNUSED (inbuf), 
-			    size_t  ARG_UNUSED (length),
-			    size_t  *ARG_UNUSED (numUniChars))
-{
-  return NULL_TREE;
-}
-/* APPLE LOCAL end radar 2996215 */
 /* APPLE LOCAL begin radar 5202926 */
 bool
 objc_anonymous_local_objc_name (const char * ARG_UNUSED (name))
@@ -585,6 +587,19 @@ objc_check_nsstring_pointer_type (tree ARG_UNUSED (type))
 }
 /* APPLE LOCAL end radar 5195402 */
 /* APPLE LOCAL end radar 5202926 */
+
+/* APPLE LOCAL begin radar 5782740 - blocks */
+bool block_requires_copying (tree exp)
+{
+  /* APPLE LOCAL begin radar 6175959 */
+  tree type = TREE_TYPE (exp);
+  return TREE_CODE (type) == BLOCK_POINTER_TYPE
+	 || (POINTER_TYPE_P (type) 
+	     && lookup_attribute ("NSObject", TYPE_ATTRIBUTES (type)));
+  /* APPLE LOCAL end radar 6175959 */
+}
+/* APPLE LOCAL end radar 5782740 - blocks */
+
 /* APPLE LOCAL begin radar 5802025 */
 tree objc_build_property_getter_func_call (tree object)
 {

@@ -1074,6 +1074,10 @@ typedef enum c_dtr_syn {
   C_DTR_NORMAL,
   /* An abstract declarator (maybe empty).  */
   C_DTR_ABSTRACT,
+  /* APPLE LOCAL begin blocks 6339747 */
+  /* A block declarator (maybe empty).  */
+  C_DTR_BLOCK,
+  /* APPLE LOCAL end blocks 6339747 */
   /* A parameter declarator: may be either, but after a type name does
      not redeclare a typedef name as an identifier if it can
      alternatively be interpreted as a typedef name; see DR#009,
@@ -1131,6 +1135,9 @@ static void c_parser_while_statement (c_parser *);
 static void c_parser_do_statement (c_parser *);
 static void c_parser_for_statement (c_parser *);
 static tree c_parser_asm_statement (c_parser *);
+/* APPLE LOCAL begin radar 5732232 - blocks (C++ ca) */
+static tree c_parser_block_literal_expr (c_parser *);
+/* APPLE LOCAL end radar 5732232 - blocks (C++ ca) */
 static tree c_parser_asm_operands (c_parser *, bool);
 static tree c_parser_asm_clobbers (c_parser *);
 static struct c_expr c_parser_expr_no_commas (c_parser *, struct c_expr *);
@@ -1567,7 +1574,11 @@ c_parser_declaration_or_fndef (c_parser *parser, bool fndef_ok, bool empty_ok,
       /* Function definition (nested or otherwise).  */
       if (nested)
 	{
-	  if (pedantic)
+          /* APPLE LOCAL begin radar 5985368 */
+          if (declarator->declarator && declarator->declarator->kind == cdk_block_pointer)
+            error ("bad definition of a block");
+	  else if (pedantic)
+          /* APPLE LOCAL end radar 5985368 */
 	    pedwarn ("ISO C forbids nested functions");
 	  /* APPLE LOCAL begin nested functions 4258406 4357979 (in 4.2 m) */
 	  else if (flag_nested_functions == 0)
@@ -2393,6 +2404,7 @@ c_parser_typeof_specifier (c_parser *parser)
       ret.spec = TREE_TYPE (expr.value);
       /* APPLE LOCAL begin radar 4204796 (in 4.2 n) */
       if (c_dialect_objc() 
+	  && ret.spec != error_mark_node
 	  && lookup_attribute ("objc_volatilized", TYPE_ATTRIBUTES (ret.spec)))
 	ret.spec = build_qualified_type
 	  (ret.spec, (TYPE_QUALS (ret.spec) & ~TYPE_QUAL_VOLATILE));
@@ -2489,6 +2501,18 @@ c_parser_typeof_specifier (c_parser *parser)
      parameter-list ;
      parameter-forward-declarations parameter-list ;
 
+     APPLE LOCAL begin blocks 6339747
+   block-declarator:
+     pointer
+     pointer[opt] direct-block-declarator
+
+   direct-block-declarator:
+     ( attributes[opt] block-declarator )
+     direct-block-declarator[opt] array-declarator
+     direct-block-declarator[opt]
+       ( parameter-type-list[opt] ) [opt]
+     APPLE LOCAL end blocks 6339747
+
    The uses of attributes shown above are GNU extensions.
 
    Some forms of array declarator are not included in C99 in the
@@ -2515,6 +2539,20 @@ c_parser_declarator (c_parser *parser, bool type_seen_p, c_dtr_syn kind,
       else
 	return make_pointer_declarator (quals_attrs, inner);
     }
+  /* APPLE LOCAL begin radar 5732232 - blocks (C++ cc) */
+  else if (flag_blocks && c_parser_next_token_is (parser, CPP_XOR)) {
+    struct c_declspecs *quals_attrs = build_null_declspecs ();
+    struct c_declarator *inner;
+    c_parser_consume_token (parser);
+    c_parser_declspecs (parser, quals_attrs, false, false, true);
+    inner = c_parser_declarator (parser, type_seen_p, kind, seen_id);
+    if (inner == NULL)
+      return NULL;
+    else
+      /* APPLE LOCAL radar 5814025 (C++ cc) */
+      return make_block_pointer_declarator (quals_attrs, inner);    
+  }
+  /* APPLE LOCAL end radar 5732232 - blocks (C++ cc) */
   /* Now we have a direct declarator, direct abstract declarator or
      nothing (which counts as a direct abstract declarator here).  */
   return c_parser_direct_declarator (parser, type_seen_p, kind, seen_id);
@@ -2561,7 +2599,8 @@ c_parser_direct_declarator (c_parser *parser, bool type_seen_p, c_dtr_syn kind,
      ??? Also following the old parser, typedef names may be
      redeclared in declarators, but not Objective-C class names.  */
 
-  if (kind != C_DTR_ABSTRACT
+  /* APPLE LOCAL blocks 6339747 */
+  if ((kind != C_DTR_ABSTRACT && kind != C_DTR_BLOCK)
       && c_parser_next_token_is (parser, CPP_NAME)
       && ((type_seen_p
 	   /* APPLE LOCAL begin radar 4281748 */
@@ -3622,6 +3661,8 @@ c_parser_compound_statement_nostart (c_parser *parser)
 {
   bool last_stmt = false;
   bool last_label = false;
+  /* APPLE LOCAL radar 5732232 - blocks (not in C++) */
+  bool first_stmt = true;
   if (c_parser_next_token_is (parser, CPP_CLOSE_BRACE))
     {
       c_parser_consume_token (parser);
@@ -3767,6 +3808,8 @@ c_parser_compound_statement_nostart (c_parser *parser)
       if (flag_iasm_blocks) iasm_in_decl = false;      
       /* APPLE LOCAL end CW asm blocks (in 4.2 al) */
       parser->error = false;
+      /* APPLE LOCAL radar 5732232 - blocks (not in C++) */
+      first_stmt = false;
     }
   /* APPLE LOCAL begin CW asm blocks (in 4.2 am) */
   if (flag_iasm_blocks)
@@ -3986,6 +4029,10 @@ c_parser_statement_after_labels (c_parser *parser)
 	  c_parser_for_statement (parser);
 	  break;
 	case RID_GOTO:
+          /* APPLE LOCAL begin radar 5732232 - blocks (C++ cb) */
+          if (cur_block)
+            error ("goto not allowed in block literal");
+          /* APPLE LOCAL end radar 5732232 - blocks (C++ cb) */
 	  c_parser_consume_token (parser);
 	  if (c_parser_next_token_is (parser, CPP_NAME))
 	    {
@@ -4096,8 +4143,20 @@ c_parser_statement_after_labels (c_parser *parser)
      (recursively) all of the component statements should already have
      line numbers assigned.  ??? Can we discard no-op statements
      earlier?  */
+  /* APPLE LOCAL begin Radar 6144634  */
+  /* Normal expr stmts, including modify exprs, get the location where
+     the statement began, i.e. 'loc'.  Assignments of Blocks to Block
+     pointer variables get the location of the end of the Block definition,
+     i.e. 'input_location', which should already be set by this point.  */
   if (stmt && EXPR_P (stmt))
-    SET_EXPR_LOCATION (stmt, loc);
+    {
+      if (TREE_CODE (stmt) == MODIFY_EXPR
+	  && TREE_CODE (TREE_TYPE (TREE_OPERAND (stmt, 0))) == BLOCK_POINTER_TYPE)
+	SET_EXPR_LOCATION (stmt, input_location);
+      else
+	SET_EXPR_LOCATION (stmt, loc);
+    }
+  /* APPLE LOCAL end Radar 6144634  */
 }
 
 /* Parse a parenthesized condition from an if, do or while statement.
@@ -4353,7 +4412,8 @@ c_parser_for_statement (c_parser *parser)
 	  /* APPLE LOCAL begin radar 4708210 (for_objc_collection in 4.2) */
 	  cond = NULL_TREE;
 	  c_parser_declaration_or_fndef (parser, true, true, true, true, &cond);
-	  if (c_parser_next_token_is_keyword (parser, RID_IN))
+	  /* APPLE LOCAL radar 5925639 */
+	  if (c_parser_next_token_is_keyword (parser, RID_IN) && cond)
 	    {
 	      cond = finish_parse_foreach_header (parser, cond);
 	      foreach_p = true;
@@ -4381,7 +4441,8 @@ c_parser_for_statement (c_parser *parser)
 	      cond = NULL_TREE;
 	      c_parser_declaration_or_fndef (parser, true, true, true, true, &cond);
 	      restore_extension_diagnostics (ext);
-	      if (c_parser_next_token_is_keyword (parser, RID_IN))
+	      /* APPLE LOCAL radar 5925639 */
+	      if (c_parser_next_token_is_keyword (parser, RID_IN) && cond)
 	        {
 		  cond = finish_parse_foreach_header (parser, cond);
 	          foreach_p = true;
@@ -5437,6 +5498,8 @@ c_parser_alignof_expression (c_parser *parser)
 			     assignment-expression ,
 			     assignment-expression )
      __builtin_types_compatible_p ( type-name , type-name )
+     APPLE LOCAL blocks (C++ cf)
+     block-literal-expr
 
    offsetof-member-designator:
      identifier
@@ -5520,6 +5583,34 @@ c_parser_postfix_expression (c_parser *parser)
 	expr.value = build_external_ref (id,
 					 (c_parser_peek_token (parser)->type
 					  == CPP_OPEN_PAREN), loc);
+        /* APPLE LOCAL begin radar 5732232 - blocks (C++ cd) */
+        /* If a variabled declared as referenced variable, using |...| syntax,
+           is used in the block, it has to be derefrenced because this
+           variable holds address of the outside variable referenced in. */
+        
+        /* APPLE LOCAL begin radar 5932809 - copyable byref blocks (C++ cd) */
+        if (TREE_CODE (expr.value) == VAR_DECL)
+	  {
+	    if (BLOCK_DECL_BYREF (expr.value))
+	      {
+		tree orig_decl = expr.value;
+		expr.value = build_indirect_ref (expr.value, "unary *");
+		if (COPYABLE_BYREF_LOCAL_VAR (orig_decl)) {
+		  /* What we have is an expression which is of type 
+		     struct __Block_byref_X. Must get to the value of the variable
+		     embedded in this structure. It is at:
+		     __Block_byref_X.__forwarding->x */
+		  expr.value = build_byref_local_var_access (expr.value,
+							     DECL_NAME (orig_decl));
+		}
+	      }
+	    else if (COPYABLE_BYREF_LOCAL_VAR (expr.value))
+              expr.value = build_byref_local_var_access (expr.value,
+                                                         DECL_NAME (expr.value));
+        }
+        /* APPLE LOCAL end radar 5932809 - copyable byref blocks */
+        
+        /* APPLE LOCAL end radar 5732232 - blocks (C++ cd) */
 	expr.original_code = ERROR_MARK;
       }
       break;
@@ -5855,6 +5946,18 @@ c_parser_postfix_expression (c_parser *parser)
 	  break;
 	}
       break;
+    /* APPLE LOCAL begin radar 5732232 - blocks (C++ cf) */
+    case CPP_XOR:
+        if (flag_blocks) {
+          expr.value = c_parser_block_literal_expr (parser);
+          expr.original_code = ERROR_MARK;
+          break;
+        }
+        c_parser_error (parser, "expected expression");
+        expr.value = error_mark_node;
+        expr.original_code = ERROR_MARK;
+        break;
+    /* APPLE LOCAL end radar 5732232 - blocks (C++ cf) */
     case CPP_OPEN_SQUARE:
       /* APPLE LOCAL begin CW asm blocks */
       if (inside_iasm_block)
@@ -6385,6 +6488,12 @@ c_parser_objc_property_attrlist (c_parser *parser)
 	 && c_parser_next_token_is_not (parser, CPP_EOF))
     {
       c_parser_objc_property_attribute (parser);
+      /* APPLE LOCAL begin radar 6302949 */
+      if (c_parser_next_token_is_not (parser, CPP_COMMA)
+	  && c_parser_next_token_is_not (parser, CPP_CLOSE_PAREN)
+	  && c_parser_next_token_is_not (parser, CPP_EOF))
+	warning (0, "property attributes must be separated by a comma");
+      /* APPLE LOCAL end radar 6302949 */
       if (c_parser_next_token_is (parser, CPP_COMMA)
 	  || c_parser_next_token_is (parser, CPP_NAME) /* error */)
 	c_parser_consume_token (parser);
@@ -7170,6 +7279,26 @@ c_parser_objc_try_catch_statement (c_parser *parser)
   objc_finish_try_stmt ();
 }
 
+/* APPLE LOCAL begin radar 5982990 */
+/* This routine is called from c_parser_objc_synchronized_statement
+   and is identical to c_parser_compound_statement with
+   the addition of volatizing local variables seen in the scope
+   of @synchroniz block.
+*/
+static tree
+c_parser_objc_synch_compound_statement (c_parser *parser)
+{
+  tree stmt;
+  if (!c_parser_require (parser, CPP_OPEN_BRACE, "expected %<{%>"))
+    return error_mark_node;
+  stmt = c_begin_compound_stmt (true);
+  c_parser_compound_statement_nostart (parser);
+  if (flag_objc_sjlj_exceptions)
+    objc_mark_locals_volatile (NULL);
+  return c_end_compound_stmt (stmt, true);
+}
+/* APPLE LOCAL end radar 5982990 */
+
 /* Parse an objc-synchronized-statement.
 
    objc-synchronized-statement:
@@ -7191,7 +7320,8 @@ c_parser_objc_synchronized_statement (c_parser *parser)
     }
   else
     expr = error_mark_node;
-  stmt = c_parser_compound_statement (parser);
+  /* APPLE LOCAL radar 5982990 */
+  stmt = c_parser_objc_synch_compound_statement (parser);
   objc_build_synchronized (loc, expr, stmt);
 }
 
@@ -9250,5 +9380,975 @@ c_parser_iasm_statement (c_parser* parser)
   c_parser_iasm_maybe_skip_comments (parser);
 }
 /* APPLE LOCAL end CW asm blocks */
+/* APPLE LOCAL begin radar 5732232 - blocks (C++ ce) */
+
+/* APPLE LOCAL begin radar 6300081  */
+
+/* This function builds a "generic" block struct type, to be passed 
+   into the debug information for blocks pointers, to allow gdb to
+   find the actual function pointer for the block.  Any time the Blocks
+   structure layout changes, this may also need to change.
+
+   Currently a block pointer is a pointer to a __block_literal_n struct,
+   the third field of which is a pointer to a __block_descriptor struct,
+   whose third field is the function pointer.  There are other fields as
+   well, but these are the ones gdb needs to know about to find the
+   function pointer.  Therefore a generic block struct currently looks
+   like this:
+
+   struct __block_literal_generic 
+   {
+      void * __isa;
+      int __flags;
+      int __reserved;
+      void (*__FuncPtr)(void *);
+      struct __block_descriptor 
+        {
+          unsigned long int reserved;
+	  unsigned long int Size;
+	} *__descriptor;
+   };
+
+   IF AT ANY TIME THE STRUCTURE OF A __BLOCK_LITERAL_N CHANGES, THIS
+   MUST BE CHANGED ALSO!!
+
+*/
+
+tree
+/* APPLE LOCAL radar 6353006  */
+c_build_generic_block_struct_type (void)
+{
+  tree field_decl_chain;
+  tree field_decl;
+  tree block_struct_type;
+
+  push_to_top_level ();
+  block_struct_type = start_struct (RECORD_TYPE, 
+				   get_identifier ("__block_literal_generic"));
+  
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__isa"), ptr_type_node);
+  field_decl_chain = field_decl;
+
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__flags"),
+			   integer_type_node);
+  chainon (field_decl_chain, field_decl);
+
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__reserved"),
+			   integer_type_node);
+  chainon (field_decl_chain, field_decl);
+  
+  /* void *__FuncPtr; */
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__FuncPtr"), ptr_type_node);
+  chainon (field_decl_chain, field_decl);
+
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__descriptor"),
+			   build_block_descriptor_type (false));
+  chainon (field_decl_chain, field_decl);
+
+  TYPE_BLOCK_IMPL_STRUCT (block_struct_type) = 1;
+  finish_struct (block_struct_type, field_decl_chain, NULL_TREE);
+  pop_from_top_level ();
+  return block_struct_type;
+}
+/* APPLE LOCAL end radar 6300081  */
+
+/* APPLE LOCAL begin radar 5847213 - radar 6329245 */
+/** build_block_struct_type -
+ struct __block_literal_n {
+  void *__isa; // initialized to &_NSConcreteStackBlock or &_NSConcreteGlobalBlock
+  int __flags;
+  int __reserved;
+  void *__FuncPtr;
+  struct __block_descriptor {
+    unsigned long int reserved;     // NULL
+    unsigned long int Size;  // sizeof(struct __block_literal_n)
+ 
+    // optional helper functions
+    void *CopyFuncPtr; // When BLOCK_HAS_COPY_DISPOSE
+    void *DestroyFuncPtr; // When BLOCK_HAS_COPY_DISPOSE 
+ } *__descriptor;
+ 
+ // imported variables
+ int x; // ref variable list ...
+ int *y; // byref variable list
+ };
+*/
+static tree
+build_block_struct_type (struct block_sema_info * block_impl)
+{
+  tree field_decl_chain, field_decl, chain;
+  char buffer[32];
+  static int unique_count;
+  tree block_struct_type;
+
+  /* Check and see if this block is required to have a Copy/Dispose
+     helper function. If yes, set BlockHasCopyDispose to TRUE. */
+  for (chain = block_impl->block_ref_decl_list; chain;
+       chain = TREE_CHAIN (chain))
+    if (block_requires_copying (TREE_VALUE (chain)))
+    {
+      block_impl->BlockHasCopyDispose = TRUE;
+      break;
+    }
+
+  /* Further check to see that we have __block variables which require
+     Copy/Dispose helpers. */
+  for (chain = block_impl->block_byref_decl_list; chain;
+       chain = TREE_CHAIN (chain))
+    if (COPYABLE_BYREF_LOCAL_VAR (TREE_VALUE (chain)))
+      {
+	block_impl->BlockHasCopyDispose = TRUE;
+	break;
+      }
+
+  sprintf(buffer, "__block_literal_%d", ++unique_count);
+  push_to_top_level ();
+  block_struct_type = start_struct (RECORD_TYPE, get_identifier (buffer));
+  
+  /* void *__isa; */
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__isa"), ptr_type_node);
+  field_decl_chain = field_decl;
+  
+  /* int __flags */
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__flags"),
+			   integer_type_node);
+  chainon (field_decl_chain, field_decl);
+
+  /* int __reserved */
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__reserved"),
+			   integer_type_node);
+  chainon (field_decl_chain, field_decl);
+  
+  /* void *__FuncPtr; */
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__FuncPtr"), ptr_type_node);
+  chainon (field_decl_chain, field_decl);
+
+  /* struct __block_descriptor *__descriptor */
+  field_decl = build_decl (FIELD_DECL, get_identifier ("__descriptor"),
+                           build_block_descriptor_type (block_impl->BlockHasCopyDispose));
+  chainon (field_decl_chain, field_decl);
+  
+  if (block_impl->BlockHasCopyDispose)
+  {
+    /* If inner block of a nested block has BlockHasCopyDispose, so
+       does its outer block. */
+    if (block_impl->prev_block_info)
+      block_impl->prev_block_info->BlockHasCopyDispose = TRUE;
+  }
+
+  /* int x; // ref variable list ... */
+  for (chain = block_impl->block_ref_decl_list; chain; chain = TREE_CHAIN (chain))
+  {
+    tree p = TREE_VALUE (chain);
+    /* Note! const-ness of copied in variable must not be carried over to the
+       type of the synthesized struct field. It prevents to assign to this
+       field when copy constructor is synthesized. */
+    field_decl = build_decl (FIELD_DECL, DECL_NAME (p),
+                             c_build_qualified_type (TREE_TYPE (p),
+                                                     TYPE_UNQUALIFIED));
+    chainon (field_decl_chain, field_decl);
+  }
+
+  /* int *y; // byref variable list */
+  for (chain = block_impl->block_byref_decl_list; chain; chain = TREE_CHAIN (chain))
+  {
+    tree p = TREE_VALUE (chain);
+    field_decl = build_decl (FIELD_DECL, DECL_NAME (p),
+                             TREE_TYPE (p));
+    chainon (field_decl_chain, field_decl);
+  }
+  pop_from_top_level ();
+  finish_struct (block_struct_type, field_decl_chain, NULL_TREE);
+  return block_struct_type;
+}
+
+/** build_descriptor_block_decl -
+  This routine builds a static block_descriptior variable of type:
+  struct __block_descriptor; and initializes it to:
+  {0, sizeof(struct literal_block_n), 
+   copy_helper_block_1, // only if block BLOCK_HAS_COPY_DISPOSE
+   destroy_helper_block_1, // only if block BLOCK_HAS_COPY_DISPOSE
+  }
+*/
+static tree
+build_descriptor_block_decl (tree block_struct_type, struct block_sema_info *block_impl)
+{
+  extern tree create_tmp_var_raw (tree, const char *);
+  static int desc_unique_count;
+  int size;
+  tree helper_addr, fields;
+  tree decl, constructor, initlist;
+  tree exp, bind;
+  char name [32];
+  tree descriptor_type =  
+    TREE_TYPE (build_block_descriptor_type (block_impl->BlockHasCopyDispose));
+
+  sprintf (name, "__block_descriptor_tmp_%d", ++desc_unique_count);
+  decl = create_tmp_var_raw (descriptor_type, name);
+  DECL_CONTEXT (decl) = NULL_TREE;
+  DECL_ARTIFICIAL (decl) = 1;
+
+  /* Initialize "reserved" field to 0 for now. */
+  fields = TYPE_FIELDS (descriptor_type);
+  initlist = build_tree_list (fields, build_int_cst (long_unsigned_type_node, 0));
+  fields = TREE_CHAIN (fields);
+  
+  /* Initialize "Size" field. */
+  size = TREE_INT_CST_LOW (TYPE_SIZE_UNIT (block_struct_type));
+  initlist = tree_cons (fields,
+                        build_int_cst (long_unsigned_type_node, size),
+                        initlist);
+
+  if (block_impl->BlockHasCopyDispose)
+    {
+      /* Initialize "CopyFuncPtr" and "DestroyFuncPtr" fields. */
+      /* Helpers were previously generated completeley as a nested
+	 function (and context was required for code gen.) But they are not, 
+	 so context must be set to NULL so initialization logic does not complain. */
+      DECL_CONTEXT (block_impl->copy_helper_func_decl) = NULL_TREE;
+      fields = TREE_CHAIN (fields);
+      helper_addr = build_fold_addr_expr (block_impl->copy_helper_func_decl);
+      helper_addr = convert (ptr_type_node, helper_addr);
+      initlist = tree_cons (fields, helper_addr, initlist);
+      DECL_CONTEXT (block_impl->destroy_helper_func_decl) = NULL_TREE;
+      fields = TREE_CHAIN (fields);
+      helper_addr = build_fold_addr_expr (block_impl->destroy_helper_func_decl);
+      helper_addr = convert (ptr_type_node, helper_addr);
+      initlist = tree_cons (fields, helper_addr, initlist);
+    }
+  constructor = build_constructor_from_list (descriptor_type,
+                                             nreverse (initlist));
+  TREE_CONSTANT (constructor) = 1;
+  TREE_STATIC (constructor) = 1;
+  TREE_READONLY (constructor) = 1;
+  DECL_INITIAL (decl) = constructor;
+  exp = build_stmt (DECL_EXPR, decl);
+  bind = build3 (BIND_EXPR, void_type_node, decl, exp, NULL);
+  TREE_SIDE_EFFECTS (bind) = 1;
+  add_stmt (bind);
+  TREE_PUBLIC (decl) = 0;
+  TREE_STATIC (decl) = 1;
+  finish_decl (decl, constructor, NULL_TREE);
+  return decl;
+}
+
+/**
+ build_block_struct_initlist - builds the initializer list:
+ { &_NSConcreteStackBlock or &_NSConcreteGlobalBlock // __isa,
+   BLOCK_HAS_DESCRIPTOR | BLOCK_HAS_COPY_DISPOSE | BLOCK_IS_GLOBAL // __flags,
+   0, // __reserved
+   &helper_1, // __FuncPtr,
+   &static_descriptor_variable // __descriptor,
+   x, // user variables.
+   &y
+   ...
+ }
+*/
+static tree
+build_block_struct_initlist (tree block_struct_type,
+			     struct block_sema_info *block_impl)
+{
+  tree initlist, helper_addr;
+  tree chain, fields;
+  unsigned int flags = BLOCK_HAS_DESCRIPTOR;
+  static tree NSConcreteStackBlock_decl = NULL_TREE;
+  static tree NSConcreteGlobalBlock_decl = NULL_TREE;
+  tree descriptor_block_decl = build_descriptor_block_decl (block_struct_type, block_impl);
+
+  if (block_impl->BlockHasCopyDispose)
+    /* Note! setting of this flag merely indicates to the runtime that
+       we have destroy_helper_block/copy_helper_block helper
+       routines. */
+    flags |= BLOCK_HAS_COPY_DISPOSE;
+
+  fields = TYPE_FIELDS (block_struct_type);
+  /* APPLE LOCAL begin radar 6230297 */
+  if (!current_function_decl || 
+      (block_impl->block_ref_decl_list == NULL_TREE &&
+       block_impl->block_byref_decl_list == NULL_TREE))
+  /* APPLE LOCAL end radar 6230297 */
+    {
+      /* This is a global block. */
+      /* Find an existing declaration for _NSConcreteGlobalBlock or declare
+	 extern void *_NSConcreteGlobalBlock; */
+      if (NSConcreteGlobalBlock_decl == NULL_TREE)
+	{
+	  tree name_id = get_identifier("_NSConcreteGlobalBlock");
+	  NSConcreteGlobalBlock_decl = lookup_name (name_id);
+	  if (!NSConcreteGlobalBlock_decl)
+	    {
+	      NSConcreteGlobalBlock_decl = build_decl (VAR_DECL, name_id, ptr_type_node);
+	      DECL_EXTERNAL (NSConcreteGlobalBlock_decl) = 1;
+	      TREE_PUBLIC (NSConcreteGlobalBlock_decl) = 1;
+	      pushdecl_top_level (NSConcreteGlobalBlock_decl);
+	      rest_of_decl_compilation (NSConcreteGlobalBlock_decl, 0, 0);
+	    }
+	}
+      /* APPLE LOCAL begin radar 6457359 */
+      initlist = build_tree_list (fields,
+                                  convert (ptr_type_node,
+                                           build_fold_addr_expr (NSConcreteGlobalBlock_decl)));
+      /* APPLE LOCAL end radar 6457359 */
+      flags |= BLOCK_IS_GLOBAL;
+    }
+  else
+    {
+      /* Find an existing declaration for _NSConcreteStackBlock or declare
+	 extern void *_NSConcreteStackBlock; */
+      if (NSConcreteStackBlock_decl == NULL_TREE)
+	{
+	  tree name_id = get_identifier("_NSConcreteStackBlock");
+	  NSConcreteStackBlock_decl = lookup_name (name_id);
+	  if (!NSConcreteStackBlock_decl)
+	    {
+	      NSConcreteStackBlock_decl = build_decl (VAR_DECL, name_id, ptr_type_node);
+	      DECL_EXTERNAL (NSConcreteStackBlock_decl) = 1;
+	      TREE_PUBLIC (NSConcreteStackBlock_decl) = 1;
+	      pushdecl_top_level (NSConcreteStackBlock_decl);
+	      rest_of_decl_compilation (NSConcreteStackBlock_decl, 0, 0);
+	    }
+	}
+      /* APPLE LOCAL begin radar 6457359 */
+      initlist = build_tree_list (fields,
+                                  convert (ptr_type_node,
+                                           build_fold_addr_expr (NSConcreteStackBlock_decl)));
+      /* APPLE LOCAL end radar 6457359 */
+    }
+  fields = TREE_CHAIN (fields);
+
+  /* __flags */
+  initlist = tree_cons (fields,
+                        build_int_cst (integer_type_node, flags),
+                        initlist);
+  fields = TREE_CHAIN (fields);
+
+  /* __reserved */
+  initlist = tree_cons (fields,
+                        build_int_cst (integer_type_node, 0),
+                        initlist);
+  fields = TREE_CHAIN (fields);
+
+  /* __FuncPtr */
+  helper_addr = build_fold_addr_expr (block_impl->helper_func_decl);
+  helper_addr = convert (ptr_type_node, helper_addr);
+  initlist = tree_cons (fields, helper_addr, initlist);
+  fields = TREE_CHAIN (fields);
+
+  /* __descriptor */
+  /* APPLE LOCAL begin radar 6457359 */
+  initlist = tree_cons (fields,
+                        build_fold_addr_expr (descriptor_block_decl),
+                        initlist);
+  /* APPLE LOCAL end radar 6457359 */
+  for (chain = block_impl->block_original_ref_decl_list; chain;
+       chain = TREE_CHAIN (chain))
+    {
+      tree y = TREE_VALUE (chain);
+      TREE_USED (y) = 1;
+      fields = TREE_CHAIN (fields);
+      initlist = tree_cons (fields, y, initlist);
+    }
+  for (chain = block_impl->block_byref_decl_list; chain;
+       chain = TREE_CHAIN (chain))
+    {
+      tree y = lookup_name (DECL_NAME (TREE_VALUE (chain)));
+      tree forwarding_expr;
+      gcc_assert (y);
+      TREE_USED (y) = 1;
+      if (COPYABLE_BYREF_LOCAL_VAR (y))
+        {
+	  /* For variables declared __block, either the original one
+	     at the point of declaration or the imported version (which is
+	     initialized in the helper function's prologue) is used to 
+	     initilize the byref variable field in the temporary. */
+          if (TREE_CODE (TREE_TYPE (y)) != RECORD_TYPE)
+            y = build_indirect_ref (y, "unary *");
+	  /* We will be using the __block_struct_variable.__forwarding as the 
+	     initializer. */
+          forwarding_expr = build_component_ref (y, get_identifier ("__forwarding"));
+        }
+      else
+	/* Global variable is always assumed passed by its address. */
+	forwarding_expr = build_fold_addr_expr (y);
+      fields = TREE_CHAIN (fields);
+      initlist = tree_cons (fields, forwarding_expr, initlist);
+    }
+  return initlist;
+}
+
+/**
+ build_block_literal_tmp - This routine:
+
+ 1) builds block type:
+ struct __block_literal_n {
+  void *__isa; // initialized to &_NSConcreteStackBlock or &_NSConcreteGlobalBlock
+  int __flags;
+  int __reserved;
+  void *__FuncPtr
+  struct __block_descriptor {
+    unsigned long int reserved;     // NULL
+    unsigned long int Size;  // sizeof(struct Block_literal_1)
+
+    // optional helper functions
+    void *CopyFuncPtr; // When BLOCK_HAS_COPY_DISPOSE
+    void *DestroyFuncPtr; // When BLOCK_HAS_COPY_DISPOSE
+ } *__descriptor;
+
+ // imported variables
+ int x; // ref variable list ...
+ int *y; // byref variable list
+ };
+
+ 2) build function prototype:
+ double helper_1(struct __block_literal_n *ii, int z);
+
+ 3) build the temporary initialization:
+ struct __block_literal_n I = {
+   &_NSConcreteStackBlock or &_NSConcreteGlobalBlock // __isa,
+   BLOCK_HAS_DESCRIPTOR | BLOCK_HAS_COPY_DISPOSE | BLOCK_IS_GLOBAL // __flags,
+   0, // __reserved
+   &helper_1, // __FuncPtr 
+   &static_descriptor_variable // __descriptor,
+   x, // user variables.
+   &y
+   ...
+ };
+It return the temporary.
+*/
+
+static tree
+build_block_literal_tmp (const char *name,
+			 struct block_sema_info * block_impl)
+{
+  extern tree create_tmp_var_raw (tree, const char *);
+  tree block_holder_tmp_decl;
+  tree constructor, initlist;
+  tree exp, bind;
+  tree block_struct_type = TREE_TYPE (block_impl->block_arg_ptr_type);
+  /* APPLE LOCAL begin radar 6230297 */
+  bool staticBlockTmp = (block_impl->block_ref_decl_list == NULL_TREE &&
+                         block_impl->block_byref_decl_list == NULL_TREE);
+
+
+  block_holder_tmp_decl = create_tmp_var_raw (block_struct_type, name);
+  /* Context will not be known until when the literal is synthesized.
+     This is more so in the case of nested block literal blocks.  */
+  DECL_CONTEXT (block_holder_tmp_decl) = staticBlockTmp ? NULL_TREE 
+                                                        : current_function_decl;
+  /* In the new ABI, helper function decl. is the initializer for the
+     descriptor variable which is always declared static. So, it must
+     have no context; otherwise, gcc thinks that it requires trampoline! when
+     address of this function is used as initializer. */
+  DECL_CONTEXT (block_impl->helper_func_decl) = NULL_TREE;
+  /* APPLE LOCAL end radar 6230297 */
+  DECL_ARTIFICIAL (block_holder_tmp_decl) = 1;
+
+  initlist = build_block_struct_initlist (block_struct_type,
+					  block_impl);
+  initlist = nreverse (initlist);
+  constructor = build_constructor_from_list (block_struct_type,
+                                             initlist);
+  TREE_CONSTANT (constructor) = 1;
+  TREE_STATIC (constructor) = 1;
+  TREE_READONLY (constructor) = 1;
+  DECL_INITIAL (block_holder_tmp_decl) = constructor;
+  exp = build_stmt (DECL_EXPR, block_holder_tmp_decl);
+  bind = build3 (BIND_EXPR, void_type_node, block_holder_tmp_decl, exp, NULL);
+  TREE_SIDE_EFFECTS (bind) = 1;
+  add_stmt (bind);
+  /* Temporary representing a global block is made global static.  */
+  /* APPLE LOCAL radar 6230297 */
+  if (staticBlockTmp || global_bindings_p ()) {
+    TREE_PUBLIC (block_holder_tmp_decl) = 0;
+    TREE_STATIC (block_holder_tmp_decl) = 1;
+    finish_decl (block_holder_tmp_decl, constructor, NULL_TREE);
+  }
+  return block_holder_tmp_decl;
+}
+/* APPLE LOCAL end radar 5847213 - radar 6329245 */
+
+static tree
+clean_and_exit (tree block)
+{
+  pop_function_context ();
+  free (finish_block (block));
+  return error_mark_node;
+}
+
+/** synth_copy_helper_block_func - This function synthesizes
+  void copy_helper_block (struct block* _dest, struct block *_src) function.
+*/
+
+static void
+synth_copy_helper_block_func (struct block_sema_info * block_impl)
+{
+  tree stmt, chain, fnbody;
+  tree dst_arg, src_arg;
+  struct c_arg_info * arg_info;
+  /* Set up: (struct block* _dest, struct block *_src) parameters. */
+  dst_arg = build_decl (PARM_DECL, get_identifier ("_dst"),
+                        block_impl->block_arg_ptr_type);
+  DECL_CONTEXT (dst_arg) = cur_block->copy_helper_func_decl;
+  TREE_USED (dst_arg) = 1;
+  DECL_ARG_TYPE (dst_arg) = block_impl->block_arg_ptr_type;
+  src_arg = build_decl (PARM_DECL, get_identifier ("_src"),
+                        block_impl->block_arg_ptr_type);
+  /* APPLE LOCAL radar 5847213 */
+  DECL_CONTEXT (src_arg) = cur_block->copy_helper_func_decl;
+  TREE_USED (src_arg) = 1;
+  DECL_ARG_TYPE (src_arg) = block_impl->block_arg_ptr_type;
+  arg_info = xcalloc (1, sizeof (struct c_arg_info));
+  TREE_CHAIN (dst_arg) = src_arg;
+  arg_info->parms = dst_arg;
+  arg_info->types = tree_cons (NULL_TREE, block_impl->block_arg_ptr_type,
+                               tree_cons (NULL_TREE,
+                                          block_impl->block_arg_ptr_type,
+                                          NULL_TREE));
+  /* function header synthesis. */
+  push_function_context ();
+  start_block_helper_function (cur_block->copy_helper_func_decl);
+  store_parm_decls_from (arg_info);
+
+  /* Body of the function. */
+  stmt = c_begin_compound_stmt (true);
+  for (chain = block_impl->block_ref_decl_list; chain;
+       chain = TREE_CHAIN (chain))
+    if (block_requires_copying (TREE_VALUE (chain)))
+    {
+      /* APPLE LOCAL begin radar 6175959 */
+      int flag;
+      tree call_exp;
+      tree p = TREE_VALUE (chain);
+      tree dst_block_component, src_block_component;
+      dst_block_component = build_component_ref (build_indirect_ref (dst_arg, "->"),
+						 DECL_NAME (p));
+      src_block_component = build_component_ref (build_indirect_ref (src_arg, "->"),
+						 DECL_NAME (p));
+
+      if (TREE_CODE (TREE_TYPE (p)) == BLOCK_POINTER_TYPE)
+        /* _Block_object_assign(&_dest->myImportedBlock, _src->myImportedClosure, BLOCK_FIELD_IS_BLOCK) */
+        flag = BLOCK_FIELD_IS_BLOCK;
+      else
+        /* _Block_object_assign(&_dest->myImportedBlock, _src->myImportedClosure, BLOCK_FIELD_IS_OBJECT) */
+        flag = BLOCK_FIELD_IS_OBJECT;
+      dst_block_component = build_fold_addr_expr (dst_block_component);
+      call_exp = build_block_object_assign_call_exp (dst_block_component, src_block_component, flag);
+      add_stmt (call_exp);
+      /* APPLE LOCAL end radar 6175959 */
+    }
+
+  /* For each __block declared variable must generate call to:
+     _Block_object_assign(&_dest->myImportedBlock, _src->myImportedBlock, BLOCK_FIELD_IS_BYREF [|BLOCK_FIELD_IS_WEAK])
+  */
+  for (chain = block_impl->block_byref_decl_list; chain;
+         chain = TREE_CHAIN (chain))
+    if (COPYABLE_BYREF_LOCAL_VAR (TREE_VALUE (chain)))
+      {
+        int flag = BLOCK_FIELD_IS_BYREF;
+	tree call_exp;
+	tree p = TREE_VALUE (chain);
+	tree dst_block_component, src_block_component;
+	dst_block_component = build_component_ref (build_indirect_ref (dst_arg, "->"),
+						   DECL_NAME (p));
+	src_block_component = build_component_ref (build_indirect_ref (src_arg, "->"),
+						   DECL_NAME (p));
+
+	/* _Block_object_assign(&_dest->myImportedClosure, _src->myImportedClosure, BLOCK_FIELD_IS_BYREF [|BLOCK_FIELD_IS_WEAK]) */
+        if (COPYABLE_WEAK_BLOCK (p))
+	  flag |= BLOCK_FIELD_IS_WEAK;
+        
+	dst_block_component = build_fold_addr_expr (dst_block_component);
+	call_exp = build_block_object_assign_call_exp (dst_block_component, src_block_component, flag);
+	add_stmt (call_exp);
+      }
+
+  fnbody = c_end_compound_stmt (stmt, true);
+  add_stmt (fnbody);
+  finish_function ();
+  pop_function_context ();
+  free (arg_info);
+}
+
+static void
+synth_destroy_helper_block_func (struct block_sema_info * block_impl)
+{
+  tree stmt, chain, fnbody;
+  tree src_arg;
+  struct c_arg_info * arg_info;
+  /* Set up: (struct block *_src) parameter. */
+  src_arg = build_decl (PARM_DECL, get_identifier ("_src"),
+                        block_impl->block_arg_ptr_type);
+  TREE_USED (src_arg) = 1;
+  DECL_ARG_TYPE (src_arg) = block_impl->block_arg_ptr_type;
+  arg_info = xcalloc (1, sizeof (struct c_arg_info));
+  arg_info->parms = src_arg;
+  arg_info->types = tree_cons (NULL_TREE, block_impl->block_arg_ptr_type,
+                               NULL_TREE);
+
+  /* function header synthesis. */
+  push_function_context ();
+  start_block_helper_function (cur_block->destroy_helper_func_decl);
+  store_parm_decls_from (arg_info);
+
+  /* Body of the function. */
+  stmt = c_begin_compound_stmt (true);
+  for (chain = block_impl->block_ref_decl_list; chain;
+       chain = TREE_CHAIN (chain))
+    if (block_requires_copying (TREE_VALUE (chain)))
+    {
+      int flag;
+      tree rel_exp;
+      tree p = TREE_VALUE (chain);
+      tree src_block_component;
+      src_block_component = build_component_ref (build_indirect_ref (src_arg, "->"),
+						 DECL_NAME (p));
+
+      if (TREE_CODE (TREE_TYPE (p)) == BLOCK_POINTER_TYPE)
+	/* _Block_object_dispose(_src->imported_object_0, BLOCK_FIELD_IS_BLOCK); */
+        flag = BLOCK_FIELD_IS_BLOCK;
+      else
+	/* _Block_object_dispose(_src->imported_object_0, BLOCK_FIELD_IS_OBJECT); */
+	flag = BLOCK_FIELD_IS_OBJECT;
+      rel_exp = build_block_object_dispose_call_exp (src_block_component, flag);
+      add_stmt (rel_exp);
+    }
+
+  /* For each __block declared variable must generate call to:
+   _Block_object_dispose(_src->myImportedClosure, BLOCK_FIELD_IS_BYREF[|BLOCK_FIELD_IS_WEAK])
+   */
+  for (chain = block_impl->block_byref_decl_list; chain;
+       chain = TREE_CHAIN (chain))
+    if (COPYABLE_BYREF_LOCAL_VAR (TREE_VALUE (chain)))
+      {
+	tree call_exp;
+        int flag = BLOCK_FIELD_IS_BYREF;
+	tree p = TREE_VALUE (chain);
+	tree src_block_component;
+
+	src_block_component = build_component_ref (build_indirect_ref (src_arg, "->"),
+						   DECL_NAME (p));
+        if (COPYABLE_WEAK_BLOCK (p))
+          flag |= BLOCK_FIELD_IS_WEAK;
+      /* _Block_object_dispose(_src->myImportedClosure, BLOCK_FIELD_IS_BYREF[|BLOCK_FIELD_IS_WEAK]) */
+      call_exp = build_block_object_dispose_call_exp (src_block_component, flag);
+      add_stmt (call_exp);
+    }
+
+  fnbody = c_end_compound_stmt (stmt, true);
+  add_stmt (fnbody);
+  finish_function ();
+  pop_function_context ();
+  free (arg_info);
+}
+
+/* Parse a block-id.
+
+   GNU Extension:
+
+   block-id:
+     specifier-qualifier-list block-declarator
+
+   Returns the DECL specified or implied.  */
+
+static tree
+c_parser_block_id (c_parser* parser)
+{
+  struct c_declspecs *specs = build_null_declspecs ();
+  struct c_declarator *declarator;
+  bool dummy = false;
+
+  c_parser_declspecs (parser, specs, false, true, true);
+  if (!specs->declspecs_seen_p)
+    {
+      c_parser_error (parser, "expected specifier-qualifier-list");
+      return NULL;
+    }
+  pending_xref_error ();
+  finish_declspecs (specs);
+  declarator = c_parser_declarator (parser, specs->type_seen_p,
+				    C_DTR_BLOCK, &dummy);
+  if (declarator == NULL)
+    return NULL;
+
+  return grokblockdecl (specs, declarator);
+}
+
+/* Parse a block-literal-expr.
+
+   GNU Extension:
+
+  block-literal-expr:
+    ^ parameter-declation-clause exception-specification [opt] compound-statement
+    ^ block-id compound-statement
+
+    It synthesizes the helper function for later generation and builds
+    the necessary data to represent the block literal where it is
+    declared.  */
+static tree
+c_parser_block_literal_expr (c_parser* parser)
+{
+  char name [32];
+  static int global_unique_count;
+  int unique_count = ++global_unique_count;
+  tree block_helper_function_decl;
+  tree expr, body, type, arglist = void_list_node, ftype;
+  tree self_arg, stmt;
+  struct c_arg_info *args = NULL;
+  tree arg_type = void_list_node;
+  struct block_sema_info *block_impl;
+  tree tmp;
+  bool open_paren_seen = false;
+  tree restype;
+  tree fnbody, typelist;
+  tree helper_function_type;
+  tree block;
+  /* APPLE LOCAL radar 6185344 */
+  tree declared_block_return_type = NULL_TREE;
+  /* APPLE LOCAL radar 6237713 */
+  tree attributes = NULL_TREE;
+
+  c_parser_consume_token (parser); /* eat '^' */
+
+  /* APPLE LOCAL begin radar 6237713 */
+  if (c_parser_next_token_is_keyword (parser, RID_ATTRIBUTE))
+    attributes = c_parser_attributes (parser);
+  /* APPLE LOCAL end radar 6237713 */
+  
+  if (c_parser_next_token_is (parser, CPP_OPEN_PAREN))
+    {
+      /* Parse the optional argument list */
+      c_parser_consume_token (parser);
+      /* Open the scope to collect parameter decls */
+      push_scope ();
+      args = c_parser_parms_declarator (parser, true, NULL_TREE);
+      /* Check for args as it might be NULL due to error. */
+      if (args)
+	{
+	  arglist = args->parms;
+	  arg_type = args->types;
+	}
+      else
+	{
+	  pop_scope ();
+	  return error_mark_node;
+	}
+      open_paren_seen = true;
+      pop_scope ();
+    }
+  else if (c_parser_next_token_is_not (parser, CPP_OPEN_BRACE))
+    {
+      /* Parse user declared return type. */
+      tree decl;
+    
+      /* APPLE LOCAL begin radar 6237713 */
+      if (attributes)
+	{
+	  warning (0, "attributes before block type are ignored");
+	  attributes = NULL_TREE;
+	}
+      /* APPLE LOCAL end radar 6237713 */    
+
+      decl = c_parser_block_id (parser);
+
+      if (decl && decl != error_mark_node)
+	{
+	  arg_type = TYPE_ARG_TYPES (TREE_TYPE (decl));
+	  arglist = DECL_ARGUMENTS (decl);
+	  declared_block_return_type = TREE_TYPE (TREE_TYPE (decl));
+	}
+    }
+
+  block = begin_block ();
+
+  cur_block->arg_info = NULL;
+  if (declared_block_return_type)
+    {
+      cur_block->return_type = TYPE_MAIN_VARIANT (declared_block_return_type);
+      cur_block->block_has_return_type = true;
+  }
+  else
+    cur_block->return_type = NULL_TREE;
+
+  if (args)
+    cur_block->arg_info = args;
+  else
+    cur_block->arg_info = xcalloc (1, sizeof (struct c_arg_info));
+
+  if (declared_block_return_type)
+    {
+      cur_block->arg_info->parms = arglist;
+      cur_block->arg_info->types = arg_type;
+    }
+
+  /* Must also build hidden parameter .block_descriptor added to the helper
+   function, even though we do not know its type yet. */
+  /* APPLE LOCAL radar 6404979 */
+  self_arg = build_decl (PARM_DECL, get_identifier (".block_descriptor"),
+                         ptr_type_node);
+  TREE_USED (self_arg) = 1;  /* Prevent unused parameter '.block_descriptor' warning. */
+  TREE_CHAIN (self_arg) = cur_block->arg_info->parms;
+  cur_block->arg_info->types = tree_cons (NULL_TREE, ptr_type_node, arg_type);
+  cur_block->arg_info->parms = self_arg;
+
+  /* APPLE LOCAL begin radar 6185344 */
+  /* Build the declaration of the helper function (if we do not know its result
+     type yet, assume it is 'void'. If user provided it, use it).
+     Treat this as a nested function and use nested function infrastructure for
+     its generation. */
+
+  ftype = build_function_type ((!cur_block->block_has_return_type
+                                ? void_type_node : cur_block->return_type),
+                               cur_block->arg_info->types);
+  /* APPLE LOCAL end radar 6185344 */
+  /* APPLE LOCAL radar 6160536 - radar 6411649 */
+  block_helper_function_decl = build_helper_func_decl (build_block_helper_name (0),
+                                                         ftype);
+  DECL_CONTEXT (block_helper_function_decl) = current_function_decl;
+  cur_block->helper_func_decl = block_helper_function_decl;
+
+  push_function_context ();
+  start_block_helper_function (cur_block->helper_func_decl);
+  /* Set block's scope to the scope of the helper function's main body.
+     This is primarily used when nested blocks are declared. */
+  /* FIXME: Name of objc_get_current_scope needs to get changed. */
+  cur_block->the_scope = (struct c_scope*)objc_get_current_scope ();
+
+  /* Enter parameter list to the scope of the helper function. */
+  store_parm_decls_from (cur_block->arg_info);
+
+  /* APPLE LOCAL begin radar 6237713 */
+  if (c_parser_next_token_is_keyword (parser, RID_ATTRIBUTE))
+    attributes = c_parser_attributes (parser);
+  /* APPLE LOCAL radar 6246527 */
+  any_recognized_block_attribute (attributes);
+  decl_attributes (&cur_block->helper_func_decl, attributes, 0);
+  /* APPLE LOCAL end radar 6237713 */
+  
+  /* Start parsing body or expression part of the block literal. */
+  if (c_parser_next_token_is (parser, CPP_OPEN_BRACE)) {
+    tree save_c_break_label = c_break_label;
+    tree save_c_cont_label = c_cont_label;
+    /* Indicate no valid break/continue context by setting these variables
+     to some non-null, non-label value.  We'll notice and emit the proper
+     error message in c_finish_bc_stmt.  */
+    c_break_label = c_cont_label = size_zero_node;
+    c_parser_consume_token (parser); /* Consure '{'. */
+    stmt = c_begin_compound_stmt (true);
+    c_parser_compound_statement_nostart (parser);
+    c_cont_label = save_c_cont_label;
+    c_break_label = save_c_break_label;
+  }
+  else
+    {
+      struct c_expr expr;
+      stmt = c_begin_compound_stmt (true);
+      error ("blocks require { }");
+      expr = c_parser_cast_expression (parser, NULL);
+      body = expr.value;
+      if (body == error_mark_node)
+	return clean_and_exit (block);
+
+      if (cur_block->return_type)
+	{
+	  error ("return not allowed in block expression literal");
+	  return clean_and_exit (block);
+	}
+      else if (!open_paren_seen)
+	{
+	  error ("argument list is required for block expression literals");
+	  return clean_and_exit (block);
+	}
+      else
+	{
+	  tree restype = TYPE_MAIN_VARIANT (TREE_TYPE (body));
+
+	  add_stmt (body);
+	  TREE_TYPE (current_function_decl)
+	    = build_function_type (restype,
+				   TYPE_ARG_TYPES (TREE_TYPE (current_function_decl)));
+	  TREE_TYPE (DECL_RESULT (current_function_decl)) = restype;
+	  relayout_decl (DECL_RESULT (current_function_decl));
+	  cur_block->return_type = restype;
+	}
+    }
+
+  cur_block->block_arg_ptr_type =
+    build_pointer_type (build_block_struct_type (cur_block));
+
+  restype = !cur_block->return_type ? void_type_node
+				    : cur_block->return_type;
+  if (restype == error_mark_node)
+    return clean_and_exit (block);
+
+  /* Now that we know type of the hidden .block_descriptor argument, fix its type. */
+  TREE_TYPE (self_arg) = cur_block->block_arg_ptr_type;
+  DECL_ARG_TYPE (self_arg) = cur_block->block_arg_ptr_type;
+
+  /* The DECL_RESULT should already have the correct type by now.  */
+  gcc_assert (TREE_TYPE (DECL_RESULT (current_function_decl))
+	      == restype);
+
+  cur_block->block_body = stmt;
+  block_build_prologue (cur_block);
+
+  fnbody = c_end_compound_stmt (stmt, true);
+  add_stmt (fnbody);
+
+  /* We are done parsing of the block body. Return type of block is now known.
+     We also know all we need to know about the helper function. So, fix its
+    type here. */
+  /* We moved this here because for global blocks, helper function body is
+     not nested and is gimplified in call to finish_function() and return type 
+     of the function must be correct. */
+  ftype = build_function_type (restype, arg_type);
+  /* Declare helper function; as in:
+     double helper_1(struct block_1 *ii, int z); */
+  typelist = TYPE_ARG_TYPES (ftype);
+  /* (struct block_1 *ii, int z, ...) */
+  typelist = tree_cons (NULL_TREE, cur_block->block_arg_ptr_type,
+                        typelist);
+  helper_function_type = build_function_type (TREE_TYPE (ftype), typelist);
+  TREE_TYPE (cur_block->helper_func_decl) = helper_function_type;
+  finish_function ();
+  pop_function_context ();
+
+  /* Build the declaration for copy_helper_block and destroy_helper_block
+   helper functions for later use. */
+
+  if (cur_block->BlockHasCopyDispose)
+  {
+    /* void copy_helper_block (struct block*, struct block *); */
+    tree s_ftype = build_function_type (void_type_node,
+                                        tree_cons (NULL_TREE, cur_block->block_arg_ptr_type,
+                                                   tree_cons (NULL_TREE,
+                                                              cur_block->block_arg_ptr_type,
+                                                              void_list_node)));
+    sprintf (name, "__copy_helper_block_%d", unique_count);
+    cur_block->copy_helper_func_decl =
+    build_helper_func_decl (get_identifier (name), s_ftype);
+    synth_copy_helper_block_func (cur_block);
+
+    /* void destroy_helper_block (struct block*); */
+    s_ftype = build_function_type (void_type_node,
+                                   tree_cons (NULL_TREE,
+                                              cur_block->block_arg_ptr_type, void_list_node));
+    sprintf (name, "__destroy_helper_block_%d", unique_count);
+    cur_block->destroy_helper_func_decl =
+    build_helper_func_decl (get_identifier (name), s_ftype);
+    synth_destroy_helper_block_func (cur_block);
+  }
+
+  block_impl = finish_block (block);
+
+  /* Build unqiue name of the temporary used in code gen. */
+  sprintf (name, "__block_holder_tmp_%d", unique_count);
+  tmp = build_block_literal_tmp (name, block_impl);
+  tmp = build_fold_addr_expr (tmp);
+  type = build_block_pointer_type (ftype);
+  expr = convert (type, convert (ptr_type_node, tmp));
+  free (block_impl);
+  return expr;
+}
+/* APPLE LOCAL end radar 5732232 - blocks (C++ ce) */
 
 #include "gt-c-parser.h"
