@@ -22,6 +22,10 @@
    the Free Software Foundation, 51 Franklin Street, Fifth Floor,
    Boston, MA 02110-1301, USA.  */
 
+/* ALQAAHIRA LOCAL begin 6902792 Q register clobbers in inline asm */
+#include <stdlib.h>
+#include <ctype.h>
+/* ALQAAHIRA LOCAL end 6902792 Q register clobbers in inline asm */
 #include "config.h"
 #include "system.h"
 #include "coretypes.h"
@@ -236,6 +240,8 @@ static bool arm_binds_local_p (tree);
 /* APPLE LOCAL ARM 6008578 */
 static HOST_WIDE_INT get_label_pad (rtx, HOST_WIDE_INT);
 
+/* ALQAAHIRA LOCAL 6902792 Q register clobbers in inline asm */
+static tree arm_md_asm_clobbers (tree, tree, tree);
 
 /* Initialize the GCC target structure.  */
 #if TARGET_DLLIMPORT_DECL_ATTRIBUTES
@@ -471,6 +477,11 @@ static HOST_WIDE_INT get_label_pad (rtx, HOST_WIDE_INT);
 #undef TARGET_BUILTIN_SETJMP_FRAME_VALUE
 #define TARGET_BUILTIN_SETJMP_FRAME_VALUE arm_builtin_setjmp_frame_value
 /* APPLE LOCAL end ARM reliable backtraces */
+
+/* ALQAAHIRA LOCAL begin 6902792 Q register clobbers in inline asm */
+#undef TARGET_MD_ASM_CLOBBERS
+#define TARGET_MD_ASM_CLOBBERS arm_md_asm_clobbers
+/* ALQAAHIRA LOCAL end 6902792 Q register clobbers in inline asm */
 
 struct gcc_target targetm = TARGET_INITIALIZER;
 
@@ -3293,7 +3304,8 @@ arm_float_words_big_endian (void)
 void
 arm_init_cumulative_args (CUMULATIVE_ARGS *pcum, tree fntype,
 			  rtx libname  ATTRIBUTE_UNUSED,
-			  tree fndecl ATTRIBUTE_UNUSED)
+/* APPLE LOCAL 6738583 -mlong-calls PIC static functions */
+			  tree fndecl)
 {
   /* On the ARM, the offset starts at 0.  */
   pcum->nregs = 0;
@@ -3313,6 +3325,10 @@ arm_init_cumulative_args (CUMULATIVE_ARGS *pcum, tree fntype,
 	pcum->call_cookie = CALL_SHORT;
       else if (lookup_attribute ("long_call", TYPE_ATTRIBUTES (fntype)))
 	pcum->call_cookie = CALL_LONG;
+      /* APPLE LOCAL begin 6738583 -mlong-calls PIC static functions */
+      else if (fndecl && ! TREE_PUBLIC (fndecl))
+	pcum->call_cookie = CALL_SHORT;
+      /* APPLE LOCAL end 6738583 -mlong-calls PIC static functions */
     }
 
   /* Varargs vectors are treated the same as long long.
@@ -12588,6 +12604,32 @@ arm_output_function_prologue (FILE *f, HOST_WIDE_INT frame_size)
   return_used_this_function = 0;
 }
 
+/* ALQAAHIRA LOCAL begin 6902937 out of order VFP restore */
+static void
+arm_output_epilogue_vfp_restore (void)
+{
+  int reg, start_reg;
+  FILE * f = asm_out_file;
+  start_reg = LAST_VFP_REGNUM - 1;
+  for (reg = LAST_VFP_REGNUM - 1 ; reg >= FIRST_VFP_REGNUM; reg -= 2)
+  {
+    if ((!regs_ever_live[reg] || call_used_regs[reg])
+        && (!regs_ever_live[reg + 1] || call_used_regs[reg + 1]))
+    {
+      if (start_reg != reg)
+        vfp_output_fldmd (f, SP_REGNUM,
+                          (reg - FIRST_VFP_REGNUM) / 2 + 1,
+                          (start_reg - reg) / 2);
+      start_reg = reg - 2;
+    }
+  }
+  if (start_reg != reg)
+    vfp_output_fldmd (f, SP_REGNUM,
+                      (reg - FIRST_VFP_REGNUM + 2) / 2 + 1,
+                      (start_reg - reg) / 2);
+}
+/* ALQAAHIRA LOCAL end 6902937 out of order VFP restore */
+
 const char *
 arm_output_epilogue (rtx sibling)
 {
@@ -12718,27 +12760,8 @@ arm_output_epilogue (rtx sibling)
 	      asm_fprintf (f, "\tsub\t%r, %r, #%d\n", SP_REGNUM,
 			   FP_REGNUM, floats_offset - vfp_offset);
 	    }
-          /* ALQAAHIRA LOCAL begin 6483528 out of order VFP restore */
-	  start_reg = LAST_VFP_REGNUM - 1;
-	  for (reg = LAST_VFP_REGNUM - 1 ; reg >= FIRST_VFP_REGNUM; reg -= 2)
-	    {
-	      if ((!regs_ever_live[reg] || call_used_regs[reg])
-		  && (!regs_ever_live[reg + 1] || call_used_regs[reg + 1]))
-		{
-		  if (start_reg != reg)
-                    /* ALQAAHIRA LOCAL v7 support. Merge from mainline */
-		    vfp_output_fldmd (f, SP_REGNUM,
-				      (reg - FIRST_VFP_REGNUM) / 2 + 1,
-				      (start_reg - reg) / 2);
-		  start_reg = reg - 2;
-		}
-	    }
-	  if (start_reg != reg)
-            /* ALQAAHIRA LOCAL v7 support. Merge from mainline */
-	    vfp_output_fldmd (f, SP_REGNUM,
-			      (reg - FIRST_VFP_REGNUM + 2) / 2 + 1,
-			      (start_reg - reg) / 2);
-          /* ALQAAHIRA LOCAL end 6483528 out of order VFP restore */
+          /* ALQAAHIRA LOCAL 6902937 out of order VFP restore */
+          arm_output_epilogue_vfp_restore ();
 	  /* APPLE LOCAL end 4809156 */
         }
 
@@ -13004,26 +13027,9 @@ arm_output_epilogue (rtx sibling)
 
       if (TARGET_HARD_FLOAT && TARGET_VFP)
 	{
-	  start_reg = FIRST_VFP_REGNUM;
-	  for (reg = FIRST_VFP_REGNUM; reg < LAST_VFP_REGNUM; reg += 2)
-	    {
-	      if ((!regs_ever_live[reg] || call_used_regs[reg])
-		  && (!regs_ever_live[reg + 1] || call_used_regs[reg + 1]))
-		{
-		  if (start_reg != reg)
-                    /* ALQAAHIRA LOCAL v7 support. Merge from mainline */
-		    vfp_output_fldmd (f, SP_REGNUM,
-				      (start_reg - FIRST_VFP_REGNUM) / 2,
-				      (reg - start_reg) / 2);
-		  start_reg = reg + 2;
-		}
-	    }
-	  if (start_reg != reg)
-            /* ALQAAHIRA LOCAL v7 support. Merge from mainline */
-	    vfp_output_fldmd (f, SP_REGNUM,
-			      (start_reg - FIRST_VFP_REGNUM) / 2,
-			      (reg - start_reg) / 2);
-	}
+          /* ALQAAHIRA LOCAL 6902937 out of order VFP restore */
+          arm_output_epilogue_vfp_restore ();
+        }
       if (TARGET_IWMMXT)
 	for (reg = FIRST_IWMMXT_REGNUM; reg <= LAST_IWMMXT_REGNUM; reg++)
 	  if (regs_ever_live[reg] && !call_used_regs[reg])
@@ -21830,7 +21836,8 @@ arm_output_mi_thunk (FILE *file, tree thunk ATTRIBUTE_UNUSED,
       && (! machopic_data_defined_p (function_rtx)))
     {
       function_name = machopic_indirection_name (function_rtx, !is_longcall);
-      is_indirected = true;
+      /* ALQAAHIRA LOCAL 6858124 don't indirect if it's just a stub */
+      is_indirected = is_longcall;
     }
   else
 #endif
@@ -23510,5 +23517,38 @@ arm_darwin_subtarget_conditional_register_usage (void)
     }
 }
 /* ALQAAHIRA LOCAL end 5571707 Allow R9 as caller-saved register */
-  
+
+/* ALQAAHIRA LOCAL begin 6902792 Q register clobbers in inline asm */
+/* Worker function for TARGET_MD_ASM_CLOBBERS.
+   We do this to translate references to Qn registers into the equivalent
+   D(2n)/D(2n+1) register pairs. */
+static tree
+arm_md_asm_clobbers (tree outputs ATTRIBUTE_UNUSED,
+		      tree inputs ATTRIBUTE_UNUSED,
+		      tree clobbers)
+{
+  tree tail;
+
+  for (tail = clobbers; tail; tail = TREE_CHAIN (tail))
+    {
+      const char *clobber_name;
+      clobber_name = TREE_STRING_POINTER (TREE_VALUE (tail));
+      if (tolower (clobber_name[0]) == 'q' && isdigit (clobber_name[1])
+          && (isdigit (clobber_name[2]) || clobber_name[2] == '\0'))
+        {
+          char regname[4] = "dXX";
+          /* found a Q register in the clobber list, so add the D reference
+             to the upper dword of it. The existing clobber for the Q
+             register will automatically translate to the low dword. */
+          int regno = atoi (clobber_name + 1) * 2 + 1;
+          snprintf (regname + 1, 3, "%d", regno);
+          clobbers =
+            tree_cons (NULL_TREE, build_string (strlen(regname), regname),
+                       clobbers);
+        }
+    }
+  return clobbers;
+}
+/* ALQAAHIRA LOCAL end 6902792 Q register clobbers in inline asm */
+
 #include "gt-arm.h"

@@ -1,3 +1,63 @@
+2009-07-03  Jon Ziegler  <jonz@apple.com>
+
+	Back out Bob's patch for 6879229 since it causes problems for the
+	Northstar build.
+
+2009-06-25  Bob Wilson  <bob.wilson@apple.com>
+
+	Radar 6879229
+	* config/arm/arm.c (arm_override_options): Disallow -fasm-blocks.
+	* doc/invoke.texi (-fasm-blocks): Document this restriction.
+
+2009-06-17  Jim Grosbach <grosbach@apple.com>
+
+	Radar 6821124
+	* builtin-attrs.def (DEF_FORMAT_ATTRIBUTE): For Darwin, don't claim
+	the format argument to be nonnull.
+	* builtins.def (BUILT_IN_FPUTS, BUILT_IN_FPUTS_UNLOCKED,
+	BUILT_IN_PUTS, BUILT_IN_PUTS_UNLOCKED): Likewise.
+
+2009-06-17  Jim Grosbach <grosbach@apple.com>
+
+	Radar 6858124
+	* config/arm/arm.c (arm_output_mi_thunk): Stub calls aren't indirect
+	in MI thumb thunks.
+
+2009-06-15  Fariborz Jahanian <fjahanian@apple.com>
+
+	Radar 6936421
+	* cvt.c (force_rvalue): Convert property reference
+	expression to its getter call before converting to
+	rvalue.
+	* obj-c++.dg/property-as-initializer.mm: New
+
+2009-06-12  Jim Grosbach <grosbach@apple.com>
+
+	Radar 6868127
+	* doc/invoke.texi (-mthumb): Specify that thumb is the default for
+	armv7.
+
+2009-05-20  Jim Grosbach <grosbach@apple.com>
+
+	Radar 6902937
+	* config/arm/arm.c (arm_output_epilogue_vfp_restore): New function.
+	(arm_output_epilogue): Factor out common code to
+	arm_output_epilogue_vfp_restore.
+
+2009-05-19  Jim Grosbach <grosbach@apple.com>
+
+        Radar 6902792
+	* config/arm/arm.c: Add includes for stdlib.h and ctype.h.
+	(TARGET_MD_ASM_CLOBBERS): New.
+	(arm_md_asm_clobbers): New function. Add a clobber of the upper
+	half D register when a Q register clobber is used.
+
+2009-04-08  Jim Grosbach <grosbach@apple.com>
+
+	Radar 6738583
+	* config/arm/arm.c (arm_init_cumulative_args): Always short call local
+	functions.
+
 2009-03-18  Jim Grosbach <grosbach@apple.com
 
         Radar 6676111 (from Mike's fix to SnowLeopard gcc 4.2 6486153)

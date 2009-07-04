@@ -1,3 +1,10 @@
+2009-05-27  Bob Wilson  <bob.wilson@apple.com>
+
+	Radar 6915254
+	* build_gcc: When the Legacy PDK (or whatever B&I uses) is not
+	available, fall back to use the internal iPhone SDK with the tools
+	from the iPhone platform directory.
+
 2009-02-25  Jim Grosbach <grosbach@apple.com>
 
 	Radar 6611402

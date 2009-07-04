@@ -1,3 +1,9 @@
+2009-05-06  Fariborz Jahanian <fjahanian@apple.com>
+
+	Radar 6083666
+	* objc.dg/property-15.m: Modified
+	* objc.dg/property-16.m: New
+
 2009-04-24  Fariborz Jahanian <fjahanian@apple.com>
 
 	Radar 6825962
