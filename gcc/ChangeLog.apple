@@ -1,3 +1,16 @@
+2009-07-07  Stuart Hastings  <stuart@apple.com>
+
+	Radar 6939151
+	* local-alloc.c (local_alloc): Add comment, limit to a 12MB
+          bitmap.
+
+2009-07-07  Stuart Hastings  <stuart@apple.com>
+
+	Radar 6939151
+	* local-alloc.c (local_alloc): Avoid allocating huge register
+          bitmaps.  Arbitrarily set 64K pseudo-register limit for
+          reg_inheritance analysis.
+
 2009-04-08  Jim Grosbach <grosbach@apple.com>
 
 	Radar 6738583
